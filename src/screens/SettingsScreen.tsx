@@ -1,8 +1,14 @@
+import { useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
 import { useFontScale } from '../hooks/useFontScale'
+import { useBiometric } from '../hooks/useBiometric'
+import { usePinAuth } from '../hooks/usePinAuth'
+import { useApp } from '../context/AppContext'
 
 interface SettingsScreenProps {
   onBack: () => void
+  onChangePin?: () => void
+  onDisconnect?: () => void
 }
 
 type FontScale = 'S' | 'M' | 'L' | 'XL'
@@ -15,9 +21,37 @@ const PREVIEW_SIZES: Record<FontScale, string> = {
   XL: '24px',
 }
 
-export function SettingsScreen({ onBack }: SettingsScreenProps) {
+export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
   const { scale, setScale } = useFontScale()
+  const bio = useBiometric()
+  const { clearPin } = usePinAuth()
+  const { disconnect } = useApp()
+  const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
+  const [bioLoading, setBioLoading] = useState(false)
+
+  const handleBioToggle = async () => {
+    if (bioLoading) return
+    setBioLoading(true)
+    if (bioEnabled) {
+      bio.unregister()
+      setBioEnabled(false)
+    } else {
+      const ok = await bio.register()
+      if (ok) setBioEnabled(true)
+    }
+    setBioLoading(false)
+  }
+
+  const handleChangePin = () => {
+    clearPin()
+    onChangePin?.()
+  }
+
+  const handleDisconnect = () => {
+    disconnect()
+    onDisconnect?.()
+  }
 
   return (
     <div className="bg-background text-on-background min-h-screen pb-xxl">
@@ -156,25 +190,34 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             Security
           </h2>
           <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
-            <button className="w-full flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left">
+            <button
+              onClick={handleChangePin}
+              className="w-full flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left"
+            >
               <div className="flex items-center gap-md">
                 <span className="material-symbols-outlined text-secondary">lock</span>
-                <span className="font-body-md text-body-md">PIN change</span>
+                <span className="font-body-md text-body-md">PIN 변경</span>
               </div>
               <span className="material-symbols-outlined text-outline-variant">chevron_right</span>
             </button>
-            <div className="flex items-center justify-between p-md">
-              <div className="flex items-center gap-md">
-                <span className="material-symbols-outlined text-secondary">fingerprint</span>
-                <span className="font-body-md text-body-md">Biometric toggle</span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only" onChange={() => {}} />
-                <div className="toggle-label w-11 h-6 bg-[#4A7B5F] rounded-full relative">
-                  <div className="toggle-dot absolute top-0.5 left-[22px] bg-white w-5 h-5 rounded-full" />
+            {bio.isSupported() && (
+              <div className="flex items-center justify-between p-md">
+                <div className="flex items-center gap-md">
+                  <span className="material-symbols-outlined text-secondary">fingerprint</span>
+                  <span className="font-body-md text-body-md">생체인증</span>
                 </div>
-              </label>
-            </div>
+                <button
+                  onClick={handleBioToggle}
+                  disabled={bioLoading}
+                  className="relative inline-flex items-center cursor-pointer disabled:opacity-50"
+                  aria-label="생체인증 토글"
+                >
+                  <div className={`w-11 h-6 rounded-full transition-colors relative ${bioEnabled ? 'bg-[#4A7B5F]' : 'bg-outline-variant'}`}>
+                    <div className={`absolute top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${bioEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -191,7 +234,10 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               </div>
               <span className="font-label-sm text-label-sm text-on-surface-variant">v 0.1.0</span>
             </div>
-            <button className="w-full flex items-center justify-between p-md hover:bg-error-container/10 transition-colors text-left group">
+            <button
+              onClick={handleDisconnect}
+              className="w-full flex items-center justify-between p-md hover:bg-error-container/10 transition-colors text-left group"
+            >
               <div className="flex items-center gap-md">
                 <span className="material-symbols-outlined text-error">link_off</span>
                 <span className="font-body-md text-body-md text-error font-semibold">연결 해제</span>
