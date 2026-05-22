@@ -1,154 +1,176 @@
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
+import { isSameDay } from 'date-fns'
+import { useApp } from '../context/AppContext'
+import { useChat, ChatMessage } from '../hooks/useChat'
+import { MessageBubble } from '../components/MessageBubble'
+import { DateDivider } from '../components/DateDivider'
+import { ChatInput } from '../components/ChatInput'
+import { ImageViewer } from '../components/ImageViewer'
 
 interface ChatScreenProps {
   onBack: () => void
 }
 
-interface Message {
-  id: string
-  text: string
-  isMe: boolean
-  time: string
-}
-
-const INITIAL_MESSAGES: Message[] = [
-  { id: '1', text: 'Good morning! Did you sleep well?', isMe: false, time: '08:42 AM' },
-  { id: '2', text: "I was thinking we could try that new cafe this weekend. ☕️", isMe: false, time: '08:42 AM' },
-  { id: '3', text: 'Hey! I slept great, dreaming of us. ❤️', isMe: true, time: '09:15 AM' },
-  { id: '4', text: "I'd love to try that place! Saturday works best for me.", isMe: true, time: '09:15 AM' },
-  { id: '5', text: 'Look at what I found for our garden!', isMe: false, time: '11:30 AM' },
-]
-
 export function ChatScreen({ onBack }: ChatScreenProps) {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
-  const [input, setInput] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { uid, coupleId, partnerNickname } = useApp()
+  const { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead } = useChat(
+    coupleId,
+    uid,
+  )
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const topRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const isInitialLoad = useRef(true)
 
+  const partnerName = partnerNickname || '자기'
+
+  // 신규 메시지 도착 시 자동 스크롤 (초기 로드 포함)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView()
-  }, [messages])
+    if (messages.length === 0) return
+    if (isInitialLoad.current) {
+      // 초기: 즉시 바닥
+      bottomRef.current?.scrollIntoView()
+      isInitialLoad.current = false
+    } else {
+      // 신규: smooth
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages.length])
 
-  const handleSend = () => {
-    if (!input.trim()) return
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        text: input.trim(),
-        isMe: true,
-        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+  // 상단 도달 시 이전 메시지 로드 (IntersectionObserver)
+  useEffect(() => {
+    if (!topRef.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading) {
+          // 스크롤 위치 보정: 로드 전 높이 기억
+          const list = listRef.current
+          const prevHeight = list?.scrollHeight ?? 0
+          loadMore().then(() => {
+            if (list) {
+              const added = list.scrollHeight - prevHeight
+              list.scrollTop = added
+            }
+          })
+        }
       },
-    ])
-    setInput('')
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-    }
-  }
+      { threshold: 0.1 },
+    )
+    observer.observe(topRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadMore])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
+  // 상대방 메시지 읽음 처리
+  useEffect(() => {
+    messages.forEach((msg) => {
+      if (msg.senderUid !== uid && !msg.readBy.includes(uid ?? '')) {
+        markAsRead(msg.id)
+      }
+    })
+  }, [messages, uid, markAsRead])
 
-  const handleInput = () => {
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
-  }
+  // 메시지 사이에 날짜 디바이더가 필요한지 판단
+  const needsDivider = useCallback(
+    (msg: ChatMessage, index: number): boolean => {
+      if (!msg.createdAt) return false
+      if (index === 0) return true
+      const prev = messages[index - 1]
+      if (!prev.createdAt) return false
+      return !isSameDay(new Date(prev.createdAt), new Date(msg.createdAt))
+    },
+    [messages],
+  )
+
+  // 같은 발신자의 연속 그룹에서 마지막 메시지인지 (시간 표시 여부)
+  const isLastInGroup = useCallback(
+    (index: number): boolean => {
+      const next = messages[index + 1]
+      if (!next) return true
+      return next.senderUid !== messages[index].senderUid
+    },
+    [messages],
+  )
 
   return (
-    <div className="bg-surface min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-md flex justify-between items-center px-margin-mobile py-sm">
-        <div className="flex items-center gap-md">
-          <button
-            className="hover:bg-surface-container rounded-full p-xs transition-colors"
-            onClick={onBack}
-          >
-            <span className="material-symbols-outlined text-primary">arrow_back</span>
-          </button>
-          <div className="flex items-center gap-sm">
-            <div className="relative w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
-              <span className="material-symbols-outlined text-primary">person</span>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#4CAF50] border-2 border-surface rounded-full" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-body-md font-semibold text-primary">자기</span>
-              <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
-                Active now
-              </span>
-            </div>
+    <div className="bg-[#EEE9DC] min-h-screen flex flex-col">
+      {/* 헤더 */}
+      <header className="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
+        <button
+          onClick={onBack}
+          className="hover:bg-surface-container rounded-full p-xs transition-colors"
+        >
+          <span className="material-symbols-outlined text-primary">arrow_back</span>
+        </button>
+
+        <div className="flex items-center gap-sm flex-1">
+          <div className="relative w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden shrink-0">
+            <span className="material-symbols-outlined text-primary">person</span>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#4CAF50] border-2 border-surface rounded-full" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-body-md font-semibold text-primary leading-tight">{partnerName}</span>
+            <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-medium">
+              Active now
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Messages */}
+      {/* 메시지 목록 */}
       <main
-        className="flex-1 overflow-y-auto px-margin-mobile py-lg flex flex-col gap-lg"
-        style={{ paddingBottom: '100px' }}
+        ref={listRef}
+        className="flex-1 overflow-y-auto px-margin-mobile flex flex-col"
+        style={{ paddingTop: '16px', paddingBottom: '80px' }}
       >
-        <div className="flex justify-center my-md">
-          <span className="bg-surface-container-highest px-md py-xs rounded-full text-label-sm text-on-surface-variant">
-            오늘
-          </span>
+        {/* 상단 감시 — 여기 보이면 loadMore */}
+        <div ref={topRef} className="h-1 shrink-0">
+          {loading && (
+            <div className="flex justify-center py-sm">
+              <span className="material-symbols-outlined text-outline-variant animate-spin text-sm">
+                progress_activity
+              </span>
+            </div>
+          )}
         </div>
 
-        {messages.map((msg, i) => {
-          const showTime = i === messages.length - 1 || messages[i + 1]?.isMe !== msg.isMe
-          return (
-            <div key={msg.id}>
-              <div className={`flex flex-col gap-xs max-w-[80%] ${msg.isMe ? 'items-end self-end ml-auto' : 'items-start'}`}>
-                <div
-                  className={`p-md rounded-[18px] shadow-sm ${
-                    msg.isMe
-                      ? 'bg-primary-container text-on-primary-container message-bubble-me'
-                      : 'bg-surface-container-low text-on-surface message-bubble-partner'
-                  }`}
-                >
-                  <p className="font-body-md text-body-md">{msg.text}</p>
-                </div>
-                {showTime && (
-                  <span className={`text-[10px] text-on-surface-variant ${msg.isMe ? 'mr-sm' : 'ml-sm'} mt-xs`}>
-                    {msg.time}
-                  </span>
-                )}
-              </div>
+        {messages.length === 0 && !loading && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-sm text-center py-xxl">
+            <span className="material-symbols-outlined text-[48px] text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>
+              chat_bubble
+            </span>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              첫 메시지를 보내보세요 💕
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div key={msg.id}>
+            {needsDivider(msg, i) && msg.createdAt && (
+              <DateDivider timestamp={msg.createdAt} />
+            )}
+            <div className={`flex mb-xs ${msg.senderUid === uid ? 'justify-end' : 'justify-start'}`}>
+              <MessageBubble
+                message={msg}
+                isMe={msg.senderUid === uid}
+                showTime={isLastInGroup(i)}
+                onImageTap={setViewerUrl}
+              />
             </div>
-          )
-        })}
-        <div ref={bottomRef} />
+          </div>
+        ))}
+
+        <div ref={bottomRef} className="h-1" />
       </main>
 
-      {/* Input */}
-      <footer className="fixed bottom-0 left-0 w-full bg-surface-container-low/80 backdrop-blur-md pt-sm pb-lg px-margin-mobile flex items-end gap-md shadow-sm">
-        <button className="bg-surface-container rounded-full p-md text-secondary hover:text-primary transition-all active:scale-95">
-          <span className="material-symbols-outlined">add_photo_alternate</span>
-        </button>
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onInput={handleInput}
-            onKeyDown={handleKeyDown}
-            placeholder="메시지 입력..."
-            rows={1}
-            className="w-full bg-surface-container border-none rounded-[24px] px-lg py-md focus:ring-2 focus:ring-primary-container font-body-md text-body-md text-on-surface placeholder-on-surface-variant/50 resize-none overflow-hidden max-h-32 transition-all outline-none"
-          />
-        </div>
-        <button
-          onClick={handleSend}
-          className="bg-primary-container text-on-primary-container rounded-full p-md shadow-md hover:bg-primary transition-all active:scale-90 flex items-center justify-center"
-        >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-            send
-          </span>
-        </button>
-      </footer>
+      {/* 입력창 */}
+      <ChatInput onSendText={sendText} onSendImage={sendImage} />
+
+      {/* 이미지 확대 뷰어 */}
+      {viewerUrl && (
+        <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
+      )}
     </div>
   )
 }
