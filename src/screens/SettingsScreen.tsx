@@ -22,17 +22,77 @@ const PREVIEW_SIZES: Record<FontScale, string> = {
   XL: '24px',
 }
 
+// ── 연결 해제 확인 다이얼로그 ────────────────────────────────────────────────
+interface ConfirmDialogProps {
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function DisconnectConfirmDialog({ onConfirm, onCancel }: ConfirmDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-margin-mobile">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-surface rounded-2xl shadow-2xl max-w-sm w-full p-xl">
+        <div className="flex flex-col items-center text-center gap-md mb-xl">
+          <div className="w-14 h-14 rounded-full bg-error-container flex items-center justify-center">
+            <span className="material-symbols-outlined text-error text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              link_off
+            </span>
+          </div>
+          <div>
+            <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface mb-xs">연결 해제</h2>
+            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              정말 연결을 해제할까요?<br />
+              채팅·일기·사진 데이터는 유지되지만<br />
+              상대방과의 실시간 연결이 끊깁니다.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-sm">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-md rounded-full border border-outline-variant font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-md rounded-full bg-error text-on-error font-label-md text-label-md active:scale-95 transition-transform"
+          >
+            연결 해제
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
   const { scale, setScale } = useFontScale()
   const bio = useBiometric()
   const { clearPin } = usePinAuth()
-  const { uid, disconnect } = useApp()
+  const {
+    uid, myNickname, partnerNickname, startDate,
+    disconnect, setStartDate, setMyNickname, setPartnerNickname,
+  } = useApp()
   const push = usePushNotification(uid)
+
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
+
+  // 커플 정보 편집
+  const [editingMyNick, setEditingMyNick] = useState(false)
+  const [myNickInput, setMyNickInput] = useState(myNickname)
+  const [editingPartnerNick, setEditingPartnerNick] = useState(false)
+  const [partnerNickInput, setPartnerNickInput] = useState(partnerNickname)
+  const [editingDate, setEditingDate] = useState(false)
+  const [dateInput, setDateInput] = useState(() => startDate ?? new Date().toISOString().split('T')[0])
+
+  // 연결 해제 확인 다이얼로그
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
   const handleBioToggle = async () => {
     if (bioLoading) return
@@ -52,7 +112,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
     onChangePin?.()
   }
 
-  const handleDisconnect = () => {
+  const handleDisconnectConfirm = () => {
+    setShowDisconnectDialog(false)
     disconnect()
     onDisconnect?.()
   }
@@ -66,6 +127,25 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
   const handleRequestPush = async () => {
     const result = await push.requestPermission()
     if (result === 'granted') setPushGranted(true)
+  }
+
+  const handleSaveMyNick = () => {
+    const trimmed = myNickInput.trim()
+    if (trimmed) setMyNickname(trimmed)
+    else setMyNickInput(myNickname)
+    setEditingMyNick(false)
+  }
+
+  const handleSavePartnerNick = () => {
+    const trimmed = partnerNickInput.trim()
+    if (trimmed) setPartnerNickname(trimmed)
+    else setPartnerNickInput(partnerNickname)
+    setEditingPartnerNick(false)
+  }
+
+  const handleSaveDate = () => {
+    if (dateInput) setStartDate(dateInput)
+    setEditingDate(false)
   }
 
   return (
@@ -87,6 +167,106 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
       </header>
 
       <main className="max-w-[600px] mx-auto px-margin-mobile mt-lg">
+
+        {/* 커플 정보 */}
+        <section className="mb-xl">
+          <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
+            커플 정보
+          </h2>
+          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+            {/* 내 닉네임 */}
+            <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
+              <div className="flex items-center gap-md">
+                <span className="material-symbols-outlined text-secondary">person</span>
+                <span className="font-body-md text-body-md">내 닉네임</span>
+              </div>
+              {editingMyNick ? (
+                <div className="flex items-center gap-sm">
+                  <input
+                    autoFocus
+                    value={myNickInput}
+                    onChange={(e) => setMyNickInput(e.target.value.slice(0, 12))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveMyNick(); if (e.key === 'Escape') setEditingMyNick(false) }}
+                    className="w-28 bg-surface-container-highest rounded-lg px-sm py-xs font-body-md text-body-md text-on-surface outline-none text-right"
+                  />
+                  <button onClick={handleSaveMyNick} className="text-primary">
+                    <span className="material-symbols-outlined text-sm">check</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setMyNickInput(myNickname); setEditingMyNick(true) }}
+                  className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <span className="font-label-md text-label-md">{myNickname || '미설정'}</span>
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+              )}
+            </div>
+
+            {/* 파트너 닉네임 */}
+            <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
+              <div className="flex items-center gap-md">
+                <span className="material-symbols-outlined text-secondary">favorite</span>
+                <span className="font-body-md text-body-md">파트너 닉네임</span>
+              </div>
+              {editingPartnerNick ? (
+                <div className="flex items-center gap-sm">
+                  <input
+                    autoFocus
+                    value={partnerNickInput}
+                    onChange={(e) => setPartnerNickInput(e.target.value.slice(0, 12))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSavePartnerNick(); if (e.key === 'Escape') setEditingPartnerNick(false) }}
+                    className="w-28 bg-surface-container-highest rounded-lg px-sm py-xs font-body-md text-body-md text-on-surface outline-none text-right"
+                  />
+                  <button onClick={handleSavePartnerNick} className="text-primary">
+                    <span className="material-symbols-outlined text-sm">check</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setPartnerNickInput(partnerNickname); setEditingPartnerNick(true) }}
+                  className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <span className="font-label-md text-label-md">{partnerNickname || '미설정'}</span>
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+              )}
+            </div>
+
+            {/* 처음 만난 날 */}
+            <div className="flex items-center justify-between p-md">
+              <div className="flex items-center gap-md">
+                <span className="material-symbols-outlined text-secondary">calendar_heart</span>
+                <span className="font-body-md text-body-md">처음 만난 날</span>
+              </div>
+              {editingDate ? (
+                <div className="flex items-center gap-sm">
+                  <input
+                    type="date"
+                    autoFocus
+                    value={dateInput}
+                    onChange={(e) => setDateInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveDate(); if (e.key === 'Escape') setEditingDate(false) }}
+                    className="bg-surface-container-highest rounded-lg px-sm py-xs font-body-sm text-body-sm text-on-surface outline-none"
+                  />
+                  <button onClick={handleSaveDate} className="text-primary">
+                    <span className="material-symbols-outlined text-sm">check</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setDateInput(startDate ?? new Date().toISOString().split('T')[0]); setEditingDate(true) }}
+                  className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <span className="font-label-md text-label-md">{startDate ?? '미설정'}</span>
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Appearance */}
         <section className="mb-xl">
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
@@ -267,7 +447,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
               <span className="font-label-sm text-label-sm text-on-surface-variant">v 0.1.0</span>
             </div>
             <button
-              onClick={handleDisconnect}
+              onClick={() => setShowDisconnectDialog(true)}
               className="w-full flex items-center justify-between p-md hover:bg-error-container/10 transition-colors text-left group"
             >
               <div className="flex items-center gap-md">
@@ -284,6 +464,14 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           </p>
         </section>
       </main>
+
+      {/* 연결 해제 확인 다이얼로그 */}
+      {showDisconnectDialog && (
+        <DisconnectConfirmDialog
+          onConfirm={handleDisconnectConfirm}
+          onCancel={() => setShowDisconnectDialog(false)}
+        />
+      )}
     </div>
   )
 }

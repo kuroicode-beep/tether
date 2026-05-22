@@ -21,6 +21,8 @@ interface AppContextType extends AppState {
   }) => void
   disconnect: () => void
   setStartDate: (date: string) => void
+  setMyNickname: (name: string) => void
+  setPartnerNickname: (name: string) => void
 }
 
 const LS_KEY = 'tether_app_state'
@@ -76,8 +78,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LS_KEY, JSON.stringify(next))
   }
 
+  const setMyNickname = (name: string) => {
+    const next = { ...state, myNickname: name }
+    setState(next)
+    localStorage.setItem(LS_KEY, JSON.stringify(next))
+  }
+
+  const setPartnerNickname = (name: string) => {
+    const next = { ...state, partnerNickname: name }
+    setState(next)
+    localStorage.setItem(LS_KEY, JSON.stringify(next))
+  }
+
   return (
-    <AppContext.Provider value={{ ...state, connect, disconnect, setStartDate }}>
+    <AppContext.Provider value={{ ...state, connect, disconnect, setStartDate, setMyNickname, setPartnerNickname }}>
       {children}
     </AppContext.Provider>
   )
