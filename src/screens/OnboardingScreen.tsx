@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { getOrCreateUid, createUserProfile, findUserByCode, linkCouple } from '../lib/coupleAuth'
+import { PushPermissionSheet } from '../components/PushPermissionSheet'
+import { usePushNotification } from '../hooks/usePushNotification'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join'
 
@@ -18,6 +20,8 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showPushSheet, setShowPushSheet] = useState(false)
+  const push = usePushNotification(uid || null)
 
   const handleNicknameNext = async () => {
     if (!nickname.trim()) return
@@ -50,7 +54,12 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     const coupleId = await linkCouple(uid, partner.uid)
     connect({ uid, coupleId, myNickname: nickname.trim(), partnerNickname: partner.nickname, partnerUid: partner.uid })
     setLoading(false)
-    onConnected()
+    // 알림 권한이 없으면 바텀시트 표시
+    if (!push.isGranted() && 'Notification' in window) {
+      setShowPushSheet(true)
+    } else {
+      onConnected()
+    }
   }
 
   // Firebase 없이 데모 진행용
@@ -60,7 +69,12 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     localStorage.setItem('tether_couple_id', coupleId)
     localStorage.setItem('tether_partner_uid', demoPartnerUid)
     connect({ uid, coupleId, myNickname: nickname.trim() || '나', partnerNickname: '자기', partnerUid: demoPartnerUid })
-    onConnected()
+    // 알림 권한이 없으면 바텀시트 표시
+    if (!push.isGranted() && 'Notification' in window) {
+      setShowPushSheet(true)
+    } else {
+      onConnected()
+    }
   }
 
   return (
@@ -201,6 +215,21 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
           </div>
         )}
       </div>
+
+      {/* 커플 연결 직후 알림 권한 요청 바텀시트 */}
+      {showPushSheet && (
+        <PushPermissionSheet
+          onAllow={async () => {
+            await push.requestPermission()
+            setShowPushSheet(false)
+            onConnected()
+          }}
+          onLater={() => {
+            setShowPushSheet(false)
+            onConnected()
+          }}
+        />
+      )}
     </div>
   )
 }
