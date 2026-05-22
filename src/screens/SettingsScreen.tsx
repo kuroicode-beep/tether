@@ -4,6 +4,7 @@ import { useFontScale } from '../hooks/useFontScale'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
+import { usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -26,9 +27,12 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
   const { scale, setScale } = useFontScale()
   const bio = useBiometric()
   const { clearPin } = usePinAuth()
-  const { disconnect } = useApp()
+  const { uid, disconnect } = useApp()
+  const push = usePushNotification(uid)
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
+  const [pushGranted, setPushGranted] = useState(() => push.isGranted())
 
   const handleBioToggle = async () => {
     if (bioLoading) return
@@ -51,6 +55,17 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
   const handleDisconnect = () => {
     disconnect()
     onDisconnect?.()
+  }
+
+  const handleNotifToggle = async (key: keyof NotificationSettings) => {
+    const next = { ...notifSettings, [key]: !notifSettings[key] }
+    setNotifSettings(next)
+    await push.saveSettings(next)
+  }
+
+  const handleRequestPush = async () => {
+    const result = await push.requestPermission()
+    if (result === 'granted') setPushGranted(true)
   }
 
   return (
@@ -155,32 +170,49 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
             Notifications
           </h2>
           <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
-            {[
-              { icon: 'chat_bubble', label: '메시지', defaultOn: true },
-              { icon: 'favorite', label: '상태 변경', defaultOn: true },
-              { icon: 'auto_stories', label: '교환일기', defaultOn: false },
-            ].map(({ icon, label, defaultOn }, i, arr) => (
-              <div
-                key={label}
-                className={`flex items-center justify-between p-md ${i < arr.length - 1 ? 'border-b border-outline-variant/20' : ''}`}
+            {/* 권한 미허용 배너 */}
+            {!pushGranted && (
+              <button
+                onClick={handleRequestPush}
+                className="w-full flex items-center gap-md p-md border-b border-outline-variant/20 bg-secondary-container/30 hover:bg-secondary-container/50 transition-colors text-left"
               >
-                <div className="flex items-center gap-md">
-                  <span className="material-symbols-outlined text-secondary">{icon}</span>
-                  <span className="font-body-md text-body-md">{label}</span>
+                <span className="material-symbols-outlined text-secondary">notifications_off</span>
+                <div className="flex-1">
+                  <p className="font-label-md text-label-md text-on-surface">알림이 꺼져 있어요</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">탭해서 허용하기</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    defaultChecked={defaultOn}
-                    className="sr-only toggle-checkbox"
-                    onChange={() => {}}
-                  />
-                  <div className={`toggle-label w-11 h-6 rounded-full transition-colors relative ${defaultOn ? 'bg-[#4A7B5F]' : 'bg-outline-variant'}`}>
-                    <div className={`toggle-dot absolute top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${defaultOn ? 'left-[22px]' : 'left-0.5'}`} />
+                <span className="material-symbols-outlined text-outline-variant">chevron_right</span>
+              </button>
+            )}
+            {(
+              [
+                { icon: 'chat_bubble', label: '메시지', key: 'message' as const },
+                { icon: 'favorite', label: '상태 변경', key: 'status' as const },
+                { icon: 'auto_stories', label: '교환일기', key: 'diary' as const },
+              ] as const
+            ).map(({ icon, label, key }, i, arr) => {
+              const on = notifSettings[key]
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between p-md ${i < arr.length - 1 ? 'border-b border-outline-variant/20' : ''}`}
+                >
+                  <div className="flex items-center gap-md">
+                    <span className="material-symbols-outlined text-secondary">{icon}</span>
+                    <span className="font-body-md text-body-md">{label}</span>
                   </div>
-                </label>
-              </div>
-            ))}
+                  <button
+                    onClick={() => handleNotifToggle(key)}
+                    className="relative inline-flex items-center cursor-pointer"
+                    aria-label={`${label} 알림 토글`}
+                  >
+                    <div className={`w-11 h-6 rounded-full transition-colors relative ${on ? 'bg-[#4A7B5F]' : 'bg-outline-variant'}`}>
+                      <div className={`absolute top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${on ? 'left-[22px]' : 'left-0.5'}`} />
+                    </div>
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </section>
 
