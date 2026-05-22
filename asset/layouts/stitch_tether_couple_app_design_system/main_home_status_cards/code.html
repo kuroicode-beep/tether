@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#d6e7db",
+                        "surface-container-highest": "#eae1d4",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1c18",
+                        "on-secondary-container": "#57665d",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c9c6c0",
+                        "surface-tint": "#37684d",
+                        "primary-container": "#4a7b5f",
+                        "outline": "#717972",
+                        "on-secondary-fixed-variant": "#3b4a41",
+                        "surface-dim": "#e2d9cc",
+                        "on-primary-container": "#dcffe7",
+                        "inverse-on-surface": "#f9efe2",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#d3e4d8",
+                        "background": "#fff8f2",
+                        "error": "#ba1a1a",
+                        "surface-container": "#f6eddf",
+                        "on-secondary-fixed": "#101e17",
+                        "on-tertiary-container": "#f9f6ef",
+                        "surface-variant": "#eae1d4",
+                        "on-primary": "#ffffff",
+                        "secondary": "#526259",
+                        "surface": "#fff8f2",
+                        "secondary-fixed-dim": "#bacbbf",
+                        "tertiary-fixed": "#e5e2db",
+                        "surface-bright": "#fff8f2",
+                        "tertiary-container": "#72716b",
+                        "outline-variant": "#c0c9c1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1f1b13",
+                        "on-surface-variant": "#414943",
+                        "primary-fixed": "#b9efcd",
+                        "surface-container-high": "#f0e7da",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1f1b13",
+                        "inverse-primary": "#9ed2b1",
+                        "primary": "#316248",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#9ed2b1",
+                        "surface-container-low": "#fcf2e5",
+                        "on-primary-fixed": "#002112",
+                        "on-primary-fixed-variant": "#1e5037",
+                        "inverse-surface": "#343027",
+                        "on-tertiary-fixed-variant": "#474742",
+                        "tertiary": "#595953"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xxl": "48px",
+                        "margin-mobile": "20px",
+                        "sm": "8px",
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mood-active {
+            transform: scale(1.1);
+            background-color: rgba(49, 98, 72, 0.1);
+            border-radius: 50%;
+        }
+        body {
+            background-color: #EEE9DC;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen text-on-surface pb-32">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
+<h1 class="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
+<div class="flex items-center gap-md">
+<button class="p-xs hover:bg-surface-container transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined text-primary">settings</span>
+</button>
+</div>
+</header>
+<main class="max-w-md mx-auto px-margin-mobile space-y-lg pt-lg">
+<!-- Status Section -->
+<section class="grid grid-cols-2 gap-gutter">
+<!-- My Card -->
+<div class="bg-[#F5F2EB] rounded-xl p-md shadow-sm border-2 border-primary-container flex flex-col items-center text-center space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="font-label-md text-label-md text-on-surface">나</span>
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<div class="flex justify-around w-full py-xs">
+<button class="text-xl mood-active p-xs">😊</button>
+<button class="text-xl p-xs grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">😐</button>
+<button class="text-xl p-xs grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">😴</button>
+</div>
+<div class="flex flex-wrap justify-center gap-xs">
+<span class="px-sm py-1 bg-primary/10 text-primary font-label-sm text-[10px] rounded-full">설렘</span>
+<span class="px-sm py-1 bg-surface-variant text-on-surface-variant font-label-sm text-[10px] rounded-full">평온</span>
+</div>
+<p class="font-body-md text-label-md text-on-surface-variant leading-tight h-10 flex items-center">오늘 하루도 고마워!</p>
+<span class="font-label-sm text-[10px] text-outline-variant">방금 전</span>
+</div>
+<!-- Partner Card -->
+<div class="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border border-transparent">
+<div class="flex items-center gap-xs">
+<span class="font-label-md text-label-md text-on-surface">자기</span>
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+</div>
+<div class="flex justify-around w-full py-xs">
+<div class="text-xl p-xs grayscale-0">😴</div>
+</div>
+<div class="flex flex-wrap justify-center gap-xs">
+<span class="px-sm py-1 bg-secondary-container text-secondary font-label-sm text-[10px] rounded-full">힘듦</span>
+<span class="px-sm py-1 bg-surface-variant text-on-surface-variant font-label-sm text-[10px] rounded-full">보고싶어</span>
+</div>
+<p class="font-body-md text-label-md text-on-surface-variant leading-tight h-10 flex items-center">졸려... 빨리 집 가고 싶다</p>
+<span class="font-label-sm text-[10px] text-outline-variant">15분 전</span>
+</div>
+</section>
+<!-- Visual Anchor / Tether Line -->
+<div class="py-sm">
+<div class="h-1 w-full bg-gradient-to-r from-primary to-primary-container rounded-full opacity-30"></div>
+</div>
+<!-- Quick Nav Grid -->
+<section class="bg-[#F5F2EB] rounded-xl p-lg shadow-sm">
+<div class="grid grid-cols-3 gap-y-xl gap-x-gutter">
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">chat</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">채팅</span>
+</button>
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">calendar_month</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">기념일</span>
+</button>
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">auto_stories</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">교환일기</span>
+</button>
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">featured_play_list</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">컨텐츠</span>
+</button>
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">photo_library</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">사진첩</span>
+</button>
+<button class="flex flex-col items-center gap-xs group">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">history</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">히스토리</span>
+</button>
+</div>
+</section>
+<!-- Highlight Featured Section -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container-highest p-lg h-40 flex flex-col justify-end">
+<img class="absolute inset-0 w-full h-full object-cover mix-blend-soft-light opacity-60" data-alt="A warm and intimate close-up of two people holding hands in a field during the golden hour sunset. The lighting is soft and ethereal, with a hazy sage green and warm cream palette. The mood is tranquil and romantic, perfectly capturing a serene moment of connection in a modern minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_xWFDj_Yg6Fdu00eWa-jTW_rWFZuFB4BLv9mHK0gWe6Xkz57uCbthoJReTAvQTCtAuKeYq5FmPhdsWiLIuoBOQ-ODaxJYjuhRTifFsyL2LJ3Uo-FL5RGL-a99utE6_Ry2dFLsAnzByc7w6ofsT0cGZJWvW1x6e-jOV_ZTMvqY4m15WKhsoiQ2LFXAk2kLLjj_irehUi74Qjs1H2u3pGvur0nnln7xe6ntkyhDMC5m2E5ITovHF6kV7CtafmKEhYL-8HkEHmrR45q2"/>
+<div class="relative z-10">
+<p class="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-xs">Today's memory</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">함께한 지 1,245일째</h3>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center pt-sm pb-lg px-xl bg-surface-container-low/80 backdrop-blur-md shadow-sm z-50 rounded-t-xl">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-md py-xs scale-95 active:transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Chat -->
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<!-- Diary -->
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Diary</span>
+</a>
+<!-- More -->
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for mood selection
+        const moodButtons = document.querySelectorAll('button.text-xl');
+        moodButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Only for "My" card buttons (the first container)
+                if (this.closest('.border-primary-container')) {
+                    moodButtons.forEach(b => {
+                        if (b.closest('.border-primary-container')) {
+                            b.classList.remove('mood-active', 'grayscale-0', 'opacity-100');
+                            b.classList.add('grayscale', 'opacity-50');
+                        }
+                    });
+                    this.classList.add('mood-active', 'grayscale-0', 'opacity-100');
+                    this.classList.remove('grayscale', 'opacity-50');
+                }
+            });
+        });
+    </script>
+</body></html>

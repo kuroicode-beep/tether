@@ -27,3 +27,6 @@ dist-ssr/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code local settings (user-specific MCP permissions)
+.claude/settings.local.json

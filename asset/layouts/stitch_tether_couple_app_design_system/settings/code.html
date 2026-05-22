@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#d6e7db",
+                        "surface-container-highest": "#eae1d4",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1c18",
+                        "on-secondary-container": "#57665d",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c9c6c0",
+                        "surface-tint": "#37684d",
+                        "primary-container": "#4a7b5f",
+                        "outline": "#717972",
+                        "on-secondary-fixed-variant": "#3b4a41",
+                        "surface-dim": "#e2d9cc",
+                        "on-primary-container": "#dcffe7",
+                        "inverse-on-surface": "#f9efe2",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#d3e4d8",
+                        "background": "#fff8f2",
+                        "error": "#ba1a1a",
+                        "surface-container": "#f6eddf",
+                        "on-secondary-fixed": "#101e17",
+                        "on-tertiary-container": "#f9f6ef",
+                        "surface-variant": "#eae1d4",
+                        "on-primary": "#ffffff",
+                        "secondary": "#526259",
+                        "surface": "#fff8f2",
+                        "secondary-fixed-dim": "#bacbbf",
+                        "tertiary-fixed": "#e5e2db",
+                        "surface-bright": "#fff8f2",
+                        "tertiary-container": "#72716b",
+                        "outline-variant": "#c0c9c1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1f1b13",
+                        "on-surface-variant": "#414943",
+                        "primary-fixed": "#b9efcd",
+                        "surface-container-high": "#f0e7da",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1f1b13",
+                        "inverse-primary": "#9ed2b1",
+                        "primary": "#316248",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#9ed2b1",
+                        "surface-container-low": "#fcf2e5",
+                        "on-primary-fixed": "#002112",
+                        "on-primary-fixed-variant": "#1e5037",
+                        "inverse-surface": "#343027",
+                        "on-tertiary-fixed-variant": "#474742",
+                        "tertiary": "#595953"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xxl": "48px",
+                        "margin-mobile": "20px",
+                        "sm": "8px",
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4A7B5F;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+        .ios-row:last-child {
+            border-bottom: none;
+        }
+        .bento-card {
+            box-shadow: 0 4px 12px rgba(49, 98, 72, 0.04);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-xxl">
+<!-- Top App Bar -->
+<header class="w-full top-0 sticky z-40 bg-surface flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary hover:bg-surface-container rounded-full p-xs transition-colors duration-200">arrow_back</button>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary">Settings</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest">
+<img alt="Partner's Profile Picture" data-alt="A close-up portrait of a serene young woman with soft features, illuminated by warm, natural golden hour sunlight. The style is intimate and cinematic, featuring a soft-focus background that evokes a sense of peace and closeness. The overall aesthetic is warm and organic, perfectly aligning with a premium digital sanctuary for couples." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3Ot_v8gl3ajs_1asBMImT2AzmxEgN0MgUrJxBfN960gTq6mGGDWdCSq54p8ueMADKudr_kJPYBsEEjJO2IQW60fUnf5o8y4hTpplDElPa7lvEtJWE8DaZf3PrusC1zOol_ZMLUHiNmi9340w-dBRn23dPln1r6N029mZRL1xg0a0BVky7cGSVAIe0lJtWGYFN2q4qYuM-_snsdjHd9AE0PMhF9nYFwUukYGlhLOMmW3zNEugyEdXW1SNxIzNRbtJiFui603M20642"/>
+</div>
+</header>
+<main class="max-w-[600px] mx-auto px-margin-mobile mt-lg">
+<!-- Theme & Appearance Bento Section -->
+<section class="mb-xl">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">Appearance</h2>
+<div class="bg-surface-container rounded-xl overflow-hidden bento-card">
+<!-- Theme Toggle -->
+<div class="ios-row flex items-center justify-between p-md border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">palette</span>
+<span class="font-body-md text-body-md">Theme Selection</span>
+</div>
+<div class="flex gap-sm">
+<button class="w-10 h-10 rounded-full border-2 border-primary bg-[#4A7B5F] flex items-center justify-center transition-transform active:scale-90" onclick="toggleTheme('sage')" title="Sage Theme">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+<button class="w-10 h-10 rounded-full border-2 border-outline-variant bg-[#1f1b13] transition-transform active:scale-90" onclick="toggleTheme('high-contrast')" title="High Contrast"></button>
+</div>
+</div>
+<!-- Font Size Segmented Control -->
+<div class="p-md bg-surface-container-low/50">
+<div class="flex items-center gap-md mb-md">
+<span class="material-symbols-outlined text-secondary">format_size</span>
+<span class="font-body-md text-body-md">Text Size</span>
+</div>
+<div class="bg-surface-container-highest p-1 rounded-lg flex justify-between relative">
+<button class="flex-1 py-xs text-label-sm font-label-sm z-10 font-bold transition-colors" onclick="updateFontSize('S')">S</button>
+<button class="flex-1 py-xs text-label-sm font-label-sm z-10 font-bold bg-white shadow-sm rounded-md transition-colors" onclick="updateFontSize('M')">M</button>
+<button class="flex-1 py-xs text-label-sm font-label-sm z-10 font-bold transition-colors" onclick="updateFontSize('L')">L</button>
+<button class="flex-1 py-xs text-label-sm font-label-sm z-10 font-bold transition-colors" onclick="updateFontSize('XL')">XL</button>
+</div>
+<!-- Live Preview -->
+<div class="mt-md p-lg bg-surface-container-lowest rounded-xl border border-outline-variant/10 text-center transition-all duration-300" id="font-preview">
+<p class="text-primary font-medium" style="font-size: 16px;">안녕, 오늘 뭐해? 💕</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Notifications Section -->
+<section class="mb-xl">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">Notifications</h2>
+<div class="bg-surface-container rounded-xl overflow-hidden bento-card">
+<!-- 메시지 -->
+<div class="ios-row flex items-center justify-between p-md border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">chat_bubble</span>
+<span class="font-body-md text-body-md">메시지</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-11 h-6 bg-outline-variant rounded-full transition-colors">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform"></div>
+</div>
+</label>
+</div>
+<!-- 상태 변경 -->
+<div class="ios-row flex items-center justify-between p-md border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">favorite</span>
+<span class="font-body-md text-body-md">상태 변경</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-11 h-6 bg-outline-variant rounded-full transition-colors">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform"></div>
+</div>
+</label>
+</div>
+<!-- 교환일기 -->
+<div class="ios-row flex items-center justify-between p-md">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">auto_stories</span>
+<span class="font-body-md text-body-md">교환일기</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-11 h-6 bg-outline-variant rounded-full transition-colors">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform"></div>
+</div>
+</label>
+</div>
+</div>
+</section>
+<!-- Security Section -->
+<section class="mb-xl">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">Security</h2>
+<div class="bg-surface-container rounded-xl overflow-hidden bento-card">
+<button class="w-full ios-row flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">lock</span>
+<span class="font-body-md text-body-md">PIN change</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</button>
+<div class="ios-row flex items-center justify-between p-md">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">fingerprint</span>
+<span class="font-body-md text-body-md">Biometric toggle</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="toggle-label w-11 h-6 bg-outline-variant rounded-full transition-colors">
+<div class="toggle-dot absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform"></div>
+</div>
+</label>
+</div>
+</div>
+</section>
+<!-- Misc Section -->
+<section class="mb-xxl">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">Misc</h2>
+<div class="bg-surface-container rounded-xl overflow-hidden bento-card">
+<button class="w-full ios-row flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">info</span>
+<span class="font-body-md text-body-md">App info</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">v 2.4.0</span>
+</button>
+<button class="w-full ios-row flex items-center justify-between p-md hover:bg-error-container/10 transition-colors text-left group">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-error">link_off</span>
+<span class="font-body-md text-body-md text-error font-semibold">연결 해제</span>
+</div>
+<span class="material-symbols-outlined text-error/40 group-hover:text-error transition-colors">warning</span>
+</button>
+</div>
+<p class="text-center text-label-sm font-label-sm text-on-surface-variant mt-lg opacity-60">Created with love for you and your partner.</p>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center pt-sm pb-lg px-xl bg-surface-container-low/80 backdrop-blur-md shadow-sm z-50 rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Diary</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-md py-xs scale-95" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-sm text-label-sm">More</span>
+</a>
+</nav>
+<script>
+        function updateFontSize(size) {
+            const preview = document.getElementById('font-preview').querySelector('p');
+            const buttons = document.querySelectorAll('.bg-surface-container-highest button');
+            
+            // UI Update
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-sm', 'rounded-md');
+                if(btn.innerText === size) {
+                    btn.classList.add('bg-white', 'shadow-sm', 'rounded-md');
+                }
+            });
+
+            // Logic Update
+            switch(size) {
+                case 'S': preview.style.fontSize = '12px'; break;
+                case 'M': preview.style.fontSize = '16px'; break;
+                case 'L': preview.style.fontSize = '20px'; break;
+                case 'XL': preview.style.fontSize = '24px'; break;
+            }
+        }
+
+        function toggleTheme(type) {
+            // Simulated micro-interaction
+            console.log("Switching theme to:", type);
+            // In a real app, this would toggle classes on document.documentElement
+            if (type === 'high-contrast') {
+                document.body.classList.add('contrast-125');
+            } else {
+                document.body.classList.remove('contrast-125');
+            }
+        }
+
+        // Ripple/Tap Effects
+        document.querySelectorAll('button, .ios-row').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.style.opacity = '0.7';
+            });
+            el.addEventListener('mouseup', () => {
+                el.style.opacity = '1';
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether - Watch Together</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .masonry-grid {
+            column-count: 2;
+            column-gap: 16px;
+        }
+        @media (min-width: 768px) {
+            .masonry-grid {
+                column-count: 3;
+            }
+        }
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 16px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#d6e7db",
+                        "surface-container-highest": "#eae1d4",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1c18",
+                        "on-secondary-container": "#57665d",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c9c6c0",
+                        "surface-tint": "#37684d",
+                        "primary-container": "#4a7b5f",
+                        "outline": "#717972",
+                        "on-secondary-fixed-variant": "#3b4a41",
+                        "surface-dim": "#e2d9cc",
+                        "on-primary-container": "#dcffe7",
+                        "inverse-on-surface": "#f9efe2",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#d3e4d8",
+                        "background": "#fff8f2",
+                        "error": "#ba1a1a",
+                        "surface-container": "#f6eddf",
+                        "on-secondary-fixed": "#101e17",
+                        "on-tertiary-container": "#f9f6ef",
+                        "surface-variant": "#eae1d4",
+                        "on-primary": "#ffffff",
+                        "secondary": "#526259",
+                        "surface": "#fff8f2",
+                        "secondary-fixed-dim": "#bacbbf",
+                        "tertiary-fixed": "#e5e2db",
+                        "surface-bright": "#fff8f2",
+                        "tertiary-container": "#72716b",
+                        "outline-variant": "#c0c9c1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1f1b13",
+                        "on-surface-variant": "#414943",
+                        "primary-fixed": "#b9efcd",
+                        "surface-container-high": "#f0e7da",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1f1b13",
+                        "inverse-primary": "#9ed2b1",
+                        "primary": "#316248",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#9ed2b1",
+                        "surface-container-low": "#fcf2e5",
+                        "on-primary-fixed": "#002112",
+                        "on-primary-fixed-variant": "#1e5037",
+                        "inverse-surface": "#343027",
+                        "on-tertiary-fixed-variant": "#474742",
+                        "tertiary": "#595953"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xxl": "48px",
+                        "margin-mobile": "20px",
+                        "sm": "8px",
+                        "margin-desktop": "40px",
+                        "md": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#EEE9DC] text-on-surface font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top Navigation -->
+<header class="bg-[#EEE9DC] w-full top-0 sticky z-40 transition-colors duration-200">
+<div class="flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-sm">
+<img alt="Partner's Profile Picture" class="w-10 h-10 rounded-full object-cover border-2 border-surface-container" data-alt="A warm, intimate close-up portrait of a smiling person in a cozy, sunlit room. The lighting is soft and natural, emphasizing a sense of comfort and partnership. The overall aesthetic is calm and minimalist, using a soft sage and cream color palette to match the digital sanctuary theme. High-end professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeEEyx1mBZfc2iHE0san-DlwOEFmDdPrWkpHjoeHgHwnn5NT6aMhV1S0tAri84hxDnmehXGxDkiRgYRdUf7Ih04hXbP4f7RiFGuZAFu_lAiKLbj7T8k1UA0eEvJQbXaUYtLrOrfBajwOFDI5xRcR7Q4T1dnVRV9Th2Na78vvnNRxPgKRgUd11LMhh1EVVjsr9M474t6cpPj6FYifZMtD--mJzQzxZjS8OTjeHYwia0N2WhnX3hFvvLJWEf7CUbjLDfeA3fngOBI1w2"/>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary">같이 볼 것들 🎬</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary hover:bg-primary-container transition-colors duration-200 shadow-sm active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</header>
+<main class="max-w-screen-xl mx-auto px-margin-mobile pb-xxl">
+<!-- Category Filters -->
+<div class="flex gap-sm overflow-x-auto py-md hide-scrollbar sticky top-[60px] bg-[#EEE9DC] z-30">
+<button class="flex-none px-lg py-xs rounded-full bg-primary text-on-primary font-label-md text-label-md transition-all active:scale-95">전체</button>
+<button class="flex-none px-lg py-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-95 border border-outline-variant/20">책</button>
+<button class="flex-none px-lg py-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-95 border border-outline-variant/20">영화</button>
+<button class="flex-none px-lg py-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-95 border border-outline-variant/20">드라마</button>
+<button class="flex-none px-lg py-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-95 border border-outline-variant/20">유튜브</button>
+<button class="flex-none px-lg py-xs rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all active:scale-95 border border-outline-variant/20">기타</button>
+</div>
+<!-- Content Grid (Pinterest-lite feel) -->
+<div class="masonry-grid mt-md">
+<!-- Card 1 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<img class="w-full h-auto object-cover border-b border-surface-container" data-alt="A high-quality artistic photograph of an open book lying on a soft, textured linen blanket. Beside it, a small sprig of dried lavender rests under warm, golden afternoon sunlight filtering through a nearby window. The mood is intellectually curious yet profoundly peaceful, emphasizing the intimacy of shared reading within a minimalist, sage-toned aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwJxjYqaoO0v_OhqAQ3R-UbqnOw2kBF8RsL-YvIrgcXsxcatCXNSyDeID0gD7kXUv3x0HZ2AL5fm0c2SEmyQX5O6eDip1nRJtCNdKtP4VhoViHoeg5_nfQtmvAOYcBsHtgvbIp40JzxypOUskQS6gKkPRAbb93HskmzXZKq_MfDpbVMN1h9GyDY_xCDn9i1IqRwTOabS--GsUszT4PfA82_Qt0lfTt41bD4se7EbZzPpZx4AHUzVMGymOitLVkKNC19V35FONnuH4r"/>
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2E7D32]">보고싶어요</span>
+<span class="text-lg">📚</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">불편한 편의점</h3>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAY1AqUxfynFNk9bFFDiT4Pdv5T8KDGd1SOSaygEfveeOFPHZmx6pUqoztFlc7TZ20OuLdWg7-MhUxmk6UIqqHPNV43VFj3CjP0EUBn3VB8o3YMsXgMac5mQDxeKArCxz9KZQoEQlYFc3vghVoWd6BssxcZdxqmcYgyQ2W8vcJptaXfrlyUOtnHDKFWz9b52-O7r8lCSSKulLCW3PR3Shbrbd8cyVYL5sErOehCy1FCKtZHRCzdghE8L3H6OsyoqaV8A5QcCnuc6wmJ"/>
+<span class="text-[10px] text-on-surface-variant">Minhyeok added</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-[#E3F2FD] text-[#1976D2]">보는 중</span>
+<span class="text-lg">🎬</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">The Bear (시즌 2)</h3>
+<p class="text-[12px] text-on-surface-variant leading-relaxed line-clamp-2">요즘 핫한 셰프 드라마! 같이 정주행해요.</p>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqkt_ZShWOplDmxTZL_TnkCsWQ1dmnL1nzxG_AS9HXeLuOs5KkFCwzyRxVae5xI403np53DsZ577_EGaDp--7xDQeDqRNQtMC7LOLT4qKcQqgTvUj0OHHw1yQiWPfTO4vy2CTnWcEjiUxmVNdKjX1dqGLwVlIZB343389Nfl8a9gdHIAfIYEQA9Z47MxlP3E90HhVUz73bn6tnZljvKsu9fkPYweTwVoUEKjv9wzsjdyNOukHBLHJbCqn2xN3SyEQcd7k5pCIi706N"/>
+<span class="text-[10px] text-on-surface-variant">Soojin added</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<img class="w-full aspect-[4/3] object-cover border-b border-surface-container" data-alt="An abstract, cinematic still of a dimly lit modern cinema hall with soft, teal-toned velvet seats. A single spotlight creates a subtle lens flare in a foggy atmosphere, evoking the magic of shared movie nights. The lighting is low-key and moody, focusing on the intimate feeling of watching a film together in a private, high-end sanctuary." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVcATYbApvopoNLoPuYkijMHbAkm5XwVZQRAgT5yJ2KmuSYavR-W0cr1YvZK_LRsNwK0-vyUBwXwbqhetKhKsiAPv3s4qIe-cEipnfeixwUSF5C5cUAPimZcuRXeic9sqQxHCj6Vzi2U0x5u-aPDSqN8r-dA5eqvmBICg_rmCVR4OmgyV8JNLxH_W6loR4OT0Kx8I_lFrGATew4djvnxX5fe2fNKd0gH4v0rVWKODvmMeJ6kF1iRXNwKgCyX7C7JyuNXpZoP0XJy6l"/>
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container">다 봤어요</span>
+<span class="text-lg">🎞️</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">파묘 (Exhuma)</h3>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeDVV_wWBcxXq91yESH90eafz7c-bIuy8Ms5B__AY0u3JIKUA-SDt5P91w3iAQXIu6SuC9mnxYSFUF5VmhXFkDp1q7rthYKNo12FjmKGGBejKu1-JFJLqxlg8Urr4ZLyIQE-9kh3Sz44Vn5s-N84jtXJBNximeU7m0eTpMG8ynW0isMBw4Qc_FHKgUe-qhntirx67vRNRoyGXVVNG8O07DuaJn2ArieAYcXliramby-er7_UpbrGw1dJ6wP8hU38XhVTkMcqRoieP8"/>
+<span class="text-[10px] text-on-surface-variant">Minhyeok added</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2E7D32]">보고싶어요</span>
+<span class="text-lg">📺</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">침착맨 TRPG 시리즈</h3>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgyo-wc3vFM1Rsx755IXfO4u_sXIWAa6SwleYKpC9aq9ZsYt84UDelCOkjcrrYHdBjYXJiRBuB_AnKP7Yig6kUXKGJSovfyFiAUnZUsBBmvGqcdqCr-X7y612rv6lo4pQ-AtRxJsuPC0uHchb155lkJpkyga6JnvG_LO4OurFn8L9a4BFtNrhAJAmv_M3dPkA3wcDlBSG7ruBrdi8ETZ382oC6nvgnOF77fUaVMovo9wQnJd4PP86UB1uEWPGLywsJDORCcsKVOEOL"/>
+<span class="text-[10px] text-on-surface-variant">Soojin added</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<img class="w-full aspect-[1/1] object-cover border-b border-surface-container" data-alt="A minimalist and high-end aesthetic shot of a sleek television screen mounted on a clean, off-white wall. The screen displays a soft, blurred landscape of a foggy forest in sage green tones. Below, on a simple oak shelf, sit two identical ceramic mugs of steaming tea. The scene is bathed in soft, diffused light, evoking a serene and intimate home atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJCdig00hYZWs3Ucv328OViCuapSkW5Li47J-JtU4QToVUIdeHSq_tzg3j0d9avNaGinKexTDutcO3X6Kym9-QjIU-FMj64cxFDZwWKqeCTPLrZ1z8oPmP186voa6jmVbR28SEWvTuLYuiJK66Y7K63T4Q9AbPVxk2nychfXoLtphN9QzPUJDjjLnMkG957jCfcU9A5R-Me-l-YxpUF5dlwjfzk5hhIA3w2IkO1rGYXW3ltb5dfunzcnD_aWSIbJ6XkeiiNJSd4GLW"/>
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-[#E3F2FD] text-[#1976D2]">보는 중</span>
+<span class="text-lg">🍿</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">나솔사계 다시보기</h3>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmqTLwhUCyhOj5iCj1it_d2wClLBaOMoTFrdNMXQkivX2BB-zGahI1oBU-4U_Uqw6NUdFtVcET7IsoIPo46CuA6k3CfQRotS4zyJrHot7UdSWIZgv7XBFiY_sC4pkeaWJJEXvk3zoL3lz_aLknEYlsx23OkZhCgwMVLRhZwjROcH8k8biiOGYVvC-nabE71DkRhGq2QPS_rOOS2QUyVFKsE5zptnglvgc76rjlpwub1sGftzWww75bYHoMvasmbWugdZW4JskGJqKX"/>
+<span class="text-[10px] text-on-surface-variant">Minhyeok added</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="masonry-item group cursor-pointer">
+<div class="bg-[#F5F2EB] rounded-xl overflow-hidden shadow-[0px_2px_12px_rgba(49,98,72,0.06)] hover:shadow-[0px_4px_20px_rgba(49,98,72,0.12)] transition-shadow duration-300">
+<div class="p-md space-y-sm">
+<div class="flex justify-between items-start">
+<span class="text-xs px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2E7D32]">보고싶어요</span>
+<span class="text-lg">🎙️</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface leading-snug">김창옥의 강연 100회</h3>
+<div class="flex items-center gap-xs pt-xs border-t border-outline-variant/10">
+<img alt="Avatar" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFg-Re4gm3hKCw5yqP6QrDBNWNh8s-fDJfhB1OVZJzIwGIW6nicgbWBazQyaQk0zSX53PT4mlp8sMJp1OJzTQmPWfF1Tbf0FUEwuSDLc_boKVNxWDHoFg38My7r4KhLKPKOOQ-DqDjya91JkE54hTMlfPI1l9he_zRgH6rLkL0VQcZLu8Kfwon4WfqFOsFQglccGWIyqr3788z7U8-tVjIridhHi8kAQgVs_hS3g65A6cnEFjCx_1uk46PP58XqSii839UlL0srzPZ"/>
+<span class="text-[10px] text-on-surface-variant">Soojin added</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State Tether Detail -->
+<div class="mt-xxl text-center py-xl">
+<div class="inline-block px-xl py-xs bg-primary/5 rounded-full border border-primary/10">
+<p class="text-label-sm font-label-sm text-primary">우리의 위시리스트가 6개 쌓였어요 ✨</p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-low/80 backdrop-blur-md rounded-t-xl shadow-sm">
+<div class="flex justify-around items-center pt-sm pb-lg px-xl">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-md py-xs scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm mt-0.5">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm mt-0.5">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm mt-0.5">Diary</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-sm text-label-sm mt-0.5">More</span>
+</a>
+</div>
+</nav>
+<!-- Floating Action Background Glow (Atmospheric) -->
+<div class="fixed top-0 left-1/4 w-[50vw] h-[442px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="fixed bottom-0 right-1/4 w-[40vw] h-[353px] bg-secondary-container/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+<script>
+        // Micro-interactions for category pills
+        const filterButtons = document.querySelectorAll('.hide-scrollbar button');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-on-primary');
+                    b.classList.add('bg-surface-container-low', 'text-on-surface-variant', 'border', 'border-outline-variant/20');
+                });
+                btn.classList.add('bg-primary', 'text-on-primary');
+                btn.classList.remove('bg-surface-container-low', 'text-on-surface-variant', 'border', 'border-outline-variant/20');
+            });
+        });
+
+        // Simple scroll reveal for cards
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.masonry-item').forEach(item => {
+            item.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
+            observer.observe(item);
+        });
+    </script>
+</body></html>

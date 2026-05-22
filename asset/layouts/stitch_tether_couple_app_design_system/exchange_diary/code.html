@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tether - 교환일기</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Nanum+Pen+Script&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .handwritten { font-family: 'Nanum Pen Script', cursive; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-glow {
+            animation: pulse-border 2.5s infinite ease-in-out;
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(74, 123, 95, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(74, 123, 95, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 123, 95, 0); }
+        }
+        .diary-blur {
+            filter: blur(4px);
+            user-select: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#d6e7db",
+                      "surface-container-highest": "#eae1d4",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed": "#1c1c18",
+                      "on-secondary-container": "#57665d",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#c9c6c0",
+                      "surface-tint": "#37684d",
+                      "primary-container": "#4a7b5f",
+                      "outline": "#717972",
+                      "on-secondary-fixed-variant": "#3b4a41",
+                      "surface-dim": "#e2d9cc",
+                      "on-primary-container": "#dcffe7",
+                      "inverse-on-surface": "#f9efe2",
+                      "error-container": "#ffdad6",
+                      "secondary-container": "#d3e4d8",
+                      "background": "#fff8f2",
+                      "error": "#ba1a1a",
+                      "surface-container": "#f6eddf",
+                      "on-secondary-fixed": "#101e17",
+                      "on-tertiary-container": "#f9f6ef",
+                      "surface-variant": "#eae1d4",
+                      "on-primary": "#ffffff",
+                      "secondary": "#526259",
+                      "surface": "#fff8f2",
+                      "secondary-fixed-dim": "#bacbbf",
+                      "tertiary-fixed": "#e5e2db",
+                      "surface-bright": "#fff8f2",
+                      "tertiary-container": "#72716b",
+                      "outline-variant": "#c0c9c1",
+                      "surface-container-lowest": "#ffffff",
+                      "on-background": "#1f1b13",
+                      "on-surface-variant": "#414943",
+                      "primary-fixed": "#b9efcd",
+                      "surface-container-high": "#f0e7da",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#1f1b13",
+                      "inverse-primary": "#9ed2b1",
+                      "primary": "#316248",
+                      "on-error": "#ffffff",
+                      "primary-fixed-dim": "#9ed2b1",
+                      "surface-container-low": "#fcf2e5",
+                      "on-primary-fixed": "#002112",
+                      "on-primary-fixed-variant": "#1e5037",
+                      "inverse-surface": "#343027",
+                      "on-tertiary-fixed-variant": "#474742",
+                      "tertiary": "#595953"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "xs": "4px",
+                      "lg": "24px",
+                      "xxl": "48px",
+                      "margin-mobile": "20px",
+                      "sm": "8px",
+                      "margin-desktop": "40px",
+                      "md": "16px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top AppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-surface flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container">
+<img alt="Partner Profile" class="w-full h-full object-cover" data-alt="A warm, intimate close-up portrait of a woman with a gentle smile, softly lit by golden hour sunlight. The photo has a natural, grainy texture and a shallow depth of field, set against a soft sage green background. The mood is peaceful, loving, and private, reflecting the core brand identity of Tether." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLu8RXWhuhobv2QM6XMWsus6aJvoEXQbyLKl7AkZ9_mKisCl-LO8oeMy-apHBE4ID-gzt3x5YOswo1cfBSsPZsXrVbe3UDQiv8QwJ7vETLkoJqzu5YfRxMEQzMO5VYMmA7TyG3iJt_60b1Mw_wDNABQAmptgzg5WujJXh2RpDUZxMoWTUYFSz6BK7n4rvkwbqqZtXhowgMFSCKAa4hKwsnpI9ZRGwpml5OywekkgQJZXYQhZ6wi8ITgeWKFNaX6Ejk0cir1ziTtEqY"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-semibold text-primary">교환일기 💌</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors duration-200 text-primary">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</header>
+<main class="max-w-[600px] mx-auto px-margin-mobile pb-32 pt-md space-y-md">
+<!-- Tether Connection Component -->
+<div class="py-sm">
+<div class="flex justify-between items-end mb-xs px-xs">
+<span class="text-label-sm font-label-sm text-secondary uppercase tracking-widest">Our Connection</span>
+<span class="text-label-sm font-label-sm text-primary font-bold">Day 412</span>
+</div>
+<div class="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container w-3/4 rounded-full"></div>
+</div>
+</div>
+<!-- Diary List -->
+<div class="flex flex-col gap-md">
+<!-- Unread Diary Card -->
+<div class="relative bg-[#F5F2EB] rounded-xl border-l-[6px] border-primary-container p-md shadow-sm pulse-glow transition-all active:scale-[0.98]">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<img alt="Partner" class="w-8 h-8 rounded-full border border-primary-container/20" data-alt="A soft-focus profile of a woman smiling, illuminated by warm indoor lighting that highlights her features gently. The aesthetic is filmic and intimate, using a palette of earthy tones and muted greens, perfectly aligned with a quiet, private digital sanctuary feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAe19MZQnB1VugawF4G2nPbQIVqOZTTwoEw8bsXW29UC4EuIZB9U5R7qyKYVgpxGq_OCVKGE3rVjL55n3HlB640rI-8_kK86aC5UUALWBTWPg_XgWgmakS13UKcc-JxzlL_zSfHpuHg7HR8P2RMokUI47_HSlgegHsXpAsRy22VMPD-4v8FjvZwEDyGJHiuu2TVVgkhc9bc9jMPZufQhyDWxJjyVetGYoEKaS83A9MTwi6HJrBDLQKFcGaqg_TMnxTGOy0s0u82jpZn"/>
+<div>
+<p class="font-label-md text-label-md text-on-background font-semibold">지수</p>
+<p class="text-label-sm text-label-sm text-on-surface-variant">오후 9:45</p>
+</div>
+</div>
+<span class="bg-primary-container text-on-primary-container px-sm py-xs rounded-full text-[10px] font-bold tracking-tight uppercase">새 일기</span>
+</div>
+<div class="space-y-xs">
+<h3 class="font-headline-md text-primary handwritten text-2xl">오늘 우리 같이 갔던 카페...</h3>
+<p class="text-on-surface-variant diary-blur handwritten text-xl leading-snug">
+                        네가 그 케이크 정말 좋아해서 나도 너무 행복했어. 사실 거기 가기 전부터 네가 좋아할지 걱정했는데...
+                    </p>
+</div>
+<div class="mt-sm flex justify-end">
+<span class="material-symbols-outlined text-primary-container">lock</span>
+</div>
+</div>
+<!-- Read Diary Card -->
+<div class="bg-[#F5F2EB] rounded-xl border-l-[6px] border-secondary-fixed-dim p-md shadow-sm opacity-90 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary text-xs font-bold">ME</div>
+<div>
+<p class="font-label-md text-label-md text-on-background">나</p>
+<p class="text-label-sm text-label-sm text-on-surface-variant">어제</p>
+</div>
+</div>
+<span class="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full text-[10px] font-semibold">읽음</span>
+</div>
+<div class="space-y-xs">
+<h3 class="font-headline-md text-secondary handwritten text-2xl">비 오는 화요일의 기록</h3>
+<p class="text-on-surface-variant handwritten text-xl leading-snug">
+                        퇴근길에 비가 많이 오더라. 너는 우산 잘 챙겼어? 갑자기 네가 해준 따뜻한 차 한 잔이 생각나서...
+                    </p>
+</div>
+</div>
+<!-- Replied Diary Card -->
+<div class="bg-[#F5F2EB] rounded-xl border-l-[6px] border-primary/40 p-md shadow-sm opacity-80 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<img alt="Partner" class="w-8 h-8 rounded-full border border-primary-container/10" data-alt="A portrait of a young woman with a calm expression, sitting in a cozy library with soft bokeh highlights. The lighting is warm and organic, emphasizing a sense of reliability and groundedness. The color tones are predominantly sage and cream, evoking a peaceful, private atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1etSdIsCfPbxqfuuOKlMMnFSgleQDnIh-Eem3Ky1HtfvX3EprXj_iY591A7YNvYFop-kYBJBvv9kjATHN95EuguTyPEQTRG3LB_lkrS-rBVnZfzP4YDkRGwKVg4NMI6qRhKzryDIdvj6650l-Un6SvYoVfLLIHUWKtk8D-jFeDIDXDXOv2gBeMPloYK9I0ehINorQEJRceLtL1DVQeyks-CmXTKh0xzcYELAZclyJsFabMx9PzJCZ4ORtazsB6HPrwUcJ4S2wA8yC"/>
+<div>
+<p class="font-label-md text-label-md text-on-background">지수</p>
+<p class="text-label-sm text-label-sm text-on-surface-variant">2일 전</p>
+</div>
+</div>
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-sm py-xs rounded-full text-[10px] font-semibold">답장 완료</span>
+</div>
+<div class="space-y-xs">
+<h3 class="font-headline-md text-secondary handwritten text-2xl">꿈속에서도 만났네</h3>
+<p class="text-on-surface-variant handwritten text-xl leading-snug">
+                        오늘 아침에 일어났는데 너무 기분이 좋았어. 꿈에서 우리 같이 바다 보러 갔었거든. 파도 소리가...
+                    </p>
+</div>
+<div class="mt-sm pt-sm border-t border-on-background/5 flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">reply</span>
+<span class="text-label-sm font-label-sm text-primary">답장을 보냈어요</span>
+</div>
+</div>
+<!-- Older Entry (Read) -->
+<div class="bg-[#F5F2EB] rounded-xl border-l-[6px] border-secondary-fixed-dim p-md shadow-sm opacity-70">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary text-xs font-bold">ME</div>
+<div>
+<p class="font-label-md text-label-md text-on-background">나</p>
+<p class="text-label-sm text-label-sm text-on-surface-variant">3일 전</p>
+</div>
+</div>
+<span class="bg-surface-variant text-on-surface-variant px-sm py-xs rounded-full text-[10px] font-semibold">읽음</span>
+</div>
+<div class="space-y-xs">
+<h3 class="font-headline-md text-secondary handwritten text-2xl">전시회 리스트 정리</h3>
+<p class="text-on-surface-variant handwritten text-xl leading-snug">
+                        이번 주말에 갈만한 전시회 몇 개 찾아봤어. 1번은 네가 좋아하는 작가꺼고, 2번은...
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full bg-surface-container-low/80 backdrop-blur-md z-50 flex justify-around items-center pt-sm pb-lg px-xl rounded-t-xl shadow-sm">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-label-sm text-label-sm mt-1">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-md py-xs scale-95 active:transition-transform duration-150 shadow-md" href="#">
+<span class="material-symbols-outlined" data-icon="auto_stories" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="font-label-sm text-label-sm mt-1">Diary</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-md py-xs hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</a>
+</nav>
+<!-- Decorative Element: Soft grain overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
+<script>
+        // Simple micro-interaction for unread cards
+        document.querySelectorAll('.pulse-glow').forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.remove('pulse-glow');
+                card.querySelector('.diary-blur')?.classList.remove('diary-blur');
+                card.querySelector('.bg-primary-container')?.classList.replace('bg-primary-container', 'bg-surface-variant');
+                card.querySelector('.text-on-primary-container')?.classList.replace('text-on-primary-container', 'text-on-surface-variant');
+                const badge = card.querySelector('span[class*="새 일기"]');
+                if(badge) badge.textContent = "읽음";
+                const lock = card.querySelector('.material-symbols-outlined:last-child');
+                if(lock && lock.textContent === 'lock') lock.textContent = 'lock_open';
+            });
+        });
+    </script>
+</body></html>
