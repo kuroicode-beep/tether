@@ -5,14 +5,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 디자인 토큰 (CSS 변수) ── */
 :root {
-  --font-scale: 1.0;
-  --font-base: calc(16px * var(--font-scale));
-  --radius-card: 16px;
-  --radius-pill: 9999px;
-  --radius-modal: 24px;
-  --shadow-card: 0 2px 12px rgba(49, 98, 72, 0.06);
-  --spacing-unit: 8px;
+  /* Sage (기본) 팔레트 */
+  --color-bg:          #EEE9DC;
+  --color-surface:     #F5F2EA;
+  --color-surface-2:   #FFFFFF;
+  --color-primary:     #4A7B5F;
+  --color-primary-dim: #D0E5D8;
+  --color-text:        #1A1A1A;
+  --color-text-muted:  #888880;
+  --color-border:      #D9D4C7;
+  --color-chip-bg:     #E8F0EB;
+  --color-chip-text:   #3A6B4F;
+
+  /* 레이아웃 */
+  --font-scale:    1.0;
+  --font-base:     calc(16px * var(--font-scale));
+  --radius-card:   16px;
+  --radius-pill:   9999px;
+  --radius-modal:  24px;
+  --shadow-card:   0 2px 12px rgba(49, 98, 72, 0.06);
+  --spacing-unit:  8px;
+}
+
+/* ── 고대비 테마 오버라이드 ── */
+[data-theme="high-contrast"] {
+  --color-bg:          #1A2620;
+  --color-surface:     #243028;
+  --color-surface-2:   #2E3C34;
+  --color-primary:     #6FCF97;
+  --color-primary-dim: #1E3D2C;
+  --color-text:        #F0EDE4;
+  --color-text-muted:  #A0A898;
+  --color-border:      #3A4E42;
+  --color-chip-bg:     #1E3D2C;
+  --color-chip-text:   #6FCF97;
+  --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 html {
@@ -21,19 +50,10 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #EEE9DC;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-/* High contrast theme overrides */
-[data-theme="high-contrast"] body {
-  background-color: #1A2620;
-  color: #F0EDE4;
 }
 
 /* Smooth transitions */
