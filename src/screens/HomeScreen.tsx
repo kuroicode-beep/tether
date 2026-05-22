@@ -3,26 +3,25 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
+import { AnniversaryCard } from '../components/AnniversaryCard'
 import { useStatus, Condition } from '../hooks/useStatus'
 import { useApp } from '../context/AppContext'
 
-type Screen = 'home' | 'chat' | 'diary' | 'more'
-
 interface HomeScreenProps {
-  onNavigate: (screen: Screen) => void
+  onNavigate: (screen: string) => void
 }
 
 const CONDITION_EMOJI: Record<Condition, string> = { good: '😊', normal: '😐', tired: '😴' }
 const CONDITIONS: Condition[] = ['good', 'normal', 'tired']
 const MOOD_TAGS = ['설렘', '평온', '힘듦', '보고싶어']
 
-const NAV_ITEMS: { icon: string; label: string; screen: Screen }[] = [
-  { icon: 'chat', label: '채팅', screen: 'chat' },
-  { icon: 'calendar_month', label: '기념일', screen: 'more' },
-  { icon: 'auto_stories', label: '교환일기', screen: 'diary' },
-  { icon: 'featured_play_list', label: '컨텐츠', screen: 'more' },
-  { icon: 'photo_library', label: '사진첩', screen: 'more' },
-  { icon: 'history', label: '히스토리', screen: 'more' },
+const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
+  { icon: 'chat',              label: '채팅',     screen: 'chat' },
+  { icon: 'calendar_month',   label: '기념일',   screen: 'anniversary' },
+  { icon: 'auto_stories',     label: '교환일기', screen: 'diary' },
+  { icon: 'featured_play_list', label: '컨텐츠', screen: 'contents' },
+  { icon: 'photo_library',    label: '사진첩',   screen: 'photo' },
+  { icon: 'history',          label: '히스토리', screen: 'history' },
 ]
 
 function timeAgo(ts: number | null): string {
@@ -31,22 +30,29 @@ function timeAgo(ts: number | null): string {
   catch { return '방금 전' }
 }
 
+// 기본 시작 날짜 (startDate 없을 때 처음 만난 날 설정 UI를 보여줌)
+function parseStartDate(iso: string | null): Date {
+  if (!iso) return new Date('2023-01-01') // 데모 기본값
+  return new Date(iso)
+}
+
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
-  const { uid, coupleId, myNickname, partnerNickname, partnerUid } = useApp()
+  const { uid, coupleId, myNickname, partnerNickname, partnerUid, startDate, setStartDate } = useApp()
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
 
   const [editMsg, setEditMsg] = useState(myStatus.message)
   const [isEditingMsg, setIsEditingMsg] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [dateInput, setDateInput] = useState(() =>
+    startDate ?? new Date('2023-01-01').toISOString().split('T')[0],
+  )
 
-  // 메시지 편집 완료 시 저장
   const handleMsgBlur = () => {
     setIsEditingMsg(false)
     updateMyStatus({ ...myStatus, message: editMsg })
   }
 
-  const toggleCondition = (c: Condition) => {
-    updateMyStatus({ ...myStatus, condition: c })
-  }
+  const toggleCondition = (c: Condition) => updateMyStatus({ ...myStatus, condition: c })
 
   const toggleMood = (tag: string) => {
     const has = myStatus.mood.includes(tag)
@@ -54,13 +60,13 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
     updateMyStatus({ ...myStatus, mood: next })
   }
 
-  // 외부 업데이트 시 editMsg 동기화
   useEffect(() => {
     if (!isEditingMsg) setEditMsg(myStatus.message)
   }, [myStatus.message, isEditingMsg])
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
+  const computedStartDate = parseStartDate(startDate)
 
   return (
     <div className="min-h-screen text-on-surface pb-32">
@@ -78,14 +84,12 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       <main className="max-w-md mx-auto px-margin-mobile space-y-lg pt-lg">
         {/* Status Cards */}
         <section className="grid grid-cols-2 gap-gutter">
-          {/* 내 카드 — 인터랙티브 */}
+          {/* 내 카드 */}
           <div className="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border-2 border-primary-container">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{myName}</span>
               <div className="w-2 h-2 rounded-full bg-primary" />
             </div>
-
-            {/* 컨디션 이모지 토글 */}
             <div className="flex justify-around w-full py-xs">
               {CONDITIONS.map((c) => (
                 <button
@@ -97,8 +101,6 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 </button>
               ))}
             </div>
-
-            {/* 기분 태그 토글 */}
             <div className="flex flex-wrap justify-center gap-xs">
               {MOOD_TAGS.map((tag) => (
                 <button key={tag} onClick={() => toggleMood(tag)}>
@@ -106,8 +108,6 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 </button>
               ))}
             </div>
-
-            {/* 한줄 메시지 */}
             {isEditingMsg ? (
               <input
                 autoFocus
@@ -126,31 +126,26 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 {myStatus.message || <span className="opacity-40">한줄 메시지...</span>}
               </button>
             )}
-
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
           </div>
 
-          {/* 파트너 카드 — 읽기 전용 */}
+          {/* 파트너 카드 */}
           <div className="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border border-transparent">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
               <div className="w-2 h-2 rounded-full bg-outline-variant" />
             </div>
-
             <div className="flex justify-around w-full py-xs">
               <div className="text-xl p-xs">{CONDITION_EMOJI[partnerStatus.condition]}</div>
             </div>
-
             <div className="flex flex-wrap justify-center gap-xs">
               {(partnerStatus.mood.length > 0 ? partnerStatus.mood : ['—']).map((tag) => (
                 <MoodChip key={tag} label={tag} active={tag !== '—'} />
               ))}
             </div>
-
             <p className="font-label-md text-on-surface-variant leading-tight h-10 flex items-center text-center text-[12px]">
               {partnerStatus.message || '아직 메시지가 없어요'}
             </p>
-
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>
           </div>
         </section>
@@ -178,14 +173,35 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </div>
         </section>
 
-        {/* D-day card */}
-        <section className="relative overflow-hidden rounded-xl bg-surface-container-highest p-lg h-40 flex flex-col justify-end">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary-container/20" />
-          <div className="relative z-10">
-            <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-xs">Today's memory</p>
-            <h3 className="font-headline-md text-headline-md text-on-surface">함께한 지 1,245일째</h3>
-          </div>
-        </section>
+        {/* D-day 기념일 카드 */}
+        <div>
+          <AnniversaryCard startDate={computedStartDate} />
+          {/* 처음 만난 날 설정 */}
+          {!startDate && (
+            <button
+              onClick={() => setShowDatePicker(true)}
+              className="w-full mt-sm font-label-sm text-label-sm text-on-surface-variant/60 hover:text-primary transition-colors"
+            >
+              처음 만난 날을 설정해보세요 📅
+            </button>
+          )}
+          {showDatePicker && (
+            <div className="mt-sm flex gap-sm items-center">
+              <input
+                type="date"
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
+                className="flex-1 bg-surface-container rounded-xl px-md py-sm font-body-md text-body-md text-on-surface outline-none"
+              />
+              <button
+                onClick={() => { setStartDate(dateInput); setShowDatePicker(false) }}
+                className="px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md active:scale-95 transition-transform"
+              >
+                저장
+              </button>
+            </div>
+          )}
+        </div>
       </main>
 
       <BottomNav active="home" onNavigate={onNavigate} />

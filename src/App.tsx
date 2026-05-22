@@ -7,10 +7,14 @@ import { ChatScreen } from './screens/ChatScreen'
 import { DiaryScreen } from './screens/DiaryScreen'
 import { ContentsScreen } from './screens/ContentsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { PhotoAlbum } from './screens/PhotoAlbum'
+import { HistoryScreen } from './screens/HistoryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { usePushNotification } from './hooks/usePushNotification'
 
-type Screen = 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents' | 'settings'
+type Screen =
+  | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
+  | 'settings' | 'photo' | 'history' | 'anniversary'
 
 function AppContent() {
   const { isConnected, uid } = useApp()
@@ -27,32 +31,25 @@ function AppContent() {
   // 포그라운드 FCM 메시지 수신 등록
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
-
     push.onForegroundMessage((payload) => {
       const title = payload.notification?.title ?? 'Tether'
       const body = payload.notification?.body ?? ''
       const type = (payload.data?.type as string) ?? undefined
       setToast({ title, body, type })
-    }).then((unsub) => {
-      unsubscribe = unsub
-    })
-
+    }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [uid]) // uid가 바뀌면(로그인) 재등록
+  }, [uid])
 
-  // 잠금 해제 시 연결 여부에 따라 라우팅
   const handleUnlocked = () => {
     setUnlocked(true)
     setScreen(isConnected ? 'home' : 'onboarding')
   }
 
-  // PIN 변경: 잠금 해제 상태 초기화 → LockScreen이 PIN 재설정 모드로 진입
   const handleChangePin = () => {
     setUnlocked(false)
     setScreen('lock')
   }
 
-  // 연결 해제: onboarding으로
   const handleDisconnect = () => {
     setScreen('onboarding')
   }
@@ -61,37 +58,27 @@ function AppContent() {
     return <LockScreen onUnlocked={handleUnlocked} />
   }
 
+  const toHome = () => setScreen('home')
+
   return (
     <>
-      {/* 포그라운드 토스트 */}
-      <ToastNotification
-        toast={toast}
-        onNavigate={navigate}
-        onDismiss={() => setToast(null)}
-      />
+      <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
 
-      {screen === 'onboarding' && (
-        <OnboardingScreen onConnected={() => setScreen('home')} />
-      )}
-      {screen === 'chat' && (
-        <ChatScreen onBack={() => setScreen('home')} />
-      )}
-      {screen === 'settings' && (
+      {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
+      {screen === 'chat'        && <ChatScreen onBack={toHome} />}
+      {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
+      {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
+      {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
+      {screen === 'history'     && <HistoryScreen onBack={toHome} />}
+      {screen === 'anniversary' && <HomeScreen onNavigate={navigate} />}  {/* TODO: 별도 기념일 화면 */}
+      {screen === 'settings'    && (
         <SettingsScreen
-          onBack={() => setScreen('home')}
+          onBack={toHome}
           onChangePin={handleChangePin}
           onDisconnect={handleDisconnect}
         />
       )}
-      {screen === 'diary' && (
-        <DiaryScreen onNavigate={navigate} />
-      )}
-      {screen === 'contents' && (
-        <ContentsScreen onNavigate={navigate} />
-      )}
-      {(screen === 'home' || !['onboarding', 'chat', 'settings', 'diary', 'contents'].includes(screen)) && (
-        <HomeScreen onNavigate={navigate} />
-      )}
+      {screen === 'home' && <HomeScreen onNavigate={navigate} />}
     </>
   )
 }
