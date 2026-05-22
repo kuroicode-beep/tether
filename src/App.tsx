@@ -10,6 +10,7 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
+import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 
 type Screen =
@@ -63,6 +64,7 @@ function AppContent() {
   return (
     <>
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
+      <IOSInstallBanner />
 
       {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
       {screen === 'chat'        && <ChatScreen onBack={toHome} />}
