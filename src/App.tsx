@@ -12,6 +12,7 @@ import { HistoryScreen } from './screens/HistoryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
+import { useTheme } from './hooks/useTheme'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
@@ -19,6 +20,7 @@ type Screen =
 
 function AppContent() {
   const { isConnected, uid } = useApp()
+  useTheme()   // 앱 루트에서 data-theme 적용 (localStorage → document.documentElement)
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)

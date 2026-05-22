@@ -10,6 +10,7 @@ export const generateInviteCode = (): string =>
 
 export const getOrCreateUid = async (): Promise<string> => {
   try {
+    if (!auth) throw new Error('auth not configured')
     const result = await signInAnonymously(auth)
     return result.user.uid
   } catch {
