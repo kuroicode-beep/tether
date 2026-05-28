@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PinPad } from '../components/PinPad'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useBiometric } from '../hooks/useBiometric'
 
@@ -164,7 +165,7 @@ export function LockScreen({ onUnlocked }: LockScreenProps) {
       </main>
 
       {/* Footer */}
-      <footer className="w-full flex justify-center pb-md">
+      <footer className="w-full flex flex-col items-center gap-md pb-md">
         {step === 'enter' && !locked && bio.isSupported() && bio.isRegistered() && (
           <button
             onClick={handleBiometric}
@@ -174,6 +175,7 @@ export function LockScreen({ onUnlocked }: LockScreenProps) {
             지문으로 잠금해제
           </button>
         )}
+        <ThemeToggle />
       </footer>
     </div>
   )
