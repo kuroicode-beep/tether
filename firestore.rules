@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 사용자 프로필 ────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // 초대코드 조회를 위해 로그인한 사용자면 읽기 허용
+      allow read: if request.auth != null;
+      // 본인 문서만 쓰기 허용 (단, coupleId 필드만 업데이트는 상대방도 허용)
+      allow create, delete: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && (
+        request.auth.uid == uid ||
+        // 커플 연결 시 상대방 coupleId만 업데이트 허용
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coupleId'])
+      );
+    }
+
+    // ── 커플 공유 데이터 ─────────────────────────────────────────────────────
+    match /couples/{coupleId} {
+      // 커플 문서 생성: 자신의 uid가 members 배열에 포함되어야 함
+      allow create: if request.auth != null &&
+        request.resource.data.members is list &&
+        request.auth.uid in request.resource.data.members;
+
+      // 읽기/수정/삭제: 기존 members 배열에 자신이 포함되어야 함
+      allow read, update, delete: if request.auth != null &&
+        request.auth.uid in resource.data.members;
+
+      // 서브컬렉션 (messages, diary, photos, contents, history, status)
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.members;
+      }
+    }
+  }
+}
