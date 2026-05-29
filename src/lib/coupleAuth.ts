@@ -208,14 +208,19 @@ export const connectCouple = async (myUid: string, partnerUid: string): Promise<
       throw new Error('PARTNER_USER_DOC_MISSING')
     }
 
-    // Firestore rules가 create/update를 명확히 판별할 수 있도록 모드를 분리한다
+    // members는 create 시에만 설정한다 — update로 members 변경은 rules에서 금지
     if (!coupleSnap.exists()) {
       tx.set(coupleRef, {
         members,
         createdAt: serverTimestamp(),
       })
     } else {
-      tx.update(coupleRef, { members })
+      const existing = Array.isArray(coupleSnap.data()?.members)
+        ? coupleSnap.data()!.members as string[]
+        : []
+      if (!existing.includes(myUid) || !existing.includes(partnerUid)) {
+        throw new Error('COUPLE_ALREADY_LINKED')
+      }
     }
 
     // 두 사용자 문서 모두 update — rules의 update 분기로 평가된다

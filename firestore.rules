@@ -2,26 +2,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── users/{uid} ────────────────────────────────────────────────────────
-    match /users/{uid} {
-      // 로그인 사용자는 누구의 user 문서든 읽을 수 있다 (초대 코드 검색용)
-      allow read: if request.auth != null;
+    function canonicalCoupleId(uidA, uidB) {
+      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
+    }
 
+    match /users/{uid} {
+      allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == uid;
 
-      // 본인은 모든 필드 수정 가능 / 상대방은 coupleId 필드 1개만 추가 가능
+      function isValidCoupleIdCrossLink() {
+        let cid = request.resource.data.coupleId;
+        let wasUnlinked = !('coupleId' in resource.data)
+          || resource.data.coupleId == null
+          || resource.data.coupleId == '';
+        return wasUnlinked &&
+          cid is string &&
+          cid.size() > 0 &&
+          cid == canonicalCoupleId(request.auth.uid, uid);
+      }
+
       allow update: if request.auth != null && (
         request.auth.uid == uid ||
         (
           resource != null &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coupleId'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coupleId']) &&
+          isValidCoupleIdCrossLink()
         )
       );
 
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
-    // ── couples/{coupleId} ─────────────────────────────────────────────────
     match /couples/{coupleId} {
       function isMember() {
         return request.auth != null &&
@@ -33,11 +44,10 @@ service cloud.firestore {
       function isMemberOfNew() {
         return request.auth != null &&
           request.resource.data.members is list &&
+          request.resource.data.members.size() == 2 &&
           request.auth.uid in request.resource.data.members;
       }
 
-      // 문서가 없으면 read 자체는 허용해야 한다 (커플 미연결 상태에서 시도)
-      // 존재할 때만 멤버십 검사를 적용한다
       allow read: if request.auth != null && (
         resource == null ||
         request.auth.uid in resource.data.members
@@ -45,18 +55,11 @@ service cloud.firestore {
 
       allow create: if isMemberOfNew();
 
-      // 멤버이거나, 새 멤버 배열에 본인이 들어있는 신규 연결 트랜잭션이면 update 허용
-      allow update: if request.auth != null && (
-        isMember() ||
-        (
-          isMemberOfNew() &&
-          request.resource.data.members is list
-        )
-      );
+      allow update: if isMember() &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['members']);
 
       allow delete: if false;
 
-      // ── couples/{coupleId}/{subcollection}/{docId} ───────────────────────
       match /{subcollection}/{docId} {
         function coupleMembers() {
           return get(/databases/$(database)/documents/couples/$(coupleId)).data.members;

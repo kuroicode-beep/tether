@@ -1,5 +1,5 @@
 // scripts/test-e2e-firebase.ts
-// 실제 Firestore에 두 사용자를 만들어 connectCouple 트랜잭션과 양방향 데이터 공유를 검증한다
+// Firestore E2E: 정상 커플 연결/공유 + Codex 지적 보안 회귀 시나리오 검증
 import { readFileSync } from 'node:fs'
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app'
 import {
@@ -58,7 +58,20 @@ async function deleteAuthUser(user: User) {
   try {
     await deleteUser(user)
   } catch {
-    // best-effort: 익명 사용자 자동 폐기에 의존
+    // best-effort
+  }
+}
+
+// permission-denied 여부를 확인하는 헬퍼
+async function expectDenied(label: string, fn: () => Promise<unknown>) {
+  try {
+    await fn()
+    throw new Error(`Security regression failed: ${label} should be denied`)
+  } catch (error) {
+    const code = (error as { code?: string }).code
+    if (code !== 'permission-denied') {
+      throw new Error(`Security regression failed: ${label} expected permission-denied, got ${code ?? error}`)
+    }
   }
 }
 
@@ -74,6 +87,8 @@ async function main() {
 
   let userA: User | null = null
   let userB: User | null = null
+  let userC: User | null = null
+  let appC: FirebaseApp | null = null
   let coupleId = ''
   const messageIds: string[] = []
 
@@ -99,17 +114,14 @@ async function main() {
       createdAt: serverTimestamp(),
     })
 
-    // ① 초대 코드 검색
     const inviteSnap = await getDocs(query(collection(dbB, 'users'), where('inviteCode', '==', codeA)))
     if (inviteSnap.empty) throw new Error('Authenticated invite lookup failed')
 
-    // ② 트랜잭션으로 커플 연결 (코드 입력자 B 컨텍스트)
     coupleId = [userA.uid, userB.uid].sort().join('_')
     await runTransaction(dbB, async (tx) => {
       const coupleRef = doc(dbB, 'couples', coupleId)
       const myRef = doc(dbB, 'users', userB!.uid)
       const partnerRef = doc(dbB, 'users', userA!.uid)
-      // 모든 read를 write보다 먼저 수행
       const coupleSnap = await tx.get(coupleRef)
       const mySnap = await tx.get(myRef)
       const partnerSnap = await tx.get(partnerRef)
@@ -121,28 +133,23 @@ async function main() {
           members: [userA!.uid, userB!.uid].sort(),
           createdAt: serverTimestamp(),
         })
-      } else {
-        tx.update(coupleRef, { members: [userA!.uid, userB!.uid].sort() })
       }
       tx.update(myRef, { coupleId })
       tx.update(partnerRef, { coupleId })
     })
 
-    // ③ 양쪽 사용자 모두에서 coupleId가 보이는지 확인
     const restoredA = await getDoc(doc(dbA, 'users', userA.uid))
     const restoredB = await getDoc(doc(dbB, 'users', userB.uid))
     if (restoredA.data()?.coupleId !== coupleId || restoredB.data()?.coupleId !== coupleId) {
       throw new Error('coupleId restore failed')
     }
 
-    // ④ 양쪽 사용자 모두에서 couples 문서를 읽을 수 있는지 확인
     const coupleFromA = await getDoc(doc(dbA, 'couples', coupleId))
     const coupleFromB = await getDoc(doc(dbB, 'couples', coupleId))
     if (!coupleFromA.exists() || !coupleFromB.exists()) {
       throw new Error('couples doc not readable from both members')
     }
 
-    // ⑤ A → B 메시지 전송
     const messageRef = await addDoc(collection(dbA, 'couples', coupleId, 'messages'), {
       senderUid: userA.uid,
       type: 'text',
@@ -157,7 +164,6 @@ async function main() {
       throw new Error('Partner shared data read failed: A to B')
     }
 
-    // ⑥ B → A 답장 전송
     const replyRef = await addDoc(collection(dbB, 'couples', coupleId, 'messages'), {
       senderUid: userB.uid,
       type: 'text',
@@ -172,8 +178,7 @@ async function main() {
       throw new Error('Partner shared data read failed: B to A')
     }
 
-    // ⑦ 기념일 공유
-    await setDoc(doc(dbB, 'couples', coupleId), {
+    await updateDoc(doc(dbB, 'couples', coupleId), {
       anniversaries: [{
         id: 'e2e-first-met',
         type: 'first_met',
@@ -181,14 +186,57 @@ async function main() {
         date: '2026-05-29',
         isYearly: false,
       }],
-    }, { merge: true })
+    })
 
     const coupleSnap = await getDoc(doc(dbA, 'couples', coupleId))
     if (coupleSnap.data()?.anniversaries?.[0]?.id !== 'e2e-first-met') {
       throw new Error('Couple document shared update failed')
     }
 
-    console.log('Firebase E2E passed: invite lookup, transactional couple linking, bidirectional messages, anniversaries, couple doc readable from both members')
+    // ── Codex 보안 회귀: 악성 사용자 C ─────────────────────────────────────
+    appC = makeApp(`e2e-c-${Date.now()}`)
+    const authC = getAuth(appC)
+    const dbC = getFirestore(appC)
+    userC = (await signInAnonymously(authC)).user
+
+    await setDoc(doc(dbC, 'users', userC.uid), {
+      uid: userC.uid,
+      nickname: 'E2E C intruder',
+      inviteCode: `E2EC${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
+      coupleId: null,
+      createdAt: serverTimestamp(),
+    })
+
+    // Critical #1: 비멤버가 기존 couples.members에 자신을 추가할 수 없어야 함
+    await expectDenied('non-member couples members update', () =>
+      updateDoc(doc(dbC, 'couples', coupleId), {
+        members: [userA.uid, userB.uid, userC!.uid],
+        intrudedBy: userC!.uid,
+      }),
+    )
+
+    // Critical #1b: 비멤버가 couples 하위 messages에 write할 수 없어야 함
+    await expectDenied('non-member subcollection write', () =>
+      addDoc(collection(dbC, 'couples', coupleId, 'messages'), {
+        senderUid: userC!.uid,
+        type: 'text',
+        text: 'intrusion',
+        createdAt: serverTimestamp(),
+        readBy: [userC!.uid],
+      }),
+    )
+
+    // Critical #2: 임의 사용자 C가 A의 coupleId를 오염시킬 수 없어야 함
+    await expectDenied('arbitrary user coupleId cross-update', () =>
+      updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
+    )
+
+    // 존재하지 않는 coupleId로 cross-update도 거부되어야 함
+    await expectDenied('nonexistent coupleId cross-update', () =>
+      updateDoc(doc(dbC, 'users', userA.uid), { coupleId: 'fake_uid1_fake_uid2' }),
+    )
+
+    console.log('Firebase E2E passed: linking, bidirectional share, anniversaries, security regression (2 Critical scenarios blocked)')
   } finally {
     if (userA && userB && coupleId) {
       try {
@@ -197,6 +245,13 @@ async function main() {
         }
         await updateDoc(doc(dbA, 'couples', coupleId), { anniversaries: [] })
       } catch { /* ignore */ }
+    }
+
+    if (userC && appC) {
+      const dbC = getFirestore(appC)
+      try { await deleteDoc(doc(dbC, 'users', userC.uid)) } catch { /* ignore */ }
+      await deleteAuthUser(userC)
+      try { await deleteApp(appC) } catch { /* ignore */ }
     }
 
     if (userA) {
