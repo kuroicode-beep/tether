@@ -160,7 +160,16 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
       {/* Header */}
       <header className="bg-[#EEE9DC] w-full top-0 sticky z-40">
         <div className="flex justify-between items-center px-margin-mobile py-sm">
-          <h1 className="font-headline-md text-headline-md font-semibold text-primary">같이 볼 것들 🎬</h1>
+          <div className="flex items-center gap-md">
+            <button
+              onClick={() => onNavigate('home')}
+              className="p-xs rounded-full hover:bg-surface-container transition-colors"
+              style={{ color: 'var(--color-text)' }}
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 className="font-headline-md text-headline-md font-semibold text-primary">같이 볼 것들 🎬</h1>
+          </div>
           <button
             onClick={() => setShowAdd(true)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary shadow-sm active:scale-95 transition-transform"

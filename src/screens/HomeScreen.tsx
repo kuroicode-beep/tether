@@ -3,8 +3,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
-import { AnniversaryCard } from '../components/AnniversaryCard'
 import { useStatus, Condition } from '../hooks/useStatus'
+import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useApp } from '../context/AppContext'
 
 interface HomeScreenProps {
@@ -30,22 +30,13 @@ function timeAgo(ts: number | null): string {
   catch { return '방금 전' }
 }
 
-// 기본 시작 날짜 (startDate 없을 때 처음 만난 날 설정 UI를 보여줌)
-function parseStartDate(iso: string | null): Date {
-  if (!iso) return new Date('2023-01-01') // 기본 시작일
-  return new Date(iso)
-}
-
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
-  const { uid, coupleId, myNickname, partnerNickname, partnerUid, startDate, setStartDate } = useApp()
+  const { uid, coupleId, myNickname, partnerNickname, partnerUid } = useApp()
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
+  const { firstMet, upcoming, getDday } = useAnniversaries(coupleId)
 
   const [editMsg, setEditMsg] = useState(myStatus.message)
   const [isEditingMsg, setIsEditingMsg] = useState(false)
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [dateInput, setDateInput] = useState(() =>
-    startDate ?? new Date('2023-01-01').toISOString().split('T')[0],
-  )
 
   const handleMsgBlur = () => {
     setIsEditingMsg(false)
@@ -66,7 +57,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
-  const computedStartDate = parseStartDate(startDate)
+  const urgentAnniversaries = upcoming.filter(({ dday }) => dday >= 0 && dday <= 7).slice(0, 2)
 
   return (
     <div className="min-h-screen text-on-surface pb-32">
@@ -174,34 +165,48 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         </section>
 
         {/* D-day 기념일 카드 */}
-        <div>
-          <AnniversaryCard startDate={computedStartDate} />
-          {/* 처음 만난 날 설정 */}
-          {!startDate && (
+        <section className="relative overflow-hidden rounded-2xl bg-[#F5F2EB] shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 to-primary-container/15 pointer-events-none" />
+          <div className="relative p-lg">
+            <p className="font-label-sm text-label-sm text-primary/70 uppercase tracking-widest mb-xs">
+              Today's Memory
+            </p>
+            {firstMet ? (
+              <>
+                <h3 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs">
+                  함께한 지 {getDday(firstMet)} 🌿
+                </h3>
+                {urgentAnniversaries.length > 0 && (
+                  <div className="flex flex-wrap gap-xs mt-md">
+                    {urgentAnniversaries.map(({ item }) => (
+                      <span
+                        key={item.id}
+                        className="px-sm py-xs rounded-full bg-primary-container/60 font-label-sm text-label-sm text-on-surface"
+                      >
+                        {item.label} {getDday(item)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h3 className="font-headline-md text-headline-md text-on-surface mb-xs">
+                  첫 만난 날을 입력해보세요
+                </h3>
+                <p className="font-body-md text-body-md text-on-surface-variant mb-md">
+                  함께한 날과 다가오는 기념일을 홈에서 볼 수 있어요.
+                </p>
+              </>
+            )}
             <button
-              onClick={() => setShowDatePicker(true)}
-              className="w-full mt-sm font-label-sm text-label-sm text-on-surface-variant/60 hover:text-primary transition-colors"
+              onClick={() => onNavigate('anniversary')}
+              className="mt-md px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md active:scale-95 transition-transform"
             >
-              처음 만난 날을 설정해보세요 📅
+              기념일 관리
             </button>
-          )}
-          {showDatePicker && (
-            <div className="mt-sm flex gap-sm items-center">
-              <input
-                type="date"
-                value={dateInput}
-                onChange={(e) => setDateInput(e.target.value)}
-                className="flex-1 bg-surface-container rounded-xl px-md py-sm font-body-md text-body-md text-on-surface outline-none"
-              />
-              <button
-                onClick={() => { setStartDate(dateInput); setShowDatePicker(false) }}
-                className="px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md active:scale-95 transition-transform"
-              >
-                저장
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        </section>
       </main>
 
       <BottomNav active="home" onNavigate={onNavigate} />

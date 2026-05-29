@@ -9,6 +9,7 @@ import { ContentsScreen } from './screens/ContentsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
 import { HistoryScreen } from './screens/HistoryScreen'
+import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
@@ -74,12 +75,13 @@ function AppContent() {
       {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
       {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
       {screen === 'history'     && <HistoryScreen onBack={toHome} />}
-      {screen === 'anniversary' && <HomeScreen onNavigate={navigate} />}  {/* TODO: 별도 기념일 화면 */}
+      {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
       {screen === 'settings'    && (
         <SettingsScreen
           onBack={toHome}
           onChangePin={handleChangePin}
           onDisconnect={handleDisconnect}
+          onOpenAnniversary={() => setScreen('anniversary')}
         />
       )}
       {screen === 'home' && <HomeScreen onNavigate={navigate} />}

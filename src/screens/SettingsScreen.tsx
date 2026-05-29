@@ -11,6 +11,7 @@ interface SettingsScreenProps {
   onBack: () => void
   onChangePin?: () => void
   onDisconnect?: () => void
+  onOpenAnniversary?: () => void
 }
 
 type FontScale = 'S' | 'M' | 'L' | 'XL'
@@ -68,7 +69,7 @@ function DisconnectConfirmDialog({ onConfirm, onCancel }: ConfirmDialogProps) {
   )
 }
 
-export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsScreenProps) {
+export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnniversary }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
   const { scale, setScale } = useFontScale()
   const bio = useBiometric()
@@ -257,7 +258,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
             </div>
 
             {/* 처음 만난 날 */}
-            <div className="flex items-center justify-between p-md">
+            <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
                 <span className="material-symbols-outlined text-secondary">calendar_heart</span>
                 <span className="font-body-md text-body-md">처음 만난 날</span>
@@ -286,6 +287,17 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
                 </button>
               )}
             </div>
+
+            <button
+              onClick={onOpenAnniversary}
+              className="w-full flex items-center justify-between p-md hover:bg-surface-container-highest transition-colors text-left"
+            >
+              <div className="flex items-center gap-md">
+                <span className="material-symbols-outlined text-secondary">calendar_month</span>
+                <span className="font-body-md text-body-md">기념일 관리</span>
+              </div>
+              <span className="material-symbols-outlined text-outline-variant">chevron_right</span>
+            </button>
           </div>
         </section>
 

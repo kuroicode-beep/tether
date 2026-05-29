@@ -261,7 +261,16 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   return (
     <div className="bg-background text-on-background min-h-screen pb-32">
       <header className="w-full top-0 sticky z-50 bg-surface flex justify-between items-center px-margin-mobile py-sm">
-        <h1 className="font-headline-md text-headline-md font-semibold text-primary">교환일기 💌</h1>
+        <div className="flex items-center gap-md">
+          <button
+            onClick={() => onNavigate('home')}
+            className="p-xs rounded-full hover:bg-surface-container transition-colors"
+            style={{ color: 'var(--color-text)' }}
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="font-headline-md text-headline-md font-semibold text-primary">교환일기 💌</h1>
+        </div>
         <button
           onClick={() => setView('write')}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors text-primary"

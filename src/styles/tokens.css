@@ -31,17 +31,20 @@
 
 /* ── 고대비 테마 오버라이드 ── */
 [data-theme="high-contrast"] {
-  --color-bg:          #1A2620;
-  --color-surface:     #243328;
-  --color-surface-2:   #2E3C34;
-  --color-primary:     #6FCF97;
-  --color-primary-dim: #1E3D2C;
-  --color-text:        #F0EDE4;
-  --color-text-muted:  #C8C4B8;
-  --color-border:      #3A5045;
-  --color-chip-bg:     #1E3D2C;
-  --color-chip-text:   #6FCF97;
-  --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.4);
+  --color-bg:           #0D0D0D;
+  --color-surface:      #1A1A1A;
+  --color-surface-2:    #262626;
+  --color-primary:      #FFE600;
+  --color-primary-dark: #CDB800;
+  --color-primary-mid:  #FFE600;
+  --color-primary-dim:  #333000;
+  --color-text:         #FFE600;
+  --color-text-muted:   #CCBB00;
+  --color-border:       #444400;
+  --color-neutral:      #888800;
+  --color-chip-bg:      #262600;
+  --color-chip-text:    #FFE600;
+  --shadow-card:        0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 html {
@@ -54,6 +57,39 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="high-contrast"] .text-primary,
+[data-theme="high-contrast"] .text-secondary,
+[data-theme="high-contrast"] .text-on-surface,
+[data-theme="high-contrast"] .text-on-background,
+[data-theme="high-contrast"] .text-on-surface-variant {
+  color: var(--color-text) !important;
+}
+
+[data-theme="high-contrast"] .bg-background,
+[data-theme="high-contrast"] .bg-\[\#EEE9DC\] {
+  background-color: var(--color-bg) !important;
+}
+
+[data-theme="high-contrast"] .bg-surface,
+[data-theme="high-contrast"] .bg-surface-container,
+[data-theme="high-contrast"] .bg-surface-container-low,
+[data-theme="high-contrast"] .bg-surface-container-lowest,
+[data-theme="high-contrast"] .bg-\[\#F5F2EB\],
+[data-theme="high-contrast"] .bg-\[\#F5F2EA\] {
+  background-color: var(--color-surface) !important;
+}
+
+[data-theme="high-contrast"] .bg-primary,
+[data-theme="high-contrast"] .bg-primary-container,
+[data-theme="high-contrast"] .bg-secondary-container {
+  background-color: var(--color-primary) !important;
+}
+
+[data-theme="high-contrast"] .text-on-primary,
+[data-theme="high-contrast"] .text-on-primary-container {
+  color: #0D0D0D !important;
 }
 
 /* Smooth transitions */
