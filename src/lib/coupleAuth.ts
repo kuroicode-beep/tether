@@ -2,8 +2,25 @@ import { db, auth } from './firebase'
 import {
   collection, doc, setDoc, query,
   where, getDocs, updateDoc, serverTimestamp,
+  getDoc,
 } from 'firebase/firestore'
 import { signInAnonymously } from 'firebase/auth'
+
+type UserProfile = {
+  uid: string
+  nickname: string
+  inviteCode: string
+  coupleId: string | null
+}
+
+export type RestoredConnection = {
+  uid: string
+  coupleId: string
+  myNickname: string
+  partnerNickname: string
+  partnerUid: string
+  startDate?: string
+}
 
 export const generateInviteCode = (): string =>
   Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -23,14 +40,40 @@ export const getOrCreateUid = async (): Promise<string> => {
   }
 }
 
-export const createUserProfile = async (uid: string, nickname: string): Promise<string> => {
+export const createUserProfile = async (
+  uid: string,
+  nickname: string,
+  displayName?: string | null
+): Promise<string> => {
+  const resolvedNickname = displayName?.trim() || nickname
   const inviteCode = generateInviteCode()
-  const profile = { uid, nickname, inviteCode, coupleId: null }
+  const profile = { uid, nickname: resolvedNickname, inviteCode, coupleId: null }
   try {
-    await setDoc(doc(db, 'users', uid), {
-      nickname,
+    const userRef = doc(db, 'users', uid)
+    const snap = await getDoc(userRef)
+    if (snap.exists()) {
+      const existing = snap.data() as Partial<UserProfile>
+      const existingProfile = {
+        uid,
+        nickname: existing.nickname ?? resolvedNickname,
+        inviteCode: existing.inviteCode ?? inviteCode,
+        coupleId: existing.coupleId ?? null,
+      }
+      localStorage.setItem('tether_user_profile', JSON.stringify(existingProfile))
+      return existingProfile.inviteCode
+    }
+
+    await setDoc(userRef, {
+      uid,
+      nickname: resolvedNickname,
       inviteCode,
       coupleId: null,
+      fcmToken: null,
+      notificationSettings: {
+        message: true,
+        status: true,
+        diary: true,
+      },
       createdAt: serverTimestamp(),
     })
   } catch {
@@ -59,6 +102,61 @@ export const findUserByCode = async (
     // Firebase 미설정 — null 반환
   }
   return null
+}
+
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid))
+    if (!snap.exists()) return null
+    const data = snap.data() as Partial<UserProfile>
+    return {
+      uid,
+      nickname: data.nickname ?? '',
+      inviteCode: data.inviteCode ?? '',
+      coupleId: data.coupleId ?? null,
+    }
+  } catch {
+    const local = getMyProfile()
+    return local?.uid === uid ? { ...local, coupleId: null } : null
+  }
+}
+
+const toIsoDate = (value: unknown): string | undefined => {
+  if (!value) return undefined
+  if (typeof value === 'object' && 'toDate' in value) {
+    const timestamp = value as { toDate?: () => Date }
+    if (typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toISOString().split('T')[0]
+    }
+  }
+  return undefined
+}
+
+export const restoreConnectionFromProfile = async (
+  uid: string
+): Promise<RestoredConnection | null> => {
+  const profile = await getUserProfile(uid)
+  if (!profile?.coupleId) return null
+
+  try {
+    const coupleSnap = await getDoc(doc(db, 'couples', profile.coupleId))
+    const couple = coupleSnap.exists() ? coupleSnap.data() : {}
+    const members = Array.isArray(couple.members) ? couple.members as string[] : []
+    const partnerUid = members.find((member) => member !== uid)
+    if (!partnerUid) return null
+
+    const partner = await getUserProfile(partnerUid)
+    return {
+      uid,
+      coupleId: profile.coupleId,
+      myNickname: profile.nickname,
+      partnerNickname: partner?.nickname || '자기',
+      partnerUid,
+      startDate: toIsoDate(couple.startDate) ?? toIsoDate(couple.createdAt),
+    }
+  } catch {
+    return null
+  }
 }
 
 export const linkCouple = async (myUid: string, partnerUid: string): Promise<string> => {

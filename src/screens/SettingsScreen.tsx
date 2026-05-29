@@ -5,6 +5,7 @@ import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
 import { usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
+import { useAuth } from '../hooks/useAuth'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -76,12 +77,15 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
     uid, myNickname, partnerNickname, startDate,
     disconnect, setStartDate, setMyNickname, setPartnerNickname,
   } = useApp()
+  const { user, linkGoogle, isGoogleLinked } = useAuth()
   const push = usePushNotification(uid)
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
+  const [googleLinking, setGoogleLinking] = useState(false)
+  const [googleError, setGoogleError] = useState('')
 
   // 커플 정보 편집
   const [editingMyNick, setEditingMyNick] = useState(false)
@@ -127,6 +131,18 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
   const handleRequestPush = async () => {
     const result = await push.requestPermission()
     if (result === 'granted') setPushGranted(true)
+  }
+
+  const handleGoogleLink = async () => {
+    setGoogleLinking(true)
+    setGoogleError('')
+    try {
+      await linkGoogle()
+    } catch {
+      setGoogleError('Google 계정 연결을 완료하지 못했어요.')
+    } finally {
+      setGoogleLinking(false)
+    }
   }
 
   const handleSaveMyNick = () => {
@@ -264,6 +280,44 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
                 </button>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* Account */}
+        <section className="mb-xl">
+          <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
+            Account
+          </h2>
+          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+            {isGoogleLinked ? (
+              <div className="flex items-center justify-between p-md">
+                <div className="flex items-center gap-md">
+                  <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                  <div>
+                    <p className="font-body-md text-body-md text-on-surface">Google 계정 연결됨</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant">{user?.email ?? '이 계정으로 동기화 중'}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoogleLink}
+                disabled={googleLinking}
+                className="w-full flex items-center justify-between gap-md p-md hover:bg-surface-container-highest transition-colors text-left disabled:opacity-50"
+              >
+                <div className="flex items-center gap-md">
+                  <span className="material-symbols-outlined text-secondary">sync</span>
+                  <div>
+                    <p className="font-body-md text-body-md text-on-surface">Google 계정 연결</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant">
+                      어떤 기기에서든 동일 데이터로 접속할 수 있어요
+                    </p>
+                    {googleError && <p className="font-label-sm text-label-sm text-error mt-xs">{googleError}</p>}
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-outline-variant">chevron_right</span>
+              </button>
+            )}
           </div>
         </section>
 

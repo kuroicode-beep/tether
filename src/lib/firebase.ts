@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getStorage } from 'firebase/storage'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
@@ -15,7 +15,7 @@ const firebaseConfig = {
 }
 
 // Firebase 미설정 시 데모 모드로 폴백
-const isConfigured = !!firebaseConfig.apiKey
+export const isConfigured = !!firebaseConfig.apiKey
 
 const app = initializeApp(firebaseConfig)
 
@@ -31,6 +31,11 @@ if (isConfigured) {
     auth = null
   }
 }
+
+export const googleProvider = new GoogleAuthProvider()
+
+export const isMobile = () =>
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 // FCM VAPID 공개 키 (Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시지 → 웹 앱 → VAPID 키)
 export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? ''

@@ -1,8 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { getOrCreateUid, createUserProfile, findUserByCode, linkCouple } from '../lib/coupleAuth'
+import {
+  createUserProfile,
+  findUserByCode,
+  getOrCreateUid,
+  linkCouple,
+  restoreConnectionFromProfile,
+} from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
 import { usePushNotification } from '../hooks/usePushNotification'
+import { useAuth } from '../hooks/useAuth'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join'
 
@@ -12,6 +19,7 @@ interface OnboardingScreenProps {
 
 export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const { connect } = useApp()
+  const { user, signInWithGoogle } = useAuth()
   const [step, setStep] = useState<Step>('nickname')
   const [nickname, setNickname] = useState('')
   const [uid, setUid] = useState('')
@@ -23,6 +31,39 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [showPushSheet, setShowPushSheet] = useState(false)
   const push = usePushNotification(uid || null)
 
+  const prepareGoogleUser = async (googleUser = user) => {
+    if (!googleUser || googleUser.isAnonymous) return
+    setLoading(true)
+    setError('')
+    try {
+      const nextNickname = googleUser.displayName?.trim() || nickname.trim() || '나'
+      const code = await createUserProfile(googleUser.uid, nextNickname, googleUser.displayName)
+      const restored = await restoreConnectionFromProfile(googleUser.uid)
+
+      setUid(googleUser.uid)
+      setNickname(nextNickname)
+      setMyCode(code)
+
+      if (restored) {
+        connect(restored)
+        onConnected()
+        return
+      }
+
+      setStep('choice')
+    } catch {
+      setError('Google 로그인 정보를 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!uid && user && !user.isAnonymous) {
+      prepareGoogleUser(user)
+    }
+  }, [user, uid])
+
   const handleNicknameNext = async () => {
     if (!nickname.trim()) return
     setLoading(true)
@@ -32,6 +73,19 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     setMyCode(code)
     setLoading(false)
     setStep('choice')
+  }
+
+  const handleGoogleStart = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const googleUser = await signInWithGoogle()
+      if (googleUser) await prepareGoogleUser(googleUser)
+    } catch {
+      setError('Google 로그인을 완료하지 못했어요.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCopy = () => {
@@ -100,6 +154,22 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               <h2 className="font-headline-md text-headline-md text-on-surface">닉네임을 알려주세요</h2>
               <p className="font-body-md text-body-md text-on-surface-variant mt-xs">상대방에게 표시될 이름이에요</p>
             </div>
+            <button
+              onClick={handleGoogleStart}
+              disabled={loading}
+              className="w-full bg-white text-on-surface rounded-full py-md px-lg font-label-md text-label-md border border-outline-variant/40 flex items-center justify-center gap-sm disabled:opacity-40 active:scale-95 transition-transform"
+            >
+              <span className="font-bold text-primary">G</span>
+              Google로 로그인
+            </button>
+            <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
+              어떤 기기에서든 동일 계정으로 접속해 모든 데이터를 유지해요
+            </p>
+            <div className="flex items-center gap-md">
+              <div className="h-px bg-outline-variant/40 flex-1" />
+              <span className="font-label-sm text-label-sm text-on-surface-variant">또는</span>
+              <div className="h-px bg-outline-variant/40 flex-1" />
+            </div>
             <input
               type="text"
               value={nickname}
@@ -115,8 +185,9 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               disabled={!nickname.trim() || loading}
               className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
             >
-              {loading ? '잠깐만요...' : '다음'}
+              {loading ? '잠깐만요...' : '닉네임만으로 시작하기'}
             </button>
+            {error && <p className="text-center font-label-sm text-label-sm text-error">{error}</p>}
           </div>
         )}
 
