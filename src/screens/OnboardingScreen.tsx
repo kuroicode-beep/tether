@@ -116,21 +116,6 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     }
   }
 
-  // Firebase 없이 데모 진행용
-  const handleDemoConnect = () => {
-    const demoPartnerUid = 'demo-partner'
-    const coupleId = [uid, demoPartnerUid].sort().join('_')
-    localStorage.setItem('tether_couple_id', coupleId)
-    localStorage.setItem('tether_partner_uid', demoPartnerUid)
-    connect({ uid, coupleId, myNickname: nickname.trim() || '나', partnerNickname: '자기', partnerUid: demoPartnerUid })
-    // 알림 권한이 없으면 바텀시트 표시
-    if (!push.isGranted() && 'Notification' in window) {
-      setShowPushSheet(true)
-    } else {
-      onConnected()
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center px-margin-mobile relative overflow-hidden">
       {/* Atmosphere */}
@@ -244,12 +229,6 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
               상대방이 코드를 입력하면 자동으로 연결돼요
             </p>
-            <button
-              onClick={handleDemoConnect}
-              className="w-full py-sm font-label-sm text-label-sm text-on-surface-variant/60 hover:text-on-surface-variant transition-colors"
-            >
-              데모로 계속하기 (Firebase 없이 테스트)
-            </button>
           </div>
         )}
 

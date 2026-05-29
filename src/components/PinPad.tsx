@@ -16,10 +16,12 @@ export function PinPad({ pinLength, maxLength = 4, onDigit, onDelete }: PinPadPr
           <div
             key={i}
             className={`pin-dot w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-              i < pinLength
-                ? 'bg-primary border-primary scale-110'
-                : 'border-[#C8C4B8]'
+              i < pinLength ? 'scale-110' : ''
             }`}
+            style={{
+              background: i < pinLength ? 'var(--color-text)' : 'transparent',
+              borderColor: i < pinLength ? 'var(--color-text)' : 'var(--color-border)',
+            }}
           />
         ))}
       </div>
@@ -33,7 +35,8 @@ export function PinPad({ pinLength, maxLength = 4, onDigit, onDelete }: PinPadPr
               <button
                 key={i}
                 onClick={onDelete}
-                className="key-tap h-16 w-full rounded-xl bg-transparent flex items-center justify-center text-on-surface-variant active:scale-95"
+                className="key-tap h-16 w-full rounded-xl bg-transparent flex items-center justify-center active:scale-95"
+                style={{ color: 'var(--color-text)' }}
               >
                 <span className="material-symbols-outlined text-headline-md">backspace</span>
               </button>
@@ -43,7 +46,11 @@ export function PinPad({ pinLength, maxLength = 4, onDigit, onDelete }: PinPadPr
             <button
               key={i}
               onClick={() => onDigit(d)}
-              className="key-tap h-16 w-full rounded-xl bg-[#F5F2EB] shadow-sm flex items-center justify-center text-headline-md font-headline-md text-on-surface active:scale-95"
+              className="key-tap h-16 w-full rounded-xl shadow-sm flex items-center justify-center text-headline-md font-headline-md active:scale-95"
+              style={{
+                color: 'var(--color-text)',
+                background: 'var(--color-surface)',
+              }}
             >
               {d}
             </button>

@@ -13,8 +13,8 @@
   --color-surface-2:   #FFFFFF;
   --color-primary:     #4A7B5F;
   --color-primary-dim: #D0E5D8;
-  --color-text:        #1A1A1A;
-  --color-text-muted:  #888880;
+  --color-text:        #2D4A38;
+  --color-text-muted:  #6A7A70;
   --color-border:      #D9D4C7;
   --color-chip-bg:     #E8F0EB;
   --color-chip-text:   #3A6B4F;
@@ -32,13 +32,13 @@
 /* ── 고대비 테마 오버라이드 ── */
 [data-theme="high-contrast"] {
   --color-bg:          #1A2620;
-  --color-surface:     #243028;
+  --color-surface:     #243328;
   --color-surface-2:   #2E3C34;
   --color-primary:     #6FCF97;
   --color-primary-dim: #1E3D2C;
   --color-text:        #F0EDE4;
-  --color-text-muted:  #A0A898;
-  --color-border:      #3A4E42;
+  --color-text-muted:  #C8C4B8;
+  --color-border:      #3A5045;
   --color-chip-bg:     #1E3D2C;
   --color-chip-text:   #6FCF97;
   --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.4);
@@ -75,7 +75,7 @@ body {
 /* Key tap effect */
 .key-tap:active {
   transform: scale(0.92);
-  background-color: #E2DCC9 !important;
+  background-color: var(--color-surface-2) !important;
 }
 
 /* Pulse glow for new diary */

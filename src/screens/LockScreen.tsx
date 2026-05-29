@@ -169,7 +169,8 @@ export function LockScreen({ onUnlocked }: LockScreenProps) {
         {step === 'enter' && !locked && bio.isSupported() && bio.isRegistered() && (
           <button
             onClick={handleBiometric}
-            className="flex items-center gap-xs px-lg py-md text-secondary hover:text-primary transition-colors font-label-md text-label-md"
+            className="flex items-center gap-xs px-lg py-md transition-colors font-label-md text-label-md"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             <span className="material-symbols-outlined">fingerprint</span>
             지문으로 잠금해제
