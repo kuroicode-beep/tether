@@ -13,8 +13,6 @@ export interface Anniversary {
   isYearly: boolean
 }
 
-const localKey = (coupleId: string) => `tether_anniversaries_${coupleId}`
-
 const todayStart = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -27,65 +25,32 @@ const parseDate = (date: string) => {
   return parsed
 }
 
-const readLocal = (coupleId: string | null): Anniversary[] => {
-  if (!coupleId) return []
-  try {
-    return JSON.parse(localStorage.getItem(localKey(coupleId)) ?? '[]') as Anniversary[]
-  } catch {
-    return []
-  }
-}
-
-const saveLocal = (coupleId: string, anniversaries: Anniversary[]) => {
-  try {
-    localStorage.setItem(localKey(coupleId), JSON.stringify(anniversaries))
-  } catch {
-    // localStorage can fail in private mode; Firestore still remains the source of truth.
-  }
-}
-
 export function useAnniversaries(coupleId: string | null) {
-  const [anniversaries, setAnniversaries] = useState<Anniversary[]>(() => readLocal(coupleId))
+  const [anniversaries, setAnniversaries] = useState<Anniversary[]>([])
 
   useEffect(() => {
-    setAnniversaries(readLocal(coupleId))
-    if (!coupleId) return
-
-    let unsub: (() => void) | undefined
-    try {
-      unsub = onSnapshot(
-        doc(db, 'couples', coupleId),
-        (snap) => {
-          const next = (snap.data()?.anniversaries ?? []) as Anniversary[]
-          setAnniversaries(next)
-          saveLocal(coupleId, next)
-        },
-        () => {
-          setAnniversaries(readLocal(coupleId))
-        },
-      )
-    } catch {
-      setAnniversaries(readLocal(coupleId))
+    if (!coupleId) {
+      setAnniversaries([])
+      return
     }
 
-    return () => {
-      try {
-        unsub?.()
-      } catch {
-        // Keep local fallback alive if Firestore listen cleanup fails.
-      }
-    }
+    const unsub = onSnapshot(
+      doc(db, 'couples', coupleId),
+      (snap) => {
+        const next = (snap.data()?.anniversaries ?? []) as Anniversary[]
+        setAnniversaries(next)
+      },
+    )
+
+    return () => unsub()
   }, [coupleId])
 
   const persist = useCallback(async (next: Anniversary[]) => {
     if (!coupleId) return
     setAnniversaries(next)
-    saveLocal(coupleId, next)
     try {
       await setDoc(doc(db, 'couples', coupleId), { anniversaries: next }, { merge: true })
-    } catch {
-      // Offline/local fallback has already been updated.
-    }
+    } catch { /* ignore */ }
   }, [coupleId])
 
   const getTargetDate = useCallback((anniversary: Anniversary) => {

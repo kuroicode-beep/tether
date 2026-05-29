@@ -20,8 +20,6 @@ export interface ContentItem {
   createdAt: number | null
 }
 
-const LS_KEY = (coupleId: string) => `tether_contents_${coupleId}`
-
 function toItem(data: Record<string, unknown>, id: string): ContentItem {
   const ts = data['createdAt'] as Timestamp | null
   return {
@@ -38,26 +36,22 @@ function toItem(data: Record<string, unknown>, id: string): ContentItem {
 }
 
 export function useContents(coupleId: string | null, myUid: string | null) {
-  const [items, setItems] = useState<ContentItem[]>(() => {
-    if (!coupleId) return []
-    try { return JSON.parse(localStorage.getItem(LS_KEY(coupleId)) ?? '[]') } catch { return [] }
-  })
+  const [items, setItems] = useState<ContentItem[]>([])
 
   useEffect(() => {
-    if (!coupleId) return
-    let unsub: (() => void) | undefined
-    try {
-      const q = query(
-        collection(db, 'couples', coupleId, 'contents'),
-        orderBy('createdAt', 'desc'),
-      )
-      unsub = onSnapshot(q, (snap) => {
-        const list = snap.docs.map((d) => toItem(d.data() as Record<string, unknown>, d.id))
-        setItems(list)
-        localStorage.setItem(LS_KEY(coupleId), JSON.stringify(list))
-      }, () => { /* Firebase 미설정 */ })
-    } catch { /* ignore */ }
-    return () => unsub?.()
+    if (!coupleId) {
+      setItems([])
+      return
+    }
+
+    const q = query(
+      collection(db, 'couples', coupleId, 'contents'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setItems(snap.docs.map((d) => toItem(d.data() as Record<string, unknown>, d.id)))
+    })
+    return () => unsub()
   }, [coupleId])
 
   const addContent = async (data: { category: ContentCategory; title: string; memo?: string }) => {
@@ -86,7 +80,7 @@ export function useContents(coupleId: string | null, myUid: string | null) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-    } catch { /* Firebase 미설정 */ }
+    } catch { /* ignore */ }
   }
 
   const updateStatus = async (
@@ -94,14 +88,14 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     status: ContentStatus,
     extra?: { rating?: number; review?: string },
   ) => {
-    if (!coupleId || contentId.startsWith('opt_')) {
-      setItems((prev) => prev.map((i) => i.id === contentId ? { ...i, status, ...extra } : i))
-      return
-    }
     setItems((prev) => prev.map((i) => i.id === contentId ? { ...i, status, ...extra } : i))
+    if (!coupleId || contentId.startsWith('opt_')) return
+
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'contents', contentId), {
-        status, ...extra, updatedAt: serverTimestamp(),
+        status,
+        ...extra,
+        updatedAt: serverTimestamp(),
       })
     } catch { /* ignore */ }
   }

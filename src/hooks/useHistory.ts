@@ -3,24 +3,21 @@ import {
   collection, addDoc, onSnapshot,
   query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../lib/firebase'
 
-// date 필드용 Timestamp 변환
 function toFirestoreDate(date: Date) {
   return Timestamp.fromDate(date)
 }
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../lib/firebase'
 
 export interface HistoryItem {
   id: string
   title: string
   memo: string | null
-  date: number        // 있었던 날짜 (ms epoch)
+  date: number
   imageUrl: string | null
   createdAt: number | null
 }
-
-const LS_KEY = (coupleId: string) => `tether_history_${coupleId}`
 
 function toItem(data: Record<string, unknown>, id: string): HistoryItem {
   const dateTs = data['date'] as Timestamp | null
@@ -36,26 +33,22 @@ function toItem(data: Record<string, unknown>, id: string): HistoryItem {
 }
 
 export function useHistory(coupleId: string | null) {
-  const [items, setItems] = useState<HistoryItem[]>(() => {
-    if (!coupleId) return []
-    try { return JSON.parse(localStorage.getItem(LS_KEY(coupleId)) ?? '[]') } catch { return [] }
-  })
+  const [items, setItems] = useState<HistoryItem[]>([])
 
   useEffect(() => {
-    if (!coupleId) return
-    let unsub: (() => void) | undefined
-    try {
-      const q = query(
-        collection(db, 'couples', coupleId, 'history'),
-        orderBy('date', 'desc'),
-      )
-      unsub = onSnapshot(q, (snap) => {
-        const list = snap.docs.map((d) => toItem(d.data() as Record<string, unknown>, d.id))
-        setItems(list)
-        localStorage.setItem(LS_KEY(coupleId), JSON.stringify(list))
-      }, () => { /* Firebase 미설정 */ })
-    } catch { /* ignore */ }
-    return () => unsub?.()
+    if (!coupleId) {
+      setItems([])
+      return
+    }
+
+    const q = query(
+      collection(db, 'couples', coupleId, 'history'),
+      orderBy('date', 'desc'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setItems(snap.docs.map((d) => toItem(d.data() as Record<string, unknown>, d.id)))
+    })
+    return () => unsub()
   }, [coupleId])
 
   const addHistory = async (data: {
@@ -92,7 +85,7 @@ export function useHistory(coupleId: string | null) {
         imageUrl,
         createdAt: serverTimestamp(),
       })
-    } catch { /* Firebase 미설정 */ }
+    } catch { /* ignore */ }
   }
 
   return { items, addHistory }

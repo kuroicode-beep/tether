@@ -18,7 +18,6 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 }
 
 export function usePushNotification(uid: string | null) {
-  // 권한 요청 + FCM 토큰 Firestore 저장
   const requestPermission = async (): Promise<'granted' | 'denied'> => {
     if (!('Notification' in window)) return 'denied'
 
@@ -28,12 +27,10 @@ export function usePushNotification(uid: string | null) {
     try {
       const messaging = await getMessagingIfSupported()
       if (!messaging || !VAPID_KEY) {
-        // Firebase 미설정이어도 권한은 granted로 기록
         localStorage.setItem(LS_GRANTED, 'true')
         return 'granted'
       }
 
-      // Service Worker에 Firebase config 전달
       const swReg = await navigator.serviceWorker.ready
       swReg.active?.postMessage({
         type: 'FIREBASE_CONFIG',
@@ -52,22 +49,21 @@ export function usePushNotification(uid: string | null) {
         serviceWorkerRegistration: swReg,
       })
 
-      // Firestore users/{uid} 에 fcmToken 저장
       if (uid) {
         await updateDoc(doc(db, 'users', uid), { fcmToken: token })
       }
 
       localStorage.setItem(LS_GRANTED, 'true')
     } catch {
-      // Firebase 미설정 — 로컬만 기록
       localStorage.setItem(LS_GRANTED, 'true')
     }
 
     return 'granted'
   }
 
-  // 포그라운드 메시지 수신 등록 — unsubscribe 함수 반환
-  const onForegroundMessage = async (callback: (payload: MessagePayload) => void): Promise<() => void> => {
+  const onForegroundMessage = async (
+    callback: (payload: MessagePayload) => void,
+  ): Promise<() => void> => {
     try {
       const messaging = await getMessagingIfSupported()
       if (!messaging) return () => {}
@@ -79,7 +75,6 @@ export function usePushNotification(uid: string | null) {
 
   const isGranted = () => localStorage.getItem(LS_GRANTED) === 'true'
 
-  // 알림 설정 로드
   const loadSettings = (): NotificationSettings => {
     try {
       return JSON.parse(localStorage.getItem(LS_SETTINGS) ?? '') as NotificationSettings
@@ -88,15 +83,12 @@ export function usePushNotification(uid: string | null) {
     }
   }
 
-  // 알림 설정 저장 (Firestore + localStorage)
   const saveSettings = async (settings: NotificationSettings): Promise<void> => {
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings))
     if (!uid) return
     try {
       await updateDoc(doc(db, 'users', uid), { notificationSettings: settings })
-    } catch {
-      // Firebase 미설정 — 로컬만 저장
-    }
+    } catch { /* ignore */ }
   }
 
   return { requestPermission, onForegroundMessage, isGranted, loadSettings, saveSettings }

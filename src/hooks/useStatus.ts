@@ -18,62 +18,53 @@ const DEFAULT_STATUS: UserStatus = {
   updatedAt: null,
 }
 
-const LS_MY = 'tether_my_status'
-const LS_PARTNER = 'tether_partner_status'
-
 export function useStatus(
   coupleId: string | null,
   myUid: string | null,
   partnerUid: string | null,
 ) {
-  const [myStatus, setMyStatus] = useState<UserStatus>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_MY) ?? '') } catch { return DEFAULT_STATUS }
-  })
-  const [partnerStatus, setPartnerStatus] = useState<UserStatus>(() => {
-    try { return JSON.parse(localStorage.getItem(LS_PARTNER) ?? '') } catch { return DEFAULT_STATUS }
-  })
+  const [myStatus, setMyStatus] = useState<UserStatus>(DEFAULT_STATUS)
+  const [partnerStatus, setPartnerStatus] = useState<UserStatus>(DEFAULT_STATUS)
 
   useEffect(() => {
-    if (!coupleId || !partnerUid) return
-    let unsub: (() => void) | undefined
-    try {
-      unsub = onSnapshot(
-        doc(db, 'couples', coupleId, 'status', partnerUid),
-        (snap) => {
-          if (!snap.exists()) return
-          const d = snap.data()
-          const status: UserStatus = {
-            condition: (d['condition'] as Condition) ?? 'good',
-            mood: (d['mood'] as string[]) ?? [],
-            message: (d['message'] as string) ?? '',
-            updatedAt: d['updatedAt']?.toMillis() ?? Date.now(),
-          }
-          setPartnerStatus(status)
-          localStorage.setItem(LS_PARTNER, JSON.stringify(status))
-        },
-        () => { /* Firebase 미설정 — 로컬 상태 유지 */ },
-      )
-    } catch { /* ignore */ }
-    return () => {
-      try {
-        unsub?.()
-      } catch {
-        // Firestore SDK cleanup can throw after a failed listen; keep local/demo UI alive.
-      }
+    if (!coupleId || !partnerUid) {
+      setPartnerStatus(DEFAULT_STATUS)
+      return
     }
+
+    const unsub = onSnapshot(
+      doc(db, 'couples', coupleId, 'status', partnerUid),
+      (snap) => {
+        if (!snap.exists()) return
+        const d = snap.data()
+        setPartnerStatus({
+          condition: (d['condition'] as Condition) ?? 'good',
+          mood: (d['mood'] as string[]) ?? [],
+          message: (d['message'] as string) ?? '',
+          updatedAt: d['updatedAt']?.toMillis() ?? Date.now(),
+        })
+      },
+    )
+
+    return () => unsub()
   }, [coupleId, partnerUid])
 
   const updateMyStatus = async (data: Omit<UserStatus, 'updatedAt'>) => {
     const next: UserStatus = { ...data, updatedAt: Date.now() }
     setMyStatus(next)
-    localStorage.setItem(LS_MY, JSON.stringify(next))
     if (!coupleId || !myUid) return
+
     try {
       await setDoc(
         doc(db, 'couples', coupleId, 'status', myUid),
-        { condition: data.condition, mood: data.mood, message: data.message, updatedAt: serverTimestamp() },
+        {
+          condition: data.condition,
+          mood: data.mood,
+          message: data.message,
+          updatedAt: serverTimestamp(),
+        },
       )
-    } catch { /* Firebase 미설정 — 로컬만 저장 */ }
+    } catch { /* ignore */ }
   }
 
   return { myStatus, partnerStatus, updateMyStatus }

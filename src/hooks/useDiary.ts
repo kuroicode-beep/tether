@@ -24,8 +24,6 @@ export interface DiaryEntry {
   reply: DiaryReply | null
 }
 
-const LS_KEY = (coupleId: string) => `tether_diary_${coupleId}`
-
 function toEntry(data: Record<string, unknown>, id: string): DiaryEntry {
   const ts = data['createdAt'] as Timestamp | null
   const reply = data['reply'] as Record<string, unknown> | null
@@ -49,26 +47,22 @@ function toEntry(data: Record<string, unknown>, id: string): DiaryEntry {
 }
 
 export function useDiary(coupleId: string | null, myUid: string | null) {
-  const [entries, setEntries] = useState<DiaryEntry[]>(() => {
-    if (!coupleId) return []
-    try { return JSON.parse(localStorage.getItem(LS_KEY(coupleId)) ?? '[]') } catch { return [] }
-  })
+  const [entries, setEntries] = useState<DiaryEntry[]>([])
 
   useEffect(() => {
-    if (!coupleId) return
-    let unsub: (() => void) | undefined
-    try {
-      const q = query(
-        collection(db, 'couples', coupleId, 'diary'),
-        orderBy('createdAt', 'desc'),
-      )
-      unsub = onSnapshot(q, (snap) => {
-        const items = snap.docs.map((d) => toEntry(d.data() as Record<string, unknown>, d.id))
-        setEntries(items)
-        localStorage.setItem(LS_KEY(coupleId), JSON.stringify(items))
-      }, () => { /* Firebase 미설정 */ })
-    } catch { /* ignore */ }
-    return () => unsub?.()
+    if (!coupleId) {
+      setEntries([])
+      return
+    }
+
+    const q = query(
+      collection(db, 'couples', coupleId, 'diary'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setEntries(snap.docs.map((d) => toEntry(d.data() as Record<string, unknown>, d.id)))
+    })
+    return () => unsub()
   }, [coupleId])
 
   const writeDiary = async (data: { title: string; content: string; imageFile?: File }) => {
@@ -104,7 +98,7 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
         isRead: false,
         reply: null,
       })
-    } catch { /* Firebase 미설정 — optimistic 유지 */ }
+    } catch { /* ignore */ }
   }
 
   const markDiaryRead = async (diaryId: string) => {
@@ -142,7 +136,7 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
         reply: { authorUid: myUid, content: data.content, imageUrl, createdAt: serverTimestamp() },
       })
-    } catch { /* Firebase 미설정 */ }
+    } catch { /* ignore */ }
   }
 
   return { entries, writeDiary, markDiaryRead, writeReply }

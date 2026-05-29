@@ -10,41 +10,53 @@ import {
   User,
 } from 'firebase/auth'
 import { auth, googleProvider, isMobile } from '../lib/firebase'
+import { createOrGetUserDoc } from '../lib/coupleAuth'
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(auth?.currentUser ?? null)
+  const [user, setUser] = useState<User | null>(auth.currentUser)
+  const [coupleId, setCoupleId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!auth) {
-      setLoading(false)
+  const syncProfile = async (nextUser: User | null) => {
+    if (!nextUser) {
+      setCoupleId(null)
       return
     }
 
+    const profile = await createOrGetUserDoc(
+      nextUser.uid,
+      nextUser.displayName,
+      nextUser.isAnonymous ? '나' : undefined,
+    )
+    setCoupleId(profile.coupleId)
+  }
+
+  useEffect(() => {
     getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) setUser(result.user)
+      .then(async (result) => {
+        if (!result?.user) return
+        setUser(result.user)
+        await syncProfile(result.user)
       })
       .catch(() => {
-        // Redirect errors are surfaced again through explicit button actions.
+        // Redirect errors are handled when the user retries the action.
       })
 
     const unsub = onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser)
-      setLoading(false)
+      syncProfile(nextUser).finally(() => setLoading(false))
     })
     return () => unsub()
   }, [])
 
   const linkGoogle = async () => {
-    if (!auth?.currentUser) throw new Error('로그인 정보가 없어요.')
+    if (!auth.currentUser) throw new Error('로그인 정보가 없습니다.')
 
     try {
-      if (isMobile()) {
-        await linkWithRedirect(auth.currentUser, googleProvider)
-      } else {
-        await linkWithPopup(auth.currentUser, googleProvider)
-      }
+      const result = isMobile()
+        ? await linkWithRedirect(auth.currentUser, googleProvider)
+        : await linkWithPopup(auth.currentUser, googleProvider)
+      if (result?.user) await syncProfile(result.user)
     } catch (error) {
       const code = (error as { code?: string }).code
       if (code === 'auth/provider-already-linked') return
@@ -52,7 +64,8 @@ export function useAuth() {
         if (isMobile()) {
           await signInWithRedirect(auth, googleProvider)
         } else {
-          await signInWithPopup(auth, googleProvider)
+          const result = await signInWithPopup(auth, googleProvider)
+          await syncProfile(result.user)
         }
         return
       }
@@ -61,19 +74,19 @@ export function useAuth() {
   }
 
   const signInWithGoogle = async () => {
-    if (!auth) throw new Error('Firebase 인증이 설정되지 않았어요.')
     if (isMobile()) {
       await signInWithRedirect(auth, googleProvider)
       return null
-    } else {
-      const result = await signInWithPopup(auth, googleProvider)
-      return result.user
     }
+
+    const result = await signInWithPopup(auth, googleProvider)
+    await syncProfile(result.user)
+    return result.user
   }
 
   const signInAnon = async () => {
-    if (!auth) return null
     const result = await signInAnonymously(auth)
+    await syncProfile(result.user)
     return result.user
   }
 
@@ -82,6 +95,8 @@ export function useAuth() {
 
   return {
     user,
+    coupleId,
+    setCoupleId,
     loading,
     linkGoogle,
     signInWithGoogle,

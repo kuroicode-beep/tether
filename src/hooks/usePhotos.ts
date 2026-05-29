@@ -14,8 +14,6 @@ export interface Photo {
   createdAt: number | null
 }
 
-const LS_KEY = (coupleId: string) => `tether_photos_${coupleId}`
-
 function toPhoto(data: Record<string, unknown>, id: string): Photo {
   const ts = data['createdAt'] as Timestamp | null
   return {
@@ -28,34 +26,29 @@ function toPhoto(data: Record<string, unknown>, id: string): Photo {
 }
 
 export function usePhotos(coupleId: string | null, myUid: string | null) {
-  const [photos, setPhotos] = useState<Photo[]>(() => {
-    if (!coupleId) return []
-    try { return JSON.parse(localStorage.getItem(LS_KEY(coupleId)) ?? '[]') } catch { return [] }
-  })
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
-    if (!coupleId) return
-    let unsub: (() => void) | undefined
-    try {
-      const q = query(
-        collection(db, 'couples', coupleId, 'photos'),
-        orderBy('createdAt', 'desc'),
-      )
-      unsub = onSnapshot(q, (snap) => {
-        const list = snap.docs.map((d) => toPhoto(d.data() as Record<string, unknown>, d.id))
-        setPhotos(list)
-        localStorage.setItem(LS_KEY(coupleId), JSON.stringify(list))
-      }, () => { /* Firebase 미설정 */ })
-    } catch { /* ignore */ }
-    return () => unsub?.()
+    if (!coupleId) {
+      setPhotos([])
+      return
+    }
+
+    const q = query(
+      collection(db, 'couples', coupleId, 'photos'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setPhotos(snap.docs.map((d) => toPhoto(d.data() as Record<string, unknown>, d.id)))
+    })
+    return () => unsub()
   }, [coupleId])
 
   const uploadPhoto = async (file: File, caption?: string) => {
     if (!coupleId || !myUid) return
     setUploading(true)
 
-    // Optimistic: 로컬 object URL로 즉시 표시
     const localUrl = URL.createObjectURL(file)
     const optimistic: Photo = {
       id: `opt_${Date.now()}`,
@@ -76,7 +69,7 @@ export function usePhotos(coupleId: string | null, myUid: string | null) {
         caption: caption ?? null,
         createdAt: serverTimestamp(),
       })
-    } catch { /* Firebase 미설정 — optimistic 유지 */ }
+    } catch { /* ignore */ }
 
     setUploading(false)
   }
