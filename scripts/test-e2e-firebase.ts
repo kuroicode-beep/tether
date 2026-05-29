@@ -126,6 +126,7 @@ async function main() {
   let coupleId = ''
   let inviteCode = ''
   const messageIds: string[] = []
+  const statusHistoryIds: string[] = []
 
   try {
     userA = (await signInAnonymously(authA)).user
@@ -237,6 +238,63 @@ async function main() {
       throw new Error('Couple document shared update failed')
     }
 
+    // ── status / statusHistory 무결성 (#18 Codex Critical) ─────────────────
+    await setDoc(doc(dbA, 'couples', coupleId, 'status', userA.uid), {
+      uid: userA.uid,
+      condition: 'good',
+      mood: ['설렘'],
+      message: 'e2e-own-status',
+      updatedAt: serverTimestamp(),
+    })
+
+    const ownStatusSnap = await getDoc(doc(dbA, 'couples', coupleId, 'status', userA.uid))
+    if (ownStatusSnap.data()?.message !== 'e2e-own-status') {
+      throw new Error('Own status write failed')
+    }
+
+    if (userA.uid === userB.uid) {
+      throw new Error('E2E setup error: userA and userB must differ')
+    }
+
+    await expectDenied('cross-user status overwrite', () =>
+      setDoc(doc(dbA, 'couples', coupleId, 'status', userB.uid), {
+        uid: userB.uid,
+        condition: 'tired',
+        mood: [],
+        message: 'intrusion',
+        updatedAt: serverTimestamp(),
+      }),
+    )
+
+    const historyRef = await addDoc(collection(dbA, 'couples', coupleId, 'statusHistory'), {
+      uid: userA.uid,
+      condition: 'good',
+      mood: ['평온'],
+      message: 'e2e-history',
+      createdAt: serverTimestamp(),
+    })
+    statusHistoryIds.push(historyRef.id)
+
+    await expectDenied('statusHistory uid spoof', () =>
+      addDoc(collection(dbA, 'couples', coupleId, 'statusHistory'), {
+        uid: userB.uid,
+        condition: 'good',
+        mood: [],
+        message: 'spoof',
+        createdAt: serverTimestamp(),
+      }),
+    )
+
+    await expectDenied('statusHistory update', () =>
+      updateDoc(doc(dbA, 'couples', coupleId, 'statusHistory', historyRef.id), {
+        message: 'tampered',
+      }),
+    )
+
+    await expectDenied('statusHistory delete', () =>
+      deleteDoc(doc(dbA, 'couples', coupleId, 'statusHistory', historyRef.id)),
+    )
+
     // ── Codex #16/#17 보안 회귀 ───────────────────────────────────────────
     await expectDenied('forced user coupleId cross-update', () =>
       updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
@@ -267,7 +325,7 @@ async function main() {
     )
 
     console.log(
-      'Firebase E2E passed: invite claim, bidirectional share, anniversaries, security regression (forced pairing blocked)',
+      'Firebase E2E passed: invite claim, bidirectional share, status integrity, security regression (forced pairing blocked)',
     )
   } finally {
     if (userA && userB && coupleId) {

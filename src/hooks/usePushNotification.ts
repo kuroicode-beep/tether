@@ -76,6 +76,11 @@ async function syncFcmToken(uid: string | null): Promise<string | null> {
 }
 
 export function usePushNotification(uid: string | null) {
+  const syncToken = async (): Promise<string | null> => {
+    if (!uid) return null
+    return syncFcmToken(uid)
+  }
+
   const requestPermission = async (): Promise<'granted' | 'denied'> => {
     if (!('Notification' in window)) return 'denied'
 
@@ -126,7 +131,7 @@ export function usePushNotification(uid: string | null) {
     } catch { /* ignore */ }
   }
 
-  return { requestPermission, onForegroundMessage, isGranted, loadSettings, saveSettings }
+  return { requestPermission, syncToken, onForegroundMessage, isGranted, loadSettings, saveSettings }
 }
 
 export function isIOSBrowser(): boolean {

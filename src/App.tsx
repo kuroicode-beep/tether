@@ -1,6 +1,6 @@
 // src/App.tsx
 // 앱 루트: Auth/AppContext 제공 + 화면 라우팅 + Auth↔AppContext 동기화
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { LockScreen } from './screens/LockScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
@@ -31,6 +31,16 @@ function AppContent() {
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const push = usePushNotification(appUid)
+  const pushSyncedRef = useRef<string | null>(null)
+
+  // 이미 알림 허용된 브라우저는 로그인 후 FCM 토큰을 1회 자동 동기화한다
+  useEffect(() => {
+    if (!appUid || isLoading) return
+    if (pushSyncedRef.current === appUid) return
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    pushSyncedRef.current = appUid
+    push.syncToken()
+  }, [appUid, isLoading, push])
 
   useEffect(() => {
     if (import.meta.env.DEV) {
