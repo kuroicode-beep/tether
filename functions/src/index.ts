@@ -6,6 +6,75 @@ admin.initializeApp()
 const db = admin.firestore()
 const messaging = admin.messaging()
 
+// ─── invite claim (Admin SDK — 양쪽 coupleId + couples 생성) ───────────────
+
+export const claimInvite = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required')
+  }
+
+  const code = String(data?.code ?? '').toUpperCase().trim()
+  if (!code || code.length < 4) {
+    throw new functions.https.HttpsError('not-found', 'invalid_code')
+  }
+
+  const myUid = context.auth.uid
+  const inviteRef = db.doc(`invites/${code}`)
+
+  return db.runTransaction(async (tx) => {
+    const inviteSnap = await tx.get(inviteRef)
+    if (!inviteSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'invalid_code')
+    }
+
+    const invite = inviteSnap.data()!
+    if (invite.claimed) {
+      throw new functions.https.HttpsError('failed-precondition', 'already_used')
+    }
+    if (invite.fromUid === myUid) {
+      throw new functions.https.HttpsError('failed-precondition', 'self_connect')
+    }
+
+    const partnerUid = invite.fromUid as string
+    const members = [myUid, partnerUid].sort()
+    const coupleId = members.join('_')
+
+    const myRef = db.doc(`users/${myUid}`)
+    const partnerRef = db.doc(`users/${partnerUid}`)
+    const coupleRef = db.doc(`couples/${coupleId}`)
+
+    const [mySnap, partnerSnap, coupleSnap] = await Promise.all([
+      tx.get(myRef),
+      tx.get(partnerRef),
+      tx.get(coupleRef),
+    ])
+
+    if (!mySnap.exists || !partnerSnap.exists) {
+      throw new functions.https.HttpsError('failed-precondition', 'user_missing')
+    }
+    if (mySnap.data()?.coupleId || partnerSnap.data()?.coupleId) {
+      throw new functions.https.HttpsError('failed-precondition', 'already_linked')
+    }
+
+    if (!coupleSnap.exists) {
+      tx.set(coupleRef, {
+        members,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+    }
+
+    tx.update(inviteRef, {
+      claimed: true,
+      toUid: myUid,
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+    tx.update(myRef, { coupleId })
+    tx.update(partnerRef, { coupleId })
+
+    return { coupleId, partnerUid }
+  })
+})
+
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────
 
 async function getPartnerToken(

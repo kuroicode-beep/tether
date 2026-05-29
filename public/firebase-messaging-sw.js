@@ -2,14 +2,34 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
-// 앱에서 postMessage로 Firebase config를 전달받아 초기화한다
+let fcmHandled = false;
+let messagingReady = false;
+
+// Firebase Messaging을 초기화하고 background handler를 등록한다
+function setupMessaging(config) {
+  if (messagingReady) return;
+  firebase.initializeApp(config);
+  const messaging = firebase.messaging();
+
+  messaging.onBackgroundMessage((payload) => {
+    fcmHandled = true;
+    const title = payload.notification?.title ?? 'Tether';
+    const body = payload.notification?.body ?? '';
+    return self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: payload.data ?? {},
+      vibrate: [200, 100, 200],
+    });
+  });
+
+  messagingReady = true;
+}
+
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'FIREBASE_CONFIG') {
-    if (!self.__firebaseInitialized) {
-      firebase.initializeApp(event.data.config);
-      firebase.messaging();
-      self.__firebaseInitialized = true;
-    }
+    setupMessaging(event.data.config);
   }
 });
 
@@ -24,27 +44,19 @@ const FIREBASE_CONFIG = {
 
 if (FIREBASE_CONFIG.projectId) {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    const messaging = firebase.messaging();
-
-    messaging.onBackgroundMessage((payload) => {
-      const title = payload.notification?.title ?? 'Tether';
-      const body = payload.notification?.body ?? '';
-      self.registration.showNotification(title, {
-        body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        data: payload.data ?? {},
-        vibrate: [200, 100, 200],
-      });
-    });
+    setupMessaging(FIREBASE_CONFIG);
   } catch {
     // Firebase 미설정 — 무시
   }
 }
 
-// 표준 push 이벤트 fallback
+// Firebase handler가 처리하지 않은 push만 fallback으로 표시한다
 self.addEventListener('push', (event) => {
+  if (fcmHandled) {
+    fcmHandled = false;
+    return;
+  }
+
   const data = event.data?.json?.() ?? {};
   const title = data.notification?.title ?? data.title ?? 'Tether';
   const body = data.notification?.body ?? data.body ?? '';

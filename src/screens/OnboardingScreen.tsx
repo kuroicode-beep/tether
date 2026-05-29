@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
   createUserProfile,
+  claimInviteAndConnect,
   findUserByCode,
-  linkCouple,
   restoreConnectionFromProfile,
   waitForCoupleConnection,
 } from '../lib/coupleAuth'
@@ -189,22 +189,22 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     try {
       const partner = await findUserByCode(code)
       if (!partner) {
-        setError('코드를 찾을 수 없어요. 다시 확인해주세요.')
+        setError('올바르지 않은 코드입니다.')
         return
       }
       if (partner.uid === uid) {
-        setError('내 초대 코드는 입력할 수 없어요.')
+        setError('자기 코드는 사용할 수 없습니다.')
         return
       }
 
-      const nextCoupleId = await linkCouple(uid, partner.uid)
+      const { coupleId: nextCoupleId, partnerUid } = await claimInviteAndConnect(uid, code)
       await setCoupleId(nextCoupleId)
       connect({
         uid,
         coupleId: nextCoupleId,
         myNickname: nickname.trim() || '나',
         partnerNickname: partner.nickname,
-        partnerUid: partner.uid,
+        partnerUid,
       })
 
       if (!push.isGranted() && 'Notification' in window) {
@@ -214,7 +214,10 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : ''
-      if (message === 'SELF_INVITE') setError('내 초대 코드는 입력할 수 없어요.')
+      if (message === 'invalid_code') setError('올바르지 않은 코드입니다.')
+      else if (message === 'already_used') setError('이미 사용된 코드입니다.')
+      else if (message === 'self_connect') setError('자기 코드는 사용할 수 없습니다.')
+      else if (message === 'already_linked') setError('이미 다른 커플과 연결되어 있어요.')
       else setError('커플 연결에 실패했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)

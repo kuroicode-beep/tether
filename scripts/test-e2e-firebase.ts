@@ -1,9 +1,11 @@
 // scripts/test-e2e-firebase.ts
-// Firestore E2E: 정상 커플 연결/공유 + Codex 지적 보안 회귀 시나리오 검증
+// Firestore E2E: invite claim 커플 연결 + Codex #16/#17 보안 회귀 시나리오 검증
 import { readFileSync } from 'node:fs'
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app'
 import {
   getAuth,
+  initializeAuth,
+  inMemoryPersistence,
   signInAnonymously,
   deleteUser,
   User,
@@ -14,15 +16,12 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  getDocs,
   getFirestore,
-  query,
-  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
-  where,
 } from 'firebase/firestore'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 function loadEnv() {
   const env = readFileSync('.env', 'utf8')
@@ -43,8 +42,8 @@ function requireEnv(key: string) {
   return value
 }
 
-function makeApp(name: string): FirebaseApp {
-  return initializeApp({
+function makeApp(name: string) {
+  const app = initializeApp({
     apiKey: requireEnv('VITE_FIREBASE_API_KEY'),
     authDomain: requireEnv('VITE_FIREBASE_AUTH_DOMAIN'),
     projectId: requireEnv('VITE_FIREBASE_PROJECT_ID'),
@@ -52,6 +51,8 @@ function makeApp(name: string): FirebaseApp {
     messagingSenderId: requireEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
     appId: requireEnv('VITE_FIREBASE_APP_ID'),
   }, name)
+  const auth = initializeAuth(app, { persistence: inMemoryPersistence })
+  return { app, auth, db: getFirestore(app) }
 }
 
 async function deleteAuthUser(user: User) {
@@ -62,7 +63,6 @@ async function deleteAuthUser(user: User) {
   }
 }
 
-// permission-denied 여부를 확인하는 헬퍼
 async function expectDenied(label: string, fn: () => Promise<unknown>) {
   try {
     await fn()
@@ -75,73 +75,95 @@ async function expectDenied(label: string, fn: () => Promise<unknown>) {
   }
 }
 
+async function expectCallableError(label: string, fn: () => Promise<unknown>, expected: string) {
+  try {
+    await fn()
+    throw new Error(`Expected ${label} to fail with ${expected}`)
+  } catch (error) {
+    const message = String((error as { message?: string }).message ?? error)
+    if (!message.includes(expected)) {
+      throw new Error(`${label} expected ${expected}, got ${message}`)
+    }
+  }
+}
+
+// invites/{code} 1회용 토큰 생성
+async function createInvite(db: ReturnType<typeof getFirestore>, uid: string): Promise<string> {
+  const code = `E2E${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+  await setDoc(doc(db, 'invites', code), {
+    fromUid: uid,
+    code,
+    createdAt: serverTimestamp(),
+    claimed: false,
+  })
+  await updateDoc(doc(db, 'users', uid), { inviteCode: code })
+  return code
+}
+
+// Cloud Function claimInvite 호출
+async function claimInvite(app: FirebaseApp, auth: ReturnType<typeof getAuth>, code: string) {
+  if (!auth.currentUser) throw new Error('Auth user missing before claimInvite')
+  await auth.currentUser.getIdToken(true)
+
+  const fn = httpsCallable<{ code: string }, { coupleId: string; partnerUid: string }>(
+    getFunctions(app, 'us-central1'),
+    'claimInvite',
+  )
+  const { data } = await fn({ code })
+  return data
+}
+
 async function main() {
   loadEnv()
 
-  const appA = makeApp(`e2e-a-${Date.now()}`)
-  const appB = makeApp(`e2e-b-${Date.now()}`)
-  const authA = getAuth(appA)
-  const authB = getAuth(appB)
-  const dbA = getFirestore(appA)
-  const dbB = getFirestore(appB)
+  const { app: appA, auth: authA, db: dbA } = makeApp(`e2e-a-${Date.now()}`)
+  const { app: appB, auth: authB, db: dbB } = makeApp(`e2e-b-${Date.now()}`)
 
   let userA: User | null = null
   let userB: User | null = null
   let userC: User | null = null
   let appC: FirebaseApp | null = null
   let coupleId = ''
+  let inviteCode = ''
   const messageIds: string[] = []
 
   try {
     userA = (await signInAnonymously(authA)).user
     userB = (await signInAnonymously(authB)).user
 
-    const codeA = `E2EA${Math.random().toString(36).slice(2, 4).toUpperCase()}`
-    const codeB = `E2EB${Math.random().toString(36).slice(2, 4).toUpperCase()}`
-
     await setDoc(doc(dbA, 'users', userA.uid), {
       uid: userA.uid,
       nickname: 'E2E A',
-      inviteCode: codeA,
+      inviteCode: '',
       coupleId: null,
       createdAt: serverTimestamp(),
     })
     await setDoc(doc(dbB, 'users', userB.uid), {
       uid: userB.uid,
       nickname: 'E2E B',
-      inviteCode: codeB,
+      inviteCode: '',
       coupleId: null,
       createdAt: serverTimestamp(),
     })
 
-    const inviteSnap = await getDocs(query(collection(dbB, 'users'), where('inviteCode', '==', codeA)))
-    if (inviteSnap.empty) throw new Error('Authenticated invite lookup failed')
+    // ── 정상 invite claim 커플 연결 ─────────────────────────────────────────
+    inviteCode = await createInvite(dbA, userA.uid)
+    const claimResult = await claimInvite(appB, authB, inviteCode)
+    coupleId = claimResult.coupleId
 
-    coupleId = [userA.uid, userB.uid].sort().join('_')
-    await runTransaction(dbB, async (tx) => {
-      const coupleRef = doc(dbB, 'couples', coupleId)
-      const myRef = doc(dbB, 'users', userB!.uid)
-      const partnerRef = doc(dbB, 'users', userA!.uid)
-      const coupleSnap = await tx.get(coupleRef)
-      const mySnap = await tx.get(myRef)
-      const partnerSnap = await tx.get(partnerRef)
-      if (!mySnap.exists() || !partnerSnap.exists()) {
-        throw new Error('user docs missing in transaction')
-      }
-      if (!coupleSnap.exists()) {
-        tx.set(coupleRef, {
-          members: [userA!.uid, userB!.uid].sort(),
-          createdAt: serverTimestamp(),
-        })
-      }
-      tx.update(myRef, { coupleId })
-      tx.update(partnerRef, { coupleId })
-    })
+    if (claimResult.partnerUid !== userA.uid) {
+      throw new Error('claimInvite returned wrong partnerUid')
+    }
 
     const restoredA = await getDoc(doc(dbA, 'users', userA.uid))
     const restoredB = await getDoc(doc(dbB, 'users', userB.uid))
     if (restoredA.data()?.coupleId !== coupleId || restoredB.data()?.coupleId !== coupleId) {
-      throw new Error('coupleId restore failed')
+      throw new Error('coupleId restore failed after invite claim')
+    }
+
+    const inviteSnap = await getDoc(doc(dbA, 'invites', inviteCode))
+    if (!inviteSnap.data()?.claimed || inviteSnap.data()?.toUid !== userB.uid) {
+      throw new Error('invite was not marked claimed')
     }
 
     const coupleFromA = await getDoc(doc(dbA, 'couples', coupleId))
@@ -150,6 +172,28 @@ async function main() {
       throw new Error('couples doc not readable from both members')
     }
 
+    // ── 이미 claim된 코드 재사용 차단 ─────────────────────────────────────
+    const appCBundle = makeApp(`e2e-c-${Date.now()}`)
+    appC = appCBundle.app
+    const authC = appCBundle.auth
+    const dbC = appCBundle.db
+    userC = (await signInAnonymously(authC)).user
+
+    await setDoc(doc(dbC, 'users', userC.uid), {
+      uid: userC.uid,
+      nickname: 'E2E C intruder',
+      inviteCode: '',
+      coupleId: null,
+      createdAt: serverTimestamp(),
+    })
+
+    await expectCallableError(
+      'already used invite code',
+      () => claimInvite(appC, authC, inviteCode),
+      'already_used',
+    )
+
+    // ── 양방향 데이터 공유 ───────────────────────────────────────────────
     const messageRef = await addDoc(collection(dbA, 'couples', coupleId, 'messages'), {
       senderUid: userA.uid,
       type: 'text',
@@ -193,21 +237,18 @@ async function main() {
       throw new Error('Couple document shared update failed')
     }
 
-    // ── Codex 보안 회귀: 악성 사용자 C ─────────────────────────────────────
-    appC = makeApp(`e2e-c-${Date.now()}`)
-    const authC = getAuth(appC)
-    const dbC = getFirestore(appC)
-    userC = (await signInAnonymously(authC)).user
+    // ── Codex #16/#17 보안 회귀 ───────────────────────────────────────────
+    await expectDenied('forced user coupleId cross-update', () =>
+      updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
+    )
 
-    await setDoc(doc(dbC, 'users', userC.uid), {
-      uid: userC.uid,
-      nickname: 'E2E C intruder',
-      inviteCode: `E2EC${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
-      coupleId: null,
-      createdAt: serverTimestamp(),
-    })
+    await expectDenied('forced couple doc create', () =>
+      setDoc(doc(dbC, 'couples', [userC!.uid, userA.uid].sort().join('_')), {
+        members: [userA.uid, userC!.uid].sort(),
+        createdAt: serverTimestamp(),
+      }),
+    )
 
-    // Critical #1: 비멤버가 기존 couples.members에 자신을 추가할 수 없어야 함
     await expectDenied('non-member couples members update', () =>
       updateDoc(doc(dbC, 'couples', coupleId), {
         members: [userA.uid, userB.uid, userC!.uid],
@@ -215,7 +256,6 @@ async function main() {
       }),
     )
 
-    // Critical #1b: 비멤버가 couples 하위 messages에 write할 수 없어야 함
     await expectDenied('non-member subcollection write', () =>
       addDoc(collection(dbC, 'couples', coupleId, 'messages'), {
         senderUid: userC!.uid,
@@ -226,17 +266,9 @@ async function main() {
       }),
     )
 
-    // Critical #2: 임의 사용자 C가 A의 coupleId를 오염시킬 수 없어야 함
-    await expectDenied('arbitrary user coupleId cross-update', () =>
-      updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
+    console.log(
+      'Firebase E2E passed: invite claim, bidirectional share, anniversaries, security regression (forced pairing blocked)',
     )
-
-    // 존재하지 않는 coupleId로 cross-update도 거부되어야 함
-    await expectDenied('nonexistent coupleId cross-update', () =>
-      updateDoc(doc(dbC, 'users', userA.uid), { coupleId: 'fake_uid1_fake_uid2' }),
-    )
-
-    console.log('Firebase E2E passed: linking, bidirectional share, anniversaries, security regression (2 Critical scenarios blocked)')
   } finally {
     if (userA && userB && coupleId) {
       try {
@@ -244,7 +276,12 @@ async function main() {
           await deleteDoc(doc(dbA, 'couples', coupleId, 'messages', id))
         }
         await updateDoc(doc(dbA, 'couples', coupleId), { anniversaries: [] })
+        await deleteDoc(doc(dbA, 'couples', coupleId))
       } catch { /* ignore */ }
+    }
+
+    if (inviteCode) {
+      try { await deleteDoc(doc(dbA, 'invites', inviteCode)) } catch { /* ignore */ }
     }
 
     if (userC && appC) {

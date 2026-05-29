@@ -10,6 +10,7 @@ import {
   initializeAuth,
 } from 'firebase/auth'
 import { getStorage } from 'firebase/storage'
+import { getFunctions } from 'firebase/functions'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
 const firebaseConfig = {
@@ -31,6 +32,7 @@ if (missingKeys.length > 0) {
 
 const app = initializeApp(firebaseConfig)
 
+export { app }
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 
@@ -42,6 +44,8 @@ export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
   popupRedirectResolver: browserPopupRedirectResolver,
 })
+
+export const functions = getFunctions(app, 'us-central1')
 
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })

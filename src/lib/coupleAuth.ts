@@ -1,17 +1,14 @@
 // src/lib/coupleAuth.ts
-// 사용자/커플 문서 관리 — 트랜잭션 기반의 안전한 커플 연결 보장
-import { db } from './firebase'
+// 사용자/커플 문서 관리 — invite 토큰 + Cloud Function claim 기반 안전 연결
+import { db, functions } from './firebase'
+import { httpsCallable } from 'firebase/functions'
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
   onSnapshot,
-  query,
-  runTransaction,
   serverTimestamp,
   setDoc,
-  where,
+  updateDoc,
 } from 'firebase/firestore'
 
 export type UserProfile = {
@@ -30,9 +27,34 @@ export type RestoredConnection = {
   startDate?: string
 }
 
+export type ClaimInviteResult = {
+  coupleId: string
+  partnerUid: string
+}
+
 // 6자리 영숫자 초대 코드 생성
 export const generateInviteCode = (): string =>
   Math.random().toString(36).substring(2, 8).toUpperCase()
+
+// Cloud Function HttpsError를 클라이언트 에러 코드로 변환한다
+const mapClaimError = (error: unknown): never => {
+  const err = error as { code?: string; message?: string; details?: unknown }
+  const message = String(err.message ?? '')
+
+  if (message.includes('invalid_code') || err.code === 'functions/not-found') {
+    throw new Error('invalid_code')
+  }
+  if (message.includes('already_used')) {
+    throw new Error('already_used')
+  }
+  if (message.includes('self_connect')) {
+    throw new Error('self_connect')
+  }
+  if (message.includes('already_linked')) {
+    throw new Error('already_linked')
+  }
+  throw error instanceof Error ? error : new Error('claim_failed')
+}
 
 // users/{uid} 문서를 가져오거나 새로 만든다 — 기존 닉네임은 절대 자동으로 덮어쓰지 않는다
 export const createOrGetUserDoc = async (
@@ -48,7 +70,6 @@ export const createOrGetUserDoc = async (
     const inviteCode = data.inviteCode || generateInviteCode()
     const existingNickname = (data.nickname ?? '').trim()
 
-    // 기존 닉네임이 비어있거나 기본 placeholder('나')일 때만 새 닉네임을 적용한다
     const candidateNickname = (nickname?.trim() || displayName?.trim() || '').trim()
     const shouldApplyNickname =
       !!candidateNickname && (!existingNickname || existingNickname === '나')
@@ -93,29 +114,49 @@ export const createOrGetUserDoc = async (
   return { ...profile, isNew: true }
 }
 
-// 닉네임 시작 흐름에서 호출되는 진입점 — 초대 코드를 반환한다
+// invites/{code} 1회용 토큰을 생성하고 users 문서 표시용 코드를 갱신한다
+export const createInvite = async (myUid: string): Promise<string> => {
+  const code = generateInviteCode()
+  await setDoc(doc(db, 'invites', code), {
+    fromUid: myUid,
+    code,
+    createdAt: serverTimestamp(),
+    claimed: false,
+  })
+  await updateDoc(doc(db, 'users', myUid), { inviteCode: code })
+  return code
+}
+
+// 닉네임 시작 흐름 — user 문서 생성 후 invite 토큰 발급
 export const createUserProfile = async (
   uid: string,
   nickname: string,
   displayName?: string | null,
 ): Promise<string> => {
-  const profile = await createOrGetUserDoc(uid, displayName, nickname)
-  return profile.inviteCode
+  await createOrGetUserDoc(uid, displayName, nickname)
+  return createInvite(uid)
 }
 
-// 초대 코드로 상대방 사용자를 검색
+// invites/{code}에서 상대방 정보를 조회한다
 export const findUserByInviteCode = async (
   code: string,
 ): Promise<{ uid: string; nickname: string } | null> => {
-  const q = query(collection(db, 'users'), where('inviteCode', '==', code))
-  const snap = await getDocs(q)
-  if (snap.empty) return null
+  const normalized = code.toUpperCase().trim()
+  const inviteSnap = await getDoc(doc(db, 'invites', normalized))
+  if (!inviteSnap.exists()) return null
 
-  const first = snap.docs[0]
-  const data = first.data() as Partial<UserProfile>
+  const invite = inviteSnap.data()
+  if (invite?.claimed) return null
+
+  const fromUid = invite?.fromUid as string | undefined
+  if (!fromUid) return null
+
+  const profile = await getUserProfile(fromUid)
+  if (!profile) return null
+
   return {
-    uid: first.id,
-    nickname: data.nickname || '상대방',
+    uid: fromUid,
+    nickname: profile.nickname || '상대방',
   }
 }
 
@@ -183,52 +224,37 @@ export const restoreConnectionFromProfile = async (
   }
 }
 
-// 두 사용자를 단일 트랜잭션으로 같은 커플에 묶는다 — race condition을 차단한다
-export const connectCouple = async (myUid: string, partnerUid: string): Promise<string> => {
-  if (myUid === partnerUid) {
-    throw new Error('SELF_INVITE')
+// invite 코드 claim — Cloud Function(Admin SDK)으로 couple 생성 + 양쪽 coupleId 설정
+export const claimInviteAndConnect = async (
+  myUid: string,
+  code: string,
+): Promise<ClaimInviteResult> => {
+  const normalized = code.toUpperCase().trim()
+  const inviteSnap = await getDoc(doc(db, 'invites', normalized))
+  if (!inviteSnap.exists()) throw new Error('invalid_code')
+
+  const invite = inviteSnap.data()
+  if (invite?.claimed) throw new Error('already_used')
+  if (invite?.fromUid === myUid) throw new Error('self_connect')
+
+  try {
+    const claimInviteFn = httpsCallable<{ code: string }, ClaimInviteResult>(
+      functions,
+      'claimInvite',
+    )
+    const { data } = await claimInviteFn({ code: normalized })
+    if (!data?.coupleId || !data?.partnerUid) {
+      throw new Error('claim_failed')
+    }
+    return data
+  } catch (error) {
+    return mapClaimError(error)
   }
+}
 
-  const members = [myUid, partnerUid].sort()
-  const coupleId = members.join('_')
-  const coupleRef = doc(db, 'couples', coupleId)
-  const myRef = doc(db, 'users', myUid)
-  const partnerRef = doc(db, 'users', partnerUid)
-
-  await runTransaction(db, async (tx) => {
-    // 모든 read를 write보다 먼저 수행한다 — Firestore 트랜잭션 규칙
-    const coupleSnap = await tx.get(coupleRef)
-    const mySnap = await tx.get(myRef)
-    const partnerSnap = await tx.get(partnerRef)
-
-    if (!mySnap.exists()) {
-      throw new Error('MY_USER_DOC_MISSING')
-    }
-    if (!partnerSnap.exists()) {
-      throw new Error('PARTNER_USER_DOC_MISSING')
-    }
-
-    // members는 create 시에만 설정한다 — update로 members 변경은 rules에서 금지
-    if (!coupleSnap.exists()) {
-      tx.set(coupleRef, {
-        members,
-        createdAt: serverTimestamp(),
-      })
-    } else {
-      const existing = Array.isArray(coupleSnap.data()?.members)
-        ? coupleSnap.data()!.members as string[]
-        : []
-      if (!existing.includes(myUid) || !existing.includes(partnerUid)) {
-        throw new Error('COUPLE_ALREADY_LINKED')
-      }
-    }
-
-    // 두 사용자 문서 모두 update — rules의 update 분기로 평가된다
-    tx.update(myRef, { coupleId })
-    tx.update(partnerRef, { coupleId })
-  })
-
-  return coupleId
+/** @deprecated claimInviteAndConnect 사용 — 클라이언트 cross-write 차단됨 */
+export const connectCouple = async (_myUid: string, _partnerUid: string): Promise<string> => {
+  throw new Error('connectCouple is deprecated — use claimInviteAndConnect')
 }
 
 export const linkCouple = connectCouple
