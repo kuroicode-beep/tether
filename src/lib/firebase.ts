@@ -30,6 +30,16 @@ if (missingKeys.length > 0) {
   throw new Error(`Firebase environment is missing: ${missingKeys.join(', ')}`)
 }
 
+if (
+  import.meta.env.DEV &&
+  firebaseConfig.authDomain &&
+  !String(firebaseConfig.authDomain).endsWith('.firebaseapp.com')
+) {
+  console.warn(
+    '[firebase] VITE_FIREBASE_AUTH_DOMAIN should be *.firebaseapp.com for Android redirect login',
+  )
+}
+
 const app = initializeApp(firebaseConfig)
 
 export { app }

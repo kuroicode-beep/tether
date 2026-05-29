@@ -25,12 +25,18 @@ type Screen =
 
 function AppContent() {
   const { isConnected, uid: appUid, coupleId: appCoupleId, connect, disconnect, syncWithAuthUid } = useApp()
-  const { user, coupleId, connection, loading: authLoading } = useAuth()
+  const { user, coupleId, connection, isLoading, redirecting } = useAuth()
   useTheme()
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const push = usePushNotification(appUid)
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[App] isLoading:', isLoading, 'user:', user?.uid, 'coupleId:', coupleId)
+    }
+  }, [isLoading, user?.uid, coupleId])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
@@ -58,17 +64,17 @@ function AppContent() {
 
   // 인증 사용자의 uid가 바뀌면 AppContext의 stale 상태를 즉시 정리한다
   useEffect(() => {
-    if (authLoading) return
+    if (isLoading) return
     syncWithAuthUid(user?.uid ?? null)
-  }, [user?.uid, authLoading, syncWithAuthUid])
+  }, [user?.uid, isLoading, syncWithAuthUid])
 
   // 로그아웃되면 AppContext도 깨끗이 비운다
   useEffect(() => {
-    if (authLoading) return
+    if (isLoading) return
     if (!user && (appUid || appCoupleId)) {
       disconnect()
     }
-  }, [user, authLoading, appUid, appCoupleId, disconnect])
+  }, [user, isLoading, appUid, appCoupleId, disconnect])
 
   // useAuth가 복원한 connection을 AppContext에 반영하고, 잠금이 풀린 상태면 홈으로 보낸다
   useEffect(() => {
@@ -92,14 +98,12 @@ function AppContent() {
     setScreen('onboarding')
   }
 
-  const showSpinner = authLoading || coupleId === undefined
-
-  if (showSpinner) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
         <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
-          로그인 정보를 확인하고 있어요
+          {redirecting ? 'Google 로그인을 마무리하고 있어요' : '로그인 정보를 확인하고 있어요'}
         </p>
       </div>
     )

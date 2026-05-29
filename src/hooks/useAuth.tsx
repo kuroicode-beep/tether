@@ -27,6 +27,7 @@ type AuthContextValue = {
   coupleId: string | null | undefined
   connection: RestoredConnection | null
   loading: boolean
+  isLoading: boolean
   redirecting: boolean
   authError: string | null
   setCoupleId: (nextCoupleId: string | null) => Promise<void>
@@ -55,6 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null)
   const cancelledRef = useRef(false)
   const authBootstrappedRef = useRef(false)
+  const redirectHandledRef = useRef(false)
+  const redirectCheckDoneRef = useRef(false)
+
+  const authLog = (...args: unknown[]) => {
+    if (import.meta.env.DEV) console.log('[Auth]', ...args)
+  }
 
   // Firebase Auth 에러 코드를 사용자에게 보여줄 문구로 변환한다
   const toAuthErrorMessage = (error: unknown): string => {
@@ -110,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let nextCoupleId: string | null = null
     try {
       nextCoupleId = await getMyCoupleId(nextUser.uid)
+      authLog('getMyCoupleId result:', nextCoupleId)
     } catch (error) {
       console.warn('[useAuth] getMyCoupleId failed', error)
     }
@@ -148,18 +156,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsub: (() => void) | undefined
 
     const init = async () => {
-      // ① redirect 결과 우선 처리 — 이후에도 onAuthStateChanged는 반드시 구독한다
+      authLog('init start')
+
+      // ① redirect 결과를 onAuthStateChanged보다 먼저 처리한다 (Android 무한루프 방지)
       try {
+        authLog('getRedirectResult start')
         const redirectResult = await getRedirectResult(auth)
         if (cancelledRef.current) return
+
+        authLog('getRedirectResult result:', redirectResult?.user?.uid ?? 'none')
 
         if (redirectResult?.user) {
           markRedirecting(false)
           await syncProfile(redirectResult.user)
+          redirectHandledRef.current = true
+          authBootstrappedRef.current = true
+          if (!cancelledRef.current) {
+            authLog('setLoading false (redirect)')
+            setLoading(false)
+          }
         }
       } catch (error) {
         const code = (error as AuthError)?.code ?? ''
-        // 익명 사용자가 이미 동일 Google 계정과 연결된 경우 fallback으로 Google 직접 로그인 처리
         if (code === 'auth/credential-already-in-use') {
           const credential = GoogleAuthProvider.credentialFromError(error as AuthError)
           if (credential) {
@@ -167,6 +185,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const result = await signInWithCredential(auth, credential)
               markRedirecting(false)
               await syncProfile(result.user)
+              redirectHandledRef.current = true
+              authBootstrappedRef.current = true
+              if (!cancelledRef.current) setLoading(false)
             } catch (innerError) {
               console.warn('[useAuth] signInWithCredential fallback failed', innerError)
             }
@@ -175,6 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn('[useAuth] getRedirectResult failed', error)
           if (code) setAuthError(`로그인을 마무리하지 못했어요 (${code})`)
         }
+      } finally {
+        redirectCheckDoneRef.current = true
       }
 
       if (cancelledRef.current) return
@@ -182,14 +205,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ② 영속 auth 상태 구독
       unsub = onAuthStateChanged(auth, async (nextUser) => {
         if (cancelledRef.current) return
-        markRedirecting(false)
-        // 최초 1회만 coupleId 로딩 상태로 — Google popup 완료 시 OnboardingScreen이 날아가지 않게
-        if (!authBootstrappedRef.current) {
+
+        authLog('onAuthStateChanged user:', nextUser?.uid ?? 'null')
+
+        if (redirectHandledRef.current) {
+          redirectHandledRef.current = false
+          authLog('skipping duplicate post-redirect callback')
+          return
+        }
+
+        let redirectPending = false
+        try {
+          redirectPending = sessionStorage.getItem(REDIRECTING_KEY) === '1'
+        } catch { /* ignore */ }
+
+        // redirect 복귀 직후 auth가 잠깐 null일 수 있음 — getRedirectResult 완료 전까지 대기
+        if (!nextUser && redirectPending && !redirectCheckDoneRef.current) {
+          authLog('redirect pending, waiting for getRedirectResult')
+          return
+        }
+
+        if (!nextUser && redirectPending && redirectCheckDoneRef.current) {
+          markRedirecting(false)
+        }
+
+        if (nextUser) {
+          markRedirecting(false)
+        }
+
+        if (!authBootstrappedRef.current && nextUser) {
           setCoupleIdState(undefined)
         }
+
         await syncProfile(nextUser)
         authBootstrappedRef.current = true
-        if (!cancelledRef.current) setLoading(false)
+        if (!cancelledRef.current) {
+          authLog('setLoading false')
+          setLoading(false)
+        }
       })
     }
 
@@ -337,6 +390,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isGoogleLinked =
     user?.providerData.some((provider) => provider.providerId === 'google.com') ?? false
 
+  const isLoading = loading || coupleId === undefined
+
   return (
     <AuthContext.Provider
       value={{
@@ -344,6 +399,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         coupleId,
         connection,
         loading,
+        isLoading,
         redirecting,
         authError,
         setCoupleId,
