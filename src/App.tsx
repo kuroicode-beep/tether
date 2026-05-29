@@ -13,6 +13,7 @@ import { PhotoAlbum } from './screens/PhotoAlbum'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
+import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { useTheme } from './hooks/useTheme'
@@ -20,7 +21,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'history' | 'anniversary'
+  | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory'
 
 function AppContent() {
   const { isConnected, uid: appUid, coupleId: appCoupleId, connect, disconnect, syncWithAuthUid } = useApp()
@@ -35,6 +36,14 @@ function AppContent() {
     if (target === 'more') setScreen('settings')
     else setScreen(target as Screen)
   }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const target = params.get('screen')
+    if (target && unlocked && target !== 'lock') {
+      setScreen(target as Screen)
+    }
+  }, [unlocked])
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
@@ -122,6 +131,7 @@ function AppContent() {
       {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
       {screen === 'history'     && <HistoryScreen onBack={toHome} />}
       {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
+      {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
       {screen === 'settings'    && (
         <SettingsScreen
           onBack={toHome}
@@ -137,10 +147,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
-    </AuthProvider>
+    <div className="app-container">
+      <AuthProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </AuthProvider>
+    </div>
   )
 }

@@ -13,14 +13,20 @@ function setupMessaging(config) {
 
   messaging.onBackgroundMessage((payload) => {
     fcmHandled = true;
-    const title = payload.notification?.title ?? 'Tether';
+    const title = payload.notification?.title ?? 'Tether 💕';
     const body = payload.notification?.body ?? '';
+    const data = payload.data ?? {};
+    const type = data.type ?? 'tether';
+    const url = data.url ?? '/';
+
     return self.registration.showNotification(title, {
       body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: payload.data ?? {},
+      tag: type,
+      renotify: true,
       vibrate: [200, 100, 200],
+      data: { ...data, url },
     });
   });
 
@@ -58,26 +64,38 @@ self.addEventListener('push', (event) => {
   }
 
   const data = event.data?.json?.() ?? {};
-  const title = data.notification?.title ?? data.title ?? 'Tether';
+  const title = data.notification?.title ?? data.title ?? 'Tether 💕';
   const body = data.notification?.body ?? data.body ?? '';
+  const payloadData = data.data ?? {};
+  const type = payloadData.type ?? 'tether';
+  const url = payloadData.url ?? '/';
+
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: data.data ?? {},
+      tag: type,
+      renotify: true,
+      data: { ...payloadData, url },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = self.location.origin + '/';
+  const rawUrl = event.notification.data?.url ?? '/';
+  const urlToOpen = rawUrl.startsWith('http')
+    ? rawUrl
+    : self.location.origin + (rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
         if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client && urlToOpen !== client.url) {
+            return client.navigate(urlToOpen).then(() => client.focus());
+          }
           return client.focus();
         }
       }

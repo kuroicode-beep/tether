@@ -23,7 +23,7 @@ export function PushPermissionSheet({ onAllow, onLater }: PushPermissionSheetPro
       />
 
       {/* 바텀시트 */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-surface px-margin-mobile pt-lg pb-xxl shadow-2xl">
+      <div className="app-fixed-x fixed bottom-0 z-50 rounded-t-3xl bg-surface px-margin-mobile pt-lg pb-xxl shadow-2xl">
         {/* 핸들 바 */}
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
 

@@ -200,7 +200,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
 
       {/* 답장 버튼 */}
       {!entry.reply && !isMe && (
-        <div className="fixed bottom-0 left-0 right-0 px-margin-mobile pb-xl pt-md bg-gradient-to-t from-[#EEE9DC] to-transparent">
+        <div className="app-fixed-x fixed bottom-0 px-margin-mobile pb-xl pt-md bg-gradient-to-t from-[#EEE9DC] to-transparent">
           <button
             onClick={onReply}
             className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md active:scale-95 transition-transform"

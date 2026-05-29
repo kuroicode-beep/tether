@@ -4,16 +4,16 @@ import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
 import { RecentFeed } from '../components/RecentFeed'
-import { useStatus, Condition } from '../hooks/useStatus'
+import { useStatus, Condition, CONDITION_EMOJI } from '../hooks/useStatus'
 import { useRecentFeed } from '../hooks/useRecentFeed'
 import { useAnniversaries } from '../hooks/useAnniversaries'
+import { PushPermissionBanner } from '../components/PushPermissionBanner'
 import { useApp } from '../context/AppContext'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
 }
 
-const CONDITION_EMOJI: Record<Condition, string> = { good: '😊', normal: '😐', tired: '😴' }
 const CONDITIONS: Condition[] = ['good', 'normal', 'tired']
 const MOOD_TAGS = ['설렘', '평온', '힘듦', '보고싶어']
 
@@ -76,8 +76,18 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       </header>
 
       <main className="max-w-md mx-auto px-margin-mobile space-y-lg pt-lg">
+        <PushPermissionBanner />
+
         {/* Status Cards */}
-        <section className="grid grid-cols-2 gap-gutter">
+        <section className="grid grid-cols-2 gap-gutter relative">
+          <button
+            type="button"
+            onClick={() => onNavigate('statusHistory')}
+            className="absolute -top-1 right-0 z-10 flex items-center gap-[4px] font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+            aria-label="상태 로그 보기"
+          >
+            📜 로그
+          </button>
           {/* 내 카드 */}
           <div className="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border-2 border-primary-container">
             <div className="flex items-center gap-xs">

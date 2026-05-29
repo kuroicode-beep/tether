@@ -37,7 +37,7 @@ function AddSheet({ onAdd, onClose }: AddSheetProps) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+      <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
         <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-lg">항목 추가</h2>
 
@@ -99,7 +99,7 @@ function DoneSheet({ item, onSave, onClose }: DoneSheetProps) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+      <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
         <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-xs">다 봤어요! ✅</h2>
         <p className="font-label-sm text-label-sm text-on-surface-variant mb-lg">{item.title}</p>
@@ -328,7 +328,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
       <button
         type="button"
         onClick={() => setShowAdd(true)}
-        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40"
+        className="app-fixed-fab fixed w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40"
         style={{ bottom: 'var(--fab-bottom-offset)' }}
         aria-label="콘텐츠 추가"
       >

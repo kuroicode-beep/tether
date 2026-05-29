@@ -2,9 +2,11 @@
 // 커플 상태(컨디션/기분/한줄 메시지) 실시간 구독 및 Firestore 저장
 import { useEffect, useState } from 'react'
 import { db } from '../lib/firebase'
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore'
 
 export type Condition = 'tired' | 'normal' | 'good'
+
+export const CONDITION_EMOJI: Record<Condition, string> = { good: '😊', normal: '😐', tired: '😴' }
 
 export interface UserStatus {
   condition: Condition
@@ -80,11 +82,12 @@ export function useStatus(
     return () => unsub()
   }, [coupleId, partnerUid])
 
-  // 내 상태를 Firestore에 저장한다
+  // 내 상태를 Firestore에 저장하고 히스토리에 기록한다
   const updateMyStatus = async (data: Omit<UserStatus, 'updatedAt'>) => {
     if (!coupleId || !myUid) return
 
     try {
+      const now = serverTimestamp()
       await setDoc(
         doc(db, 'couples', coupleId, 'status', myUid),
         {
@@ -92,10 +95,17 @@ export function useStatus(
           condition: data.condition,
           mood: data.mood,
           message: data.message,
-          updatedAt: serverTimestamp(),
+          updatedAt: now,
         },
         { merge: true },
       )
+      await addDoc(collection(db, 'couples', coupleId, 'statusHistory'), {
+        uid: myUid,
+        condition: data.condition,
+        mood: data.mood,
+        message: data.message,
+        createdAt: now,
+      })
     } catch (error) {
       console.warn('[useStatus] updateMyStatus failed', error)
     }

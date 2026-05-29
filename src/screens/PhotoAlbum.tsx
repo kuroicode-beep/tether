@@ -20,7 +20,7 @@ function UploadSheet({ preview, onSave, onCancel }: UploadSheetProps) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/50" onClick={onCancel} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+      <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
         <div className="flex justify-center mb-md">
           <img src={preview} alt="업로드 미리보기" className="max-h-48 rounded-xl object-contain" />
@@ -187,7 +187,7 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
       <button
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
+        className="app-fixed-fab fixed w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
         style={{ bottom: 'var(--fab-bottom-offset)' }}
       >
         <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>

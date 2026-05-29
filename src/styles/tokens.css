@@ -20,6 +20,8 @@
   --color-chip-text:   #3A6B4F;
 
   /* 레이아웃 */
+  --app-max-width: 430px;
+  --font-scale: 1.0;
   --bottom-nav-height: 56px;
   --fab-bottom-offset: calc(var(--bottom-nav-height) + 24px);
   --font-base:     calc(16px * var(--font-scale));
@@ -54,10 +56,49 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--color-bg);
+  background: #1a1a1a;
   color: var(--color-text);
+  min-height: 100dvh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="high-contrast"] body {
+  background: #000;
+}
+
+/* PC: 모바일 너비 컨테이너로 앱 가두기 */
+.app-container {
+  max-width: var(--app-max-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  background: var(--color-bg);
+  isolation: isolate;
+}
+
+@media (min-width: 431px) {
+  .app-container {
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* fixed 하단/전폭 UI를 컨테이너 너비에 맞춘다 */
+.app-fixed-x {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%);
+  width: min(100vw, var(--app-max-width));
+  max-width: var(--app-max-width);
+}
+
+.app-fixed-fab {
+  position: fixed;
+  right: max(1.5rem, calc((100vw - var(--app-max-width)) / 2 + 1.5rem));
 }
 
 [data-theme="high-contrast"] .text-primary,
@@ -135,6 +176,22 @@ body {
 /* Chat bubble tails */
 .message-bubble-me { border-bottom-right-radius: 4px !important; }
 .message-bubble-partner { border-bottom-left-radius: 4px !important; }
+
+.message-bubble {
+  max-width: 75%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.5;
+}
+
+.message-mine {
+  margin-left: auto;
+  text-align: left;
+}
+
+.message-partner {
+  margin-right: auto;
+}
 
 /* Toggle switch */
 .toggle-checkbox:checked + .toggle-label {

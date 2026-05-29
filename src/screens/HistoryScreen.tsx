@@ -43,7 +43,7 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
         <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-lg">기억 추가</h2>
 
@@ -192,7 +192,7 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
       {/* FAB */}
       <button
         onClick={() => setShowAdd(true)}
-        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
+        className="app-fixed-fab fixed w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
         style={{ bottom: 'var(--fab-bottom-offset)' }}
       >
         <span className="material-symbols-outlined text-2xl">add</span>

@@ -17,17 +17,17 @@ export function MessageBubble({ message, isMe, showTime, onImageTap }: MessageBu
   const isRead = !isMe ? false : readBy.filter((u) => u !== senderUid).length > 0
 
   return (
-    <div className={`flex flex-col max-w-[75%] gap-xs ${isMe ? 'items-end self-end ml-auto' : 'items-start self-start mr-auto'}`}>
+    <div className={`flex flex-col gap-xs message-bubble ${isMe ? 'message-mine items-end self-end' : 'message-partner items-start self-start'}`}>
       {/* 버블 */}
       {type === 'text' ? (
         <div
-          className={`px-md py-sm rounded-[18px] shadow-sm leading-relaxed ${
+          className={`px-md py-sm rounded-[18px] shadow-sm message-bubble ${
             isMe
-              ? 'bg-primary text-on-primary rounded-br-sm'
-              : 'bg-surface-container text-on-surface rounded-bl-sm'
+              ? 'bg-primary text-on-primary message-bubble-me'
+              : 'bg-surface-container text-on-surface message-bubble-partner'
           }`}
         >
-          <p className="font-body-md text-body-md whitespace-pre-wrap break-words">{text}</p>
+          <p className="font-body-md text-body-md whitespace-pre-wrap">{text}</p>
         </div>
       ) : imageUrl ? (
         <button

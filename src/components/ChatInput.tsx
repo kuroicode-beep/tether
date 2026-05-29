@@ -63,7 +63,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelImage} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+          <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
               이 사진을 보낼까요?
@@ -94,7 +94,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
       )}
 
       {/* 입력창 */}
-      <footer className="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md pt-sm pb-safe px-margin-mobile flex items-end gap-sm shadow-sm"
+      <footer className="app-fixed-x fixed bottom-0 bg-surface/90 backdrop-blur-md pt-sm pb-safe px-margin-mobile flex items-end gap-sm shadow-sm"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         {/* 이미지 첨부 버튼 */}

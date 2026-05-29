@@ -139,7 +139,7 @@ export const onStatusUpdate = functions.firestore
         title: 'Tether 🌿',
         body: `${senderName}이(가) 상태를 업데이트했어요`,
       },
-      data: { type: 'status', uid },
+      data: { type: 'status', uid, url: '/?screen=home' },
       webpush: {
         notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
       },
@@ -167,7 +167,7 @@ export const onNewMessage = functions.firestore
     await messaging.send({
       token,
       notification: { title: senderName, body },
-      data: { type: 'message', coupleId },
+      data: { type: 'message', coupleId, url: '/?screen=chat' },
       webpush: {
         notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
       },
@@ -197,7 +197,7 @@ export const onNewDiary = functions.firestore
         title: 'Tether 💌',
         body: `${senderName}의 일기가 도착했어요`,
       },
-      data: { type: 'diary', coupleId },
+      data: { type: 'diary', coupleId, url: '/?screen=diary' },
       webpush: {
         notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
       },

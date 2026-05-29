@@ -49,41 +49,50 @@ async function getMessagingServiceWorker(): Promise<ServiceWorkerRegistration | 
   }
 }
 
+// FCM 토큰을 발급하고 Firestore users 문서에 저장한다
+async function syncFcmToken(uid: string | null): Promise<string | null> {
+  try {
+    const messaging = await getMessagingIfSupported()
+    if (!messaging || !VAPID_KEY) return null
+
+    const swReg = await getMessagingServiceWorker()
+    if (!swReg) return null
+
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    })
+
+    if (uid && token) {
+      await updateDoc(doc(db, 'users', uid), { fcmToken: token })
+    }
+
+    if (token) localStorage.setItem(LS_GRANTED, 'true')
+    return token
+  } catch (error) {
+    console.warn('[usePushNotification] syncFcmToken failed', error)
+    return null
+  }
+}
+
 export function usePushNotification(uid: string | null) {
   const requestPermission = async (): Promise<'granted' | 'denied'> => {
     if (!('Notification' in window)) return 'denied'
 
+    if (Notification.permission === 'granted') {
+      await syncFcmToken(uid)
+      return 'granted'
+    }
+
+    if (Notification.permission === 'denied') {
+      console.warn('[usePushNotification] notifications blocked in browser settings')
+      return 'denied'
+    }
+
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return 'denied'
 
-    try {
-      const messaging = await getMessagingIfSupported()
-      if (!messaging || !VAPID_KEY) {
-        localStorage.setItem(LS_GRANTED, 'true')
-        return 'granted'
-      }
-
-      const swReg = await getMessagingServiceWorker()
-      if (!swReg) {
-        localStorage.setItem(LS_GRANTED, 'true')
-        return 'granted'
-      }
-
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swReg,
-      })
-
-      if (uid && token) {
-        await updateDoc(doc(db, 'users', uid), { fcmToken: token })
-      }
-
-      localStorage.setItem(LS_GRANTED, 'true')
-    } catch (error) {
-      console.warn('[usePushNotification] requestPermission failed', error)
-      localStorage.setItem(LS_GRANTED, 'true')
-    }
-
+    await syncFcmToken(uid)
     return 'granted'
   }
 

@@ -50,7 +50,7 @@ export function ContentActionSheet({ enabled, onEdit, onDelete, children }: Cont
       {open && (
         <>
           <div className="fixed inset-0 z-[80] bg-black/30" onClick={() => setOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[90] bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+          <div className="app-fixed-x fixed bottom-0 z-[90] bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <div className="space-y-sm">
               <button

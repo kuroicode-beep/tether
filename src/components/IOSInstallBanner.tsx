@@ -43,7 +43,7 @@ export function IOSInstallBanner() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-[100] transition-transform duration-350 ease-out ${
+      className={`app-fixed-x fixed bottom-0 z-[100] transition-transform duration-350 ease-out ${
         closing ? 'translate-y-full' : 'translate-y-0'
       }`}
       style={{ animation: closing ? undefined : 'slideUp 0.35s ease-out' }}

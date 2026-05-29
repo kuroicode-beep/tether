@@ -42,7 +42,7 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 w-full flex justify-around items-center pt-sm pb-lg px-xl bg-surface-container-low/80 backdrop-blur-md shadow-sm z-50 rounded-t-xl"
+      className="app-fixed-x fixed bottom-0 flex justify-around items-center pt-sm pb-lg px-xl bg-surface-container-low/80 backdrop-blur-md shadow-sm z-50 rounded-t-xl"
       style={{ height: 'var(--bottom-nav-height)' }}
     >
       {items.map(({ id, tab, icon, label }) => {

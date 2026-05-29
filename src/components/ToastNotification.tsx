@@ -51,7 +51,7 @@ export function ToastNotification({ toast, onNavigate, onDismiss }: ToastNotific
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 z-[100] flex justify-center px-margin-mobile pt-safe-top transition-transform duration-300 ${
+      className={`app-fixed-x fixed top-0 z-[100] flex justify-center px-margin-mobile pt-safe-top transition-transform duration-300 ${
         visible ? 'translate-y-0' : '-translate-y-full'
       }`}
       style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
