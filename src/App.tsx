@@ -14,29 +14,26 @@ import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { useTheme } from './hooks/useTheme'
-import { useAuth } from './hooks/useAuth'
-import { restoreConnectionFromProfile } from './lib/coupleAuth'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
   | 'settings' | 'photo' | 'history' | 'anniversary'
 
 function AppContent() {
-  const { isConnected, uid, connect } = useApp()
-  const { user, coupleId, loading: authLoading } = useAuth()
-  useTheme()   // 앱 루트에서 data-theme 적용 (localStorage → document.documentElement)
+  const { isConnected, uid: appUid, coupleId: appCoupleId, connect } = useApp()
+  const { user, coupleId, connection, loading: authLoading } = useAuth()
+  useTheme()
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
-  const [restoringConnection, setRestoringConnection] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
-  const push = usePushNotification(uid)
+  const push = usePushNotification(appUid)
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
     else setScreen(target as Screen)
   }, [])
 
-  // 포그라운드 FCM 메시지 수신 등록
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
     push.onForegroundMessage((payload) => {
@@ -46,27 +43,14 @@ function AppContent() {
       setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [uid])
+  }, [appUid])
 
   useEffect(() => {
-    if (!user || !coupleId || isConnected) return
-
-    let cancelled = false
-    setRestoringConnection(true)
-    restoreConnectionFromProfile(user.uid)
-      .then((restored) => {
-        if (!restored || cancelled) return
-        connect(restored)
-        if (unlocked) setScreen('home')
-      })
-      .finally(() => {
-        if (!cancelled) setRestoringConnection(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, coupleId, isConnected, unlocked])
+    if (!connection) return
+    if (isConnected && appUid === connection.uid && appCoupleId === connection.coupleId) return
+    connect(connection)
+    if (unlocked) setScreen('home')
+  }, [connection, isConnected, appUid, appCoupleId, unlocked])
 
   const handleUnlocked = () => {
     setUnlocked(true)
@@ -82,12 +66,29 @@ function AppContent() {
     setScreen('onboarding')
   }
 
-  if (authLoading || restoringConnection) {
+  const showSpinner = authLoading || (user !== null && coupleId === undefined)
+
+  if (showSpinner) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
         <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
           로그인 정보를 확인하고 있어요
+        </p>
+      </div>
+    )
+  }
+
+  if (!user || coupleId === null) {
+    return <OnboardingScreen onConnected={() => setScreen('home')} />
+  }
+
+  if (coupleId && !isConnected) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+        <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
+        <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
+          커플 정보를 불러오고 있어요
         </p>
       </div>
     )
@@ -126,8 +127,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </AuthProvider>
   )
 }

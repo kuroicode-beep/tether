@@ -73,7 +73,7 @@ async function main() {
   let userA: User | null = null
   let userB: User | null = null
   let coupleId = ''
-  let messageId = ''
+  const messageIds: string[] = []
 
   try {
     userA = (await signInAnonymously(authA)).user
@@ -102,7 +102,7 @@ async function main() {
 
     coupleId = [userA.uid, userB.uid].sort().join('_')
     await setDoc(doc(dbA, 'couples', coupleId), {
-      members: [userA.uid, userB.uid],
+      members: [userA.uid, userB.uid].sort(),
       anniversaries: [],
       createdAt: serverTimestamp(),
     })
@@ -122,11 +122,25 @@ async function main() {
       createdAt: serverTimestamp(),
       readBy: [userA.uid],
     })
-    messageId = messageRef.id
+    messageIds.push(messageRef.id)
 
-    const messageSnap = await getDoc(doc(dbB, 'couples', coupleId, 'messages', messageId))
+    const messageSnap = await getDoc(doc(dbB, 'couples', coupleId, 'messages', messageRef.id))
     if (messageSnap.data()?.text !== 'firebase-e2e') {
-      throw new Error('Partner shared data read failed')
+      throw new Error('Partner shared data read failed: A to B')
+    }
+
+    const replyRef = await addDoc(collection(dbB, 'couples', coupleId, 'messages'), {
+      senderUid: userB.uid,
+      type: 'text',
+      text: 'firebase-e2e-reply',
+      createdAt: serverTimestamp(),
+      readBy: [userB.uid],
+    })
+    messageIds.push(replyRef.id)
+
+    const replySnap = await getDoc(doc(dbA, 'couples', coupleId, 'messages', replyRef.id))
+    if (replySnap.data()?.text !== 'firebase-e2e-reply') {
+      throw new Error('Partner shared data read failed: B to A')
     }
 
     await setDoc(doc(dbB, 'couples', coupleId), {
@@ -144,14 +158,14 @@ async function main() {
       throw new Error('Couple document shared update failed')
     }
 
-    console.log('Firebase E2E passed: invite lookup, couple linking, shared messages, anniversaries')
+    console.log('Firebase E2E passed: invite lookup, couple linking, bidirectional messages, anniversaries')
   } finally {
     if (userA && userB && coupleId) {
       try {
-        if (messageId) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'messages', messageId))
+        for (const id of messageIds) {
+          await deleteDoc(doc(dbA, 'couples', coupleId, 'messages', id))
         }
-        await deleteDoc(doc(dbA, 'couples', coupleId))
+        await updateDoc(doc(dbA, 'couples', coupleId), { anniversaries: [] })
       } catch { /* ignore */ }
     }
 

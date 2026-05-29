@@ -159,13 +159,18 @@ export const restoreConnectionFromProfile = async (
 }
 
 export const connectCouple = async (myUid: string, partnerUid: string): Promise<string> => {
-  const coupleId = [myUid, partnerUid].sort().join('_')
+  const members = [myUid, partnerUid].sort()
+  const coupleId = members.join('_')
+  const coupleRef = doc(db, 'couples', coupleId)
+  const snap = await getDoc(coupleRef)
 
-  await setDoc(doc(db, 'couples', coupleId), {
-    members: [myUid, partnerUid],
-    anniversaries: [],
-    createdAt: serverTimestamp(),
-  }, { merge: true })
+  if (!snap.exists()) {
+    await setDoc(coupleRef, {
+      members,
+      anniversaries: [],
+      createdAt: serverTimestamp(),
+    })
+  }
 
   await Promise.all([
     updateDoc(doc(db, 'users', myUid), { coupleId }),
