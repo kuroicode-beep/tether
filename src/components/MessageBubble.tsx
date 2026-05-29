@@ -4,35 +4,42 @@ interface MessageBubbleProps {
   message: ChatMessage
   isMe: boolean
   showTime: boolean
+  showSenderName?: boolean
+  senderName?: string
   onImageTap?: (url: string) => void
 }
 
+// Firestore 타임스탬프를 HH:MM 형식으로 변환
 function formatTime(ts: number | null): string {
   if (!ts) return ''
   return new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function MessageBubble({ message, isMe, showTime, onImageTap }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  isMe,
+  showTime,
+  showSenderName = false,
+  senderName,
+  onImageTap,
+}: MessageBubbleProps) {
   const { type, text, imageUrl, createdAt, readBy, senderUid } = message
-  const isRead = !isMe ? false : readBy.filter((u) => u !== senderUid).length > 0
+  const isRead = isMe && readBy.filter((u) => u !== senderUid).length > 0
 
   return (
-    <div className={`flex flex-col gap-xs message-bubble ${isMe ? 'message-mine items-end self-end' : 'message-partner items-start self-start'}`}>
-      {/* 버블 */}
+    <div className={isMe ? 'message-mine' : 'message-partner'}>
+      {!isMe && showSenderName && senderName && (
+        <span className="sender-name">{senderName}</span>
+      )}
+
       {type === 'text' ? (
-        <div
-          className={`px-md py-sm rounded-[18px] shadow-sm message-bubble ${
-            isMe
-              ? 'bg-primary text-on-primary message-bubble-me'
-              : 'bg-surface-container text-on-surface message-bubble-partner'
-          }`}
-        >
-          <p className="font-body-md text-body-md whitespace-pre-wrap">{text}</p>
-        </div>
+        <div className="bubble">{text}</div>
       ) : imageUrl ? (
         <button
+          type="button"
           onClick={() => onImageTap?.(imageUrl)}
-          className="rounded-[18px] overflow-hidden shadow-sm active:scale-95 transition-transform"
+          className="rounded-[18px] overflow-hidden active:scale-95 transition-transform"
+          style={{ maxWidth: '68%' }}
         >
           <img
             src={imageUrl}
@@ -43,15 +50,12 @@ export function MessageBubble({ message, isMe, showTime, onImageTap }: MessageBu
         </button>
       ) : null}
 
-      {/* 시간 + 읽음 */}
       {showTime && (
-        <div className={`flex items-center gap-xs ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-          <span className="text-[10px] text-on-surface-variant opacity-70">
-            {formatTime(createdAt)}
-          </span>
+        <div className="message-time">
+          <span>{formatTime(createdAt)}</span>
           {isMe && (
             <span
-              className={`material-symbols-outlined text-[12px] ${isRead ? 'text-primary' : 'text-outline-variant'}`}
+              className={`material-symbols-outlined text-[12px] ${isRead ? 'text-primary' : 'opacity-50'}`}
               style={{ fontVariationSettings: isRead ? "'FILL' 1" : "'FILL' 0" }}
             >
               {isRead ? 'done_all' : 'done'}

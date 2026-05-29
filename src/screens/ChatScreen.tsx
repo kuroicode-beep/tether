@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { isSameDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
 import { useChat, ChatMessage } from '../hooks/useChat'
@@ -11,6 +11,25 @@ import { ImageViewer } from '../components/ImageViewer'
 
 interface ChatScreenProps {
   onBack: () => void
+}
+
+// 연속된 동일 발신자 메시지를 1분 단위로 그룹화
+function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
+  return messages.reduce<ChatMessage[][]>((groups, msg, i) => {
+    const prev = messages[i - 1]
+    const isSameSender = prev?.senderUid === msg.senderUid
+    const isSameMinute =
+      prev?.createdAt != null &&
+      msg.createdAt != null &&
+      Math.abs(msg.createdAt - prev.createdAt) < 60_000
+
+    if (isSameSender && isSameMinute) {
+      groups[groups.length - 1].push(msg)
+    } else {
+      groups.push([msg])
+    }
+    return groups
+  }, [])
 }
 
 export function ChatScreen({ onBack }: ChatScreenProps) {
@@ -27,6 +46,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const isInitialLoad = useRef(true)
 
   const partnerName = partnerNickname || '자기'
+  const groupedMessages = useMemo(() => groupMessages(messages), [messages])
 
   // 채팅 탭 진입 시 미읽음 배지 해제
   useEffect(() => {
@@ -37,11 +57,9 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   useEffect(() => {
     if (messages.length === 0) return
     if (isInitialLoad.current) {
-      // 초기: 즉시 바닥
       bottomRef.current?.scrollIntoView()
       isInitialLoad.current = false
     } else {
-      // 신규: smooth
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages.length])
@@ -52,7 +70,6 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && hasMore && !loading) {
-          // 스크롤 위치 보정: 로드 전 높이 기억
           const list = listRef.current
           const prevHeight = list?.scrollHeight ?? 0
           loadMore().then(() => {
@@ -90,48 +107,29 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     [messages],
   )
 
-  // 같은 발신자의 연속 그룹에서 마지막 메시지인지 (시간 표시 여부)
-  const isLastInGroup = useCallback(
-    (index: number): boolean => {
-      const next = messages[index + 1]
-      if (!next) return true
-      return next.senderUid !== messages[index].senderUid
-    },
-    [messages],
-  )
-
   return (
-    <div className="bg-[#EEE9DC] min-h-screen flex flex-col">
-      {/* 헤더 */}
-      <header className="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
-        <button
-          onClick={onBack}
-          className="hover:bg-surface-container rounded-full p-xs transition-colors"
-        >
-          <span className="material-symbols-outlined text-primary">arrow_back</span>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
+      <header className="chat-header">
+        <button type="button" onClick={onBack} className="back-btn" aria-label="뒤로">
+          <span className="material-symbols-outlined">arrow_back</span>
         </button>
 
-        <div className="flex items-center gap-sm flex-1">
-          <div className="relative w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden shrink-0">
-            <span className="material-symbols-outlined text-primary">person</span>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#4CAF50] border-2 border-surface rounded-full" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-body-md font-semibold text-primary leading-tight">{partnerName}</span>
-            <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-medium">
-              Active now
-            </span>
-          </div>
+        <div className="avatar">
+          <span className="material-symbols-outlined text-primary">person</span>
+          <span className="online-dot" />
+        </div>
+
+        <div className="info flex flex-col">
+          <span className="name">{partnerName}</span>
+          <span className="status">Active now</span>
         </div>
       </header>
 
-      {/* 메시지 목록 */}
       <main
         ref={listRef}
-        className="flex-1 overflow-y-auto px-margin-mobile flex flex-col"
+        className="flex-1 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '80px' }}
       >
-        {/* 상단 감시 — 여기 보이면 loadMore */}
         <div ref={topRef} className="h-1 shrink-0">
           {loading && (
             <div className="flex justify-center py-sm">
@@ -144,56 +142,78 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
         {messages.length === 0 && !loading && (
           <div className="flex-1 flex flex-col items-center justify-center gap-sm text-center py-xxl">
-            <span className="material-symbols-outlined text-[48px] text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <span
+              className="material-symbols-outlined text-[48px] opacity-30 text-primary"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
               chat_bubble
             </span>
-            <p className="font-body-md text-body-md text-on-surface-variant">
+            <p className="font-body-md text-body-md opacity-60" style={{ color: 'var(--color-text-muted)' }}>
               첫 메시지를 보내보세요 💕
             </p>
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div key={msg.id}>
-            {needsDivider(msg, i) && msg.createdAt && (
-              <DateDivider timestamp={msg.createdAt} />
-            )}
-            <div className={`flex mb-xs ${msg.senderUid === uid ? 'justify-end' : 'justify-start'}`}>
-              {msg.senderUid === uid && msg.type === 'text' ? (
-                <ContentActionSheet
-                  enabled
-                  onEdit={() => {
-                    const next = window.prompt('메시지 수정', msg.text ?? '')
-                    if (next?.trim()) updateMessage(msg.id, next)
-                  }}
-                  onDelete={() => deleteMessage(msg.id)}
-                >
+        {groupedMessages.map((group, groupIndex) => {
+          const prevGroup = groupedMessages[groupIndex - 1]
+          const isNewSender =
+            groupIndex === 0 || prevGroup?.[0]?.senderUid !== group[0].senderUid
+
+          return (
+            <div
+              key={group.map((m) => m.id).join('-')}
+              className={`message-group${isNewSender ? ' new-sender' : ''}`}
+            >
+              {group.map((msg, msgIndex) => {
+                const flatIndex = messages.findIndex((m) => m.id === msg.id)
+                const isMe = msg.senderUid === uid
+                const showSenderName = msgIndex === 0 && !isMe
+                const showTime = msgIndex === group.length - 1
+
+                const bubble = (
                   <MessageBubble
                     message={msg}
-                    isMe
-                    showTime={isLastInGroup(i)}
+                    isMe={isMe}
+                    showTime={showTime}
+                    showSenderName={showSenderName}
+                    senderName={partnerName}
                     onImageTap={setViewerUrl}
                   />
-                </ContentActionSheet>
-              ) : (
-                <MessageBubble
-                  message={msg}
-                  isMe={msg.senderUid === uid}
-                  showTime={isLastInGroup(i)}
-                  onImageTap={setViewerUrl}
-                />
-              )}
+                )
+
+                return (
+                  <div key={msg.id}>
+                    {needsDivider(msg, flatIndex) && msg.createdAt && (
+                      <DateDivider timestamp={msg.createdAt} />
+                    )}
+                    <div className={`message-row flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      {isMe && msg.type === 'text' ? (
+                        <ContentActionSheet
+                          enabled
+                          onEdit={() => {
+                            const next = window.prompt('메시지 수정', msg.text ?? '')
+                            if (next?.trim()) updateMessage(msg.id, next)
+                          }}
+                          onDelete={() => deleteMessage(msg.id)}
+                        >
+                          {bubble}
+                        </ContentActionSheet>
+                      ) : (
+                        bubble
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         <div ref={bottomRef} className="h-1" />
       </main>
 
-      {/* 입력창 */}
       <ChatInput onSendText={sendText} onSendImage={sendImage} />
 
-      {/* 이미지 확대 뷰어 */}
       {viewerUrl && (
         <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
       )}

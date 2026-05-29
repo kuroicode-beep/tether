@@ -17,6 +17,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // textarea 높이를 내용에 맞게 자동 조절
   const adjustHeight = () => {
     const el = textareaRef.current
     if (!el) return
@@ -42,7 +43,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
     const file = e.target.files?.[0]
     if (!file) return
     setPreview({ file, url: URL.createObjectURL(file) })
-    e.target.value = '' // reset so same file can be selected again
+    e.target.value = ''
   }
 
   const handleConfirmImage = () => {
@@ -59,7 +60,6 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
 
   return (
     <>
-      {/* 이미지 미리보기 바텀시트 */}
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelImage} />
@@ -76,15 +76,14 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
               />
             </div>
             <div className="space-y-sm">
-              <button
-                onClick={handleConfirmImage}
-                className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md active:scale-95 transition-transform"
-              >
+              <button type="button" onClick={handleConfirmImage} className="btn-outline w-full active">
                 전송
               </button>
               <button
+                type="button"
                 onClick={handleCancelImage}
-                className="w-full py-md font-label-md text-label-md text-on-surface-variant"
+                className="w-full py-md font-label-md text-label-md opacity-60"
+                style={{ color: 'var(--color-text-muted)' }}
               >
                 취소
               </button>
@@ -93,15 +92,13 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
         </>
       )}
 
-      {/* 입력창 */}
-      <footer className="app-fixed-x fixed bottom-0 bg-surface/90 backdrop-blur-md pt-sm pb-safe px-margin-mobile flex items-end gap-sm shadow-sm"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
-      >
-        {/* 이미지 첨부 버튼 */}
+      <footer className="chat-input-bar app-fixed-x">
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-secondary hover:text-primary transition-colors active:scale-90 shrink-0"
+          className="img-btn"
+          aria-label="사진 첨부"
         >
           <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
         </button>
@@ -113,30 +110,26 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
           onChange={handleFileChange}
         />
 
-        {/* 텍스트 입력 */}
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => { setText(e.target.value); adjustHeight() }}
-            onKeyDown={handleKeyDown}
-            placeholder="메시지 입력..."
-            rows={1}
-            disabled={disabled}
-            className="w-full bg-surface-container rounded-3xl px-lg py-[10px] font-body-md text-body-md text-on-surface placeholder-on-surface-variant/40 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all border-none leading-snug"
-            style={{ maxHeight: '120px' }}
-          />
-        </div>
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value)
+            adjustHeight()
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="메시지 입력..."
+          rows={1}
+          disabled={disabled}
+          style={{ maxHeight: '120px' }}
+        />
 
-        {/* 전송 버튼 */}
         <button
+          type="button"
           onClick={handleSend}
           disabled={!text.trim() || disabled}
-          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90 ${
-            text.trim() && !disabled
-              ? 'bg-primary text-on-primary shadow-md'
-              : 'bg-surface-container text-outline-variant'
-          }`}
+          className="send-btn"
+          aria-label="전송"
         >
           <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
             send
