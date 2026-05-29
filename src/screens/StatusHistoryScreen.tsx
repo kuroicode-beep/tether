@@ -28,7 +28,7 @@ export function StatusHistoryScreen({ onBack }: StatusHistoryScreenProps) {
   const partnerName = partnerNickname || '자기'
 
   return (
-    <div className="min-h-screen text-on-surface pb-xl">
+    <div className="screen min-h-screen text-on-surface pb-xl">
       <header className="sticky top-0 z-50 bg-surface flex items-center gap-sm px-margin-mobile py-sm shadow-sm">
         <button
           onClick={onBack}

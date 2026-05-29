@@ -110,7 +110,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+      <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
         <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
           {redirecting ? 'Google 로그인을 마무리하고 있어요' : '로그인 정보를 확인하고 있어요'}

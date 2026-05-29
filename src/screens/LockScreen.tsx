@@ -121,7 +121,7 @@ export function LockScreen({ onUnlocked }: LockScreenProps) {
   const locked = isLocked()
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen py-xxl px-margin-mobile select-none relative overflow-hidden">
+    <div className="screen lock-screen py-xxl select-none relative overflow-hidden">
       {/* Atmosphere */}
       <div className="fixed inset-0 -z-10 pointer-events-none opacity-40">
         <div className="absolute top-[10%] left-[10%] w-64 h-64 bg-primary-container blur-[100px] rounded-full" />

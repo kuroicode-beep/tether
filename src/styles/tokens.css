@@ -73,12 +73,139 @@ body {
 
 /* PC: 모바일 너비 컨테이너로 앱 가두기 */
 .app-container {
+  width: 100%;
   max-width: var(--app-max-width);
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
   background: var(--color-bg);
   isolation: isolate;
+}
+
+/* 모든 화면 최상위 — 컨테이너 너비 100% 채우기 (#21) */
+.screen {
+  width: 100%;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+/* ── LockScreen (#21) ── */
+.lock-screen {
+  width: 100%;
+  min-height: 100dvh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  box-sizing: border-box;
+}
+
+.pin-dots {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.pin-dot.filled {
+  background: var(--color-primary);
+}
+
+[data-theme="high-contrast"] .pin-dot {
+  border-color: #FFE600;
+}
+
+[data-theme="high-contrast"] .pin-dot.filled {
+  background: #FFE600;
+}
+
+.pin-keypad {
+  width: 100%;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.pin-key {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.pin-key:active {
+  filter: brightness(0.92);
+  border-color: var(--color-primary);
+}
+
+[data-theme="high-contrast"] .pin-key {
+  background: #1A1A00;
+  border-color: #333;
+  color: #FFE600;
+}
+
+[data-theme="high-contrast"] .pin-key:active {
+  background: #2A2A00;
+  border-color: #FFE600;
+}
+
+.pin-key--empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.theme-toggle-bar {
+  width: calc(100% - 48px);
+  max-width: 240px;
+  display: flex;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border);
+  overflow: hidden;
+}
+
+[data-theme="high-contrast"] .theme-toggle-bar {
+  border-color: #333;
+}
+
+.theme-toggle-bar button {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.theme-toggle-bar button.active {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: 600;
+}
+
+[data-theme="high-contrast"] .theme-toggle-bar button.active {
+  color: #0D0D0D;
 }
 
 @media (min-width: 431px) {

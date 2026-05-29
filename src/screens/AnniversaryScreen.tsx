@@ -192,7 +192,7 @@ export function AnniversaryScreen({ onBack }: AnniversaryScreenProps) {
 
   return (
     <div
-      className="min-h-screen pb-28"
+      className="screen min-h-screen pb-28"
       style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
       <header
@@ -215,7 +215,7 @@ export function AnniversaryScreen({ onBack }: AnniversaryScreenProps) {
         </button>
       </header>
 
-      <main className="max-w-[600px] mx-auto px-margin-mobile pt-lg space-y-lg">
+      <main className="w-full px-margin-mobile pt-lg space-y-lg">
         {firstMet ? (
           <button
             onClick={() => setEditing({ mode: 'edit', item: firstMet })}

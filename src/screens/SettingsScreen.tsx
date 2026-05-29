@@ -167,7 +167,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
 
   return (
     <div
-      className="min-h-screen pb-xxl"
+      className="screen min-h-screen pb-xxl"
       style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
       {/* Header */}
@@ -189,7 +189,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
         </div>
       </header>
 
-      <main className="max-w-[600px] mx-auto px-margin-mobile mt-lg">
+      <main className="w-full px-margin-mobile mt-lg">
 
         {/* 커플 정보 */}
         <section className="mb-xl">

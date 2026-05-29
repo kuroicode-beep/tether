@@ -115,7 +115,7 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
 
   return (
-    <div className="bg-[#EEE9DC] min-h-screen">
+    <div className="screen bg-[#EEE9DC] min-h-screen">
       {/* 헤더 */}
       <header className="w-full top-0 sticky z-40 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
         <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
@@ -125,7 +125,7 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
       </header>
 
       {/* 타임라인 */}
-      <main className="max-w-md mx-auto px-margin-mobile py-lg pb-32">
+      <main className="w-full px-margin-mobile py-lg pb-32">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-xxl text-center gap-md min-h-[60vh]">
             <span className="material-symbols-outlined text-[56px] text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>

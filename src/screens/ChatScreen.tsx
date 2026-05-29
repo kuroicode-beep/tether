@@ -108,7 +108,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   )
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
+    <div className="screen min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
       <header className="chat-header">
         <button type="button" onClick={onBack} className="back-btn" aria-label="뒤로">
           <span className="material-symbols-outlined">arrow_back</span>

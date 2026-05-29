@@ -226,30 +226,33 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
 
   if (redirecting) {
     return (
-      <div className="min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center px-margin-mobile text-center">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-lg" />
-        <h1 className="font-headline-md text-headline-md text-on-surface">구글 로그인 중...</h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-          로그인 화면으로 이동하고 있어요
-        </p>
+      <div className="screen min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center text-center">
+        <div className="w-full px-margin-mobile">
+          <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-lg mx-auto" />
+          <h1 className="font-headline-md text-headline-md text-on-surface">구글 로그인 중...</h1>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+            로그인 화면으로 이동하고 있어요
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center px-margin-mobile relative overflow-hidden">
+    <div className="screen min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center relative overflow-hidden">
       <div className="fixed inset-0 -z-10 pointer-events-none opacity-30">
         <div className="absolute top-[5%] left-[5%] w-72 h-72 bg-primary-container blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] right-[5%] w-80 h-80 bg-secondary-container blur-[100px] rounded-full" />
       </div>
 
+      <div className="w-full px-margin-mobile flex flex-col items-center">
       <div className="mb-xl text-center">
         <span className="material-symbols-outlined text-[56px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
         <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">Tether</h1>
         <p className="font-label-md text-label-md text-secondary mt-xs opacity-80">우리만의 공간</p>
       </div>
 
-      <div className="w-full max-w-sm">
+      <div className="w-full">
         {step === 'nickname' && (
           <div className="space-y-lg">
             <div className="text-center">
@@ -380,6 +383,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {showPushSheet && (

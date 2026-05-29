@@ -142,7 +142,7 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
   }
 
   return (
-    <div className="bg-[#EEE9DC] min-h-screen">
+    <div className="screen bg-[#EEE9DC] min-h-screen">
       {/* 헤더 */}
       <header className="w-full top-0 sticky z-40 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
         <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">

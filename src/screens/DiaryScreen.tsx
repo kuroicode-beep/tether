@@ -47,7 +47,7 @@ function WriteForm({ isReply, onSubmit, onCancel }: WriteFormProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#EEE9DC]">
+    <div className="screen flex flex-col min-h-screen bg-[#EEE9DC]">
       <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md flex items-center justify-between px-margin-mobile py-sm">
         <button onClick={onCancel} className="p-xs rounded-full hover:bg-surface-container transition-colors">
           <span className="material-symbols-outlined text-primary">close</span>
@@ -127,7 +127,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
   const authorName = isMe ? myNickname : partnerNickname
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#EEE9DC]">
+    <div className="screen flex flex-col min-h-screen bg-[#EEE9DC]">
       <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
         <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
           <span className="material-symbols-outlined text-primary">arrow_back</span>
@@ -290,7 +290,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
 
   // 목록
   return (
-    <div className="bg-background text-on-background min-h-screen pb-32">
+    <div className="screen bg-background text-on-background min-h-screen pb-32">
       <header className="w-full top-0 sticky z-50 bg-surface flex justify-between items-center px-margin-mobile py-sm">
         <div className="flex items-center gap-md">
           <button
@@ -310,7 +310,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
         </button>
       </header>
 
-      <main className="max-w-[600px] mx-auto px-margin-mobile pb-32 pt-md">
+      <main className="w-full px-margin-mobile pb-32 pt-md">
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-xxl text-center gap-md">
             <span className="material-symbols-outlined text-[56px] text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>

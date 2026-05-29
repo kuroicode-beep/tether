@@ -63,7 +63,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const urgentAnniversaries = upcoming.filter(({ dday }) => dday >= 0 && dday <= 7).slice(0, 2)
 
   return (
-    <div className="min-h-screen text-on-surface pb-32">
+    <div className="screen min-h-screen text-on-surface pb-32">
       {/* TopAppBar */}
       <header className="w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
         <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
@@ -75,7 +75,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         </button>
       </header>
 
-      <main className="max-w-md mx-auto px-margin-mobile space-y-lg pt-lg">
+      <main className="w-full px-margin-mobile space-y-lg pt-lg">
         <PushPermissionBanner />
 
         {/* Status Cards */}

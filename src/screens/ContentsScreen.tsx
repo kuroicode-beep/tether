@@ -163,7 +163,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
   }
 
   return (
-    <div className="bg-[#EEE9DC] text-on-surface min-h-screen">
+    <div className="screen bg-[#EEE9DC] text-on-surface min-h-screen">
       {/* Header */}
       <header className="bg-[#EEE9DC] w-full top-0 sticky z-40">
         <div className="flex justify-between items-center px-margin-mobile py-sm">
@@ -203,7 +203,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
         </div>
       </header>
 
-      <main className="max-w-screen-xl mx-auto px-margin-mobile pb-32 pt-md">
+      <main className="w-full px-margin-mobile pb-32 pt-md">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-xxl text-center gap-md">
             <span className="text-5xl">🎬</span>

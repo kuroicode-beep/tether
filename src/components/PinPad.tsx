@@ -6,37 +6,32 @@ interface PinPadProps {
 }
 
 export function PinPad({ pinLength, maxLength = 4, onDigit, onDelete }: PinPadProps) {
-  const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+  const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 
   return (
     <div className="flex flex-col items-center gap-xxl w-full">
-      {/* Dots */}
-      <div className="flex gap-md justify-center items-center">
+      <div className="pin-dots">
         {Array.from({ length: maxLength }).map((_, i) => (
           <div
             key={i}
-            className={`pin-dot w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-              i < pinLength ? 'scale-110' : ''
-            }`}
-            style={{
-              background: i < pinLength ? 'var(--color-text)' : 'transparent',
-              borderColor: i < pinLength ? 'var(--color-text)' : 'var(--color-border)',
-            }}
+            className={`pin-dot${i < pinLength ? ' filled' : ''}`}
           />
         ))}
       </div>
 
-      {/* Keypad */}
-      <div className="grid grid-cols-3 gap-md w-full max-w-[280px]">
+      <div className="pin-keypad">
         {digits.map((d, i) => {
-          if (d === '') return <div key={i} className="h-16 w-full" />
+          if (d === '') {
+            return <div key={i} className="pin-key pin-key--empty" aria-hidden />
+          }
           if (d === '⌫') {
             return (
               <button
                 key={i}
+                type="button"
                 onClick={onDelete}
-                className="key-tap h-16 w-full rounded-xl bg-transparent flex items-center justify-center active:scale-95"
-                style={{ color: 'var(--color-text)' }}
+                className="pin-key key-tap"
+                aria-label="삭제"
               >
                 <span className="material-symbols-outlined text-headline-md">backspace</span>
               </button>
@@ -45,12 +40,9 @@ export function PinPad({ pinLength, maxLength = 4, onDigit, onDelete }: PinPadPr
           return (
             <button
               key={i}
+              type="button"
               onClick={() => onDigit(d)}
-              className="key-tap h-16 w-full rounded-xl shadow-sm flex items-center justify-center text-headline-md font-headline-md active:scale-95"
-              style={{
-                color: 'var(--color-text)',
-                background: 'var(--color-surface)',
-              }}
+              className="pin-key key-tap"
             >
               {d}
             </button>
