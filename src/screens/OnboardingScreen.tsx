@@ -19,7 +19,7 @@ interface OnboardingScreenProps {
 
 export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const { connect } = useApp()
-  const { user, signInAnon, signInWithGoogle, setCoupleId } = useAuth()
+  const { user, signInAnon, signInWithGoogle, setCoupleId, redirecting } = useAuth()
   const [step, setStep] = useState<Step>('nickname')
   const [nickname, setNickname] = useState('')
   const [uid, setUid] = useState('')
@@ -157,6 +157,18 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-[#EEE9DC] flex flex-col items-center justify-center px-margin-mobile text-center">
+        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-lg" />
+        <h1 className="font-headline-md text-headline-md text-on-surface">구글 로그인 중...</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+          로그인 화면으로 이동하고 있어요
+        </p>
+      </div>
+    )
   }
 
   return (

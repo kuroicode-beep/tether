@@ -14,16 +14,20 @@ import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { useTheme } from './hooks/useTheme'
+import { useAuth } from './hooks/useAuth'
+import { restoreConnectionFromProfile } from './lib/coupleAuth'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
   | 'settings' | 'photo' | 'history' | 'anniversary'
 
 function AppContent() {
-  const { isConnected, uid } = useApp()
+  const { isConnected, uid, connect } = useApp()
+  const { user, coupleId, loading: authLoading } = useAuth()
   useTheme()   // 앱 루트에서 data-theme 적용 (localStorage → document.documentElement)
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
+  const [restoringConnection, setRestoringConnection] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const push = usePushNotification(uid)
 
@@ -44,6 +48,26 @@ function AppContent() {
     return () => unsubscribe?.()
   }, [uid])
 
+  useEffect(() => {
+    if (!user || !coupleId || isConnected) return
+
+    let cancelled = false
+    setRestoringConnection(true)
+    restoreConnectionFromProfile(user.uid)
+      .then((restored) => {
+        if (!restored || cancelled) return
+        connect(restored)
+        if (unlocked) setScreen('home')
+      })
+      .finally(() => {
+        if (!cancelled) setRestoringConnection(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, coupleId, isConnected, unlocked])
+
   const handleUnlocked = () => {
     setUnlocked(true)
     setScreen(isConnected ? 'home' : 'onboarding')
@@ -56,6 +80,17 @@ function AppContent() {
 
   const handleDisconnect = () => {
     setScreen('onboarding')
+  }
+
+  if (authLoading || restoringConnection) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+        <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
+        <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
+          로그인 정보를 확인하고 있어요
+        </p>
+      </div>
+    )
   }
 
   if (!unlocked || screen === 'lock') {
