@@ -162,16 +162,8 @@ export const connectCouple = async (myUid: string, partnerUid: string): Promise<
   const members = [myUid, partnerUid].sort()
   const coupleId = members.join('_')
   const coupleRef = doc(db, 'couples', coupleId)
-  const snap = await getDoc(coupleRef)
 
-  if (!snap.exists()) {
-    await setDoc(coupleRef, {
-      members,
-      anniversaries: [],
-      createdAt: serverTimestamp(),
-    })
-  }
-
+  await setDoc(coupleRef, { members }, { merge: true })
   await Promise.all([
     updateDoc(doc(db, 'users', myUid), { coupleId }),
     updateDoc(doc(db, 'users', partnerUid), { coupleId }),

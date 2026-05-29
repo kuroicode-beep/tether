@@ -101,13 +101,11 @@ async function main() {
     if (inviteSnap.empty) throw new Error('Authenticated invite lookup failed')
 
     coupleId = [userA.uid, userB.uid].sort().join('_')
-    await setDoc(doc(dbA, 'couples', coupleId), {
+    await setDoc(doc(dbB, 'couples', coupleId), {
       members: [userA.uid, userB.uid].sort(),
-      anniversaries: [],
-      createdAt: serverTimestamp(),
-    })
-    await updateDoc(doc(dbA, 'users', userA.uid), { coupleId })
-    await updateDoc(doc(dbA, 'users', userB.uid), { coupleId })
+    }, { merge: true })
+    await updateDoc(doc(dbB, 'users', userB.uid), { coupleId })
+    await updateDoc(doc(dbB, 'users', userA.uid), { coupleId })
 
     const restoredA = await getDoc(doc(dbA, 'users', userA.uid))
     const restoredB = await getDoc(doc(dbB, 'users', userB.uid))
