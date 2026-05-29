@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BottomNav } from '../components/BottomNav'
+import { ContentActionSheet } from '../components/ContentActionSheet'
 import { useContents, ContentCategory, ContentItem, ContentStatus } from '../hooks/useContents'
+import { useUnreadBadges } from '../hooks/useUnreadBadges'
 import { useApp } from '../context/AppContext'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
@@ -133,11 +135,16 @@ function DoneSheet({ item, onSave, onClose }: DoneSheetProps) {
 
 export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
   const { uid, coupleId, myNickname, partnerNickname } = useApp()
-  const { items, addContent, updateStatus } = useContents(coupleId, uid)
+  const { items, addContent, updateStatus, updateContent, deleteContent } = useContents(coupleId, uid)
+  const { markTabRead } = useUnreadBadges(coupleId, uid)
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('전체')
   const [showAdd, setShowAdd] = useState(false)
   const [doneTarget, setDoneTarget] = useState<ContentItem | null>(null)
   const [statusMenu, setStatusMenu] = useState<string | null>(null) // 상태 변경 메뉴 열린 id
+
+  useEffect(() => {
+    markTabRead('more')
+  }, [coupleId, uid, markTabRead])
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
@@ -215,6 +222,16 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
               const statusInfo = STATUS_INFO[item.status]
               return (
                 <div key={item.id} style={{ breakInside: 'avoid', marginBottom: '12px' }}>
+                  <ContentActionSheet
+                    enabled={item.addedBy === uid}
+                    onEdit={() => {
+                      const title = window.prompt('제목 수정', item.title)
+                      if (!title?.trim()) return
+                      const memo = window.prompt('메모 수정', item.memo ?? '') ?? item.memo
+                      updateContent(item.id, { title: title.trim(), memo: memo?.trim() || null })
+                    }}
+                    onDelete={() => deleteContent(item.id)}
+                  >
                   <div className="bg-[#F5F2EB] rounded-xl shadow-sm p-md space-y-sm relative">
                     {/* 상태 배지 + 이모지 */}
                     <div className="flex justify-between items-start">
@@ -271,6 +288,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
                       </div>
                     </div>
                   </div>
+                  </ContentActionSheet>
                 </div>
               )
             })}
@@ -306,6 +324,16 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
       )}
 
       <BottomNav active="more" onNavigate={onNavigate} />
+
+      <button
+        type="button"
+        onClick={() => setShowAdd(true)}
+        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40"
+        style={{ bottom: 'var(--fab-bottom-offset)' }}
+        aria-label="콘텐츠 추가"
+      >
+        <span className="material-symbols-outlined text-2xl">add</span>
+      </button>
     </div>
   )
 }

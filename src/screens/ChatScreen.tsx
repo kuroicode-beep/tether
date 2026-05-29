@@ -2,6 +2,8 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { isSameDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
 import { useChat, ChatMessage } from '../hooks/useChat'
+import { ContentActionSheet } from '../components/ContentActionSheet'
+import { useUnreadBadges } from '../hooks/useUnreadBadges'
 import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
 import { ChatInput } from '../components/ChatInput'
@@ -13,10 +15,11 @@ interface ChatScreenProps {
 
 export function ChatScreen({ onBack }: ChatScreenProps) {
   const { uid, coupleId, partnerNickname } = useApp()
-  const { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead } = useChat(
+  const { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
   )
+  const { markTabRead } = useUnreadBadges(coupleId, uid)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -24,6 +27,11 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const isInitialLoad = useRef(true)
 
   const partnerName = partnerNickname || '자기'
+
+  // 채팅 탭 진입 시 미읽음 배지 해제
+  useEffect(() => {
+    markTabRead('chat')
+  }, [coupleId, uid, markTabRead])
 
   // 신규 메시지 도착 시 자동 스크롤 (초기 로드 포함)
   useEffect(() => {
@@ -151,12 +159,30 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
               <DateDivider timestamp={msg.createdAt} />
             )}
             <div className={`flex mb-xs ${msg.senderUid === uid ? 'justify-end' : 'justify-start'}`}>
-              <MessageBubble
-                message={msg}
-                isMe={msg.senderUid === uid}
-                showTime={isLastInGroup(i)}
-                onImageTap={setViewerUrl}
-              />
+              {msg.senderUid === uid && msg.type === 'text' ? (
+                <ContentActionSheet
+                  enabled
+                  onEdit={() => {
+                    const next = window.prompt('메시지 수정', msg.text ?? '')
+                    if (next?.trim()) updateMessage(msg.id, next)
+                  }}
+                  onDelete={() => deleteMessage(msg.id)}
+                >
+                  <MessageBubble
+                    message={msg}
+                    isMe
+                    showTime={isLastInGroup(i)}
+                    onImageTap={setViewerUrl}
+                  />
+                </ContentActionSheet>
+              ) : (
+                <MessageBubble
+                  message={msg}
+                  isMe={msg.senderUid === uid}
+                  showTime={isLastInGroup(i)}
+                  onImageTap={setViewerUrl}
+                />
+              )}
             </div>
           </div>
         ))}

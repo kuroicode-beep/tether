@@ -1,3 +1,5 @@
+// src/components/MoodChip.tsx
+// 기분 태그 칩 — 선택/미선택 상태를 명확히 구분
 interface MoodChipProps {
   label: string
   active?: boolean
@@ -6,11 +8,26 @@ interface MoodChipProps {
 export function MoodChip({ label, active }: MoodChipProps) {
   return (
     <span
-      className={`px-sm py-[2px] font-label-sm text-[10px] rounded-full ${
+      className="inline-flex items-center justify-center rounded-full font-label-sm text-[10px] transition-all duration-200"
+      style={
         active
-          ? 'bg-primary/10 text-primary'
-          : 'bg-surface-variant text-on-surface-variant'
-      }`}
+          ? {
+              background: 'var(--color-primary)',
+              color: '#FFFFFF',
+              transform: 'scale(1.2)',
+              border: '2px solid var(--color-primary)',
+              padding: '4px 10px',
+              opacity: 1,
+            }
+          : {
+              background: 'transparent',
+              color: 'var(--color-text-muted)',
+              transform: 'scale(1)',
+              border: '2px solid transparent',
+              padding: '4px 10px',
+              opacity: 0.4,
+            }
+      }
     >
       {label}
     </span>

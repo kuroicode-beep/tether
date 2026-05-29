@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   collection, addDoc, onSnapshot, doc,
-  updateDoc, query, orderBy, serverTimestamp, Timestamp,
+  updateDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
@@ -100,5 +100,26 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     } catch { /* ignore */ }
   }
 
-  return { items, addContent, updateStatus }
+  const updateContent = async (
+    contentId: string,
+    data: { title: string; memo?: string | null },
+  ) => {
+    if (!coupleId || contentId.startsWith('opt_')) return
+    try {
+      await updateDoc(doc(db, 'couples', coupleId, 'contents', contentId), {
+        title: data.title,
+        memo: data.memo ?? null,
+        updatedAt: serverTimestamp(),
+      })
+    } catch { /* ignore */ }
+  }
+
+  const deleteContent = async (contentId: string) => {
+    if (!coupleId || contentId.startsWith('opt_')) return
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'contents', contentId))
+    } catch { /* ignore */ }
+  }
+
+  return { items, addContent, updateStatus, updateContent, deleteContent }
 }

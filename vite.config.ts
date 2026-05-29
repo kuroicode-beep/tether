@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png', 'firebase-messaging-sw.js'],
       manifest: {
         name: 'Tether',
         short_name: 'Tether',

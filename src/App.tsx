@@ -83,7 +83,7 @@ function AppContent() {
     setScreen('onboarding')
   }
 
-  const showSpinner = authLoading || (user !== null && coupleId === undefined)
+  const showSpinner = authLoading || coupleId === undefined
 
   if (showSpinner) {
     return (
@@ -96,19 +96,12 @@ function AppContent() {
     )
   }
 
-  if (!user || coupleId === null) {
-    return <OnboardingScreen onConnected={() => setScreen('home')} />
+  if (!user) {
+    return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
   }
 
-  if (coupleId && !isConnected) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-        <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
-        <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
-          커플 정보를 불러오고 있어요
-        </p>
-      </div>
-    )
+  if (coupleId === null) {
+    return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
   }
 
   if (!unlocked || screen === 'lock') {

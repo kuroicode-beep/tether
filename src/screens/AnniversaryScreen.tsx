@@ -294,7 +294,8 @@ export function AnniversaryScreen({ onBack }: AnniversaryScreenProps) {
 
       <button
         onClick={() => setEditing({ mode: 'add' })}
-        className="fixed bottom-8 right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
+        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
+        style={{ bottom: 'var(--fab-bottom-offset)' }}
       >
         <span className="material-symbols-outlined text-2xl">add</span>
       </button>

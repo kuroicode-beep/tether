@@ -20,7 +20,8 @@
   --color-chip-text:   #3A6B4F;
 
   /* 레이아웃 */
-  --font-scale:    1.0;
+  --bottom-nav-height: 56px;
+  --fab-bottom-offset: calc(var(--bottom-nav-height) + 24px);
   --font-base:     calc(16px * var(--font-scale));
   --radius-card:   16px;
   --radius-pill:   9999px;

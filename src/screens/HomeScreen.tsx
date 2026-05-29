@@ -3,7 +3,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
+import { RecentFeed } from '../components/RecentFeed'
 import { useStatus, Condition } from '../hooks/useStatus'
+import { useRecentFeed } from '../hooks/useRecentFeed'
 import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useApp } from '../context/AppContext'
 
@@ -33,6 +35,7 @@ function timeAgo(ts: number | null): string {
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { uid, coupleId, myNickname, partnerNickname, partnerUid } = useApp()
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
+  const feedItems = useRecentFeed(coupleId, uid, partnerUid)
   const { firstMet, upcoming, getDday } = useAnniversaries(coupleId)
 
   const [editMsg, setEditMsg] = useState(myStatus.message)
@@ -86,7 +89,22 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 <button
                   key={c}
                   onClick={() => toggleCondition(c)}
-                  className={`text-xl p-xs transition-all ${myStatus.condition === c ? 'scale-110' : 'grayscale opacity-50 hover:grayscale-0 hover:opacity-80'}`}
+                  className="text-xl p-xs rounded-full transition-all duration-200"
+                  style={
+                    myStatus.condition === c
+                      ? {
+                          background: 'var(--color-primary)',
+                          transform: 'scale(1.2)',
+                          border: '2px solid var(--color-primary)',
+                          opacity: 1,
+                        }
+                      : {
+                          background: 'transparent',
+                          transform: 'scale(1)',
+                          border: '2px solid transparent',
+                          opacity: 0.4,
+                        }
+                  }
                 >
                   {CONDITION_EMOJI[c]}
                 </button>
@@ -145,6 +163,8 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         <div className="py-sm">
           <div className="h-1 w-full bg-gradient-to-r from-primary to-primary-container rounded-full opacity-30" />
         </div>
+
+        <RecentFeed items={feedItems} partnerName={partnerName} onNavigate={onNavigate} />
 
         {/* Quick Nav Grid */}
         <section className="bg-[#F5F2EB] rounded-xl p-lg shadow-sm">

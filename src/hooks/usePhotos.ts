@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  collection, addDoc, onSnapshot,
+  collection, addDoc, onSnapshot, doc,
+  updateDoc, deleteDoc,
   query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -74,5 +75,19 @@ export function usePhotos(coupleId: string | null, myUid: string | null) {
     setUploading(false)
   }
 
-  return { photos, uploading, uploadPhoto }
+  const updatePhoto = async (photoId: string, caption: string | null) => {
+    if (!coupleId || photoId.startsWith('opt_')) return
+    try {
+      await updateDoc(doc(db, 'couples', coupleId, 'photos', photoId), { caption })
+    } catch { /* ignore */ }
+  }
+
+  const deletePhoto = async (photoId: string) => {
+    if (!coupleId || photoId.startsWith('opt_')) return
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'photos', photoId))
+    } catch { /* ignore */ }
+  }
+
+  return { photos, uploading, uploadPhoto, updatePhoto, deletePhoto }
 }

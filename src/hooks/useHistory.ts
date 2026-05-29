@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  collection, addDoc, onSnapshot,
+  collection, addDoc, onSnapshot, doc,
+  updateDoc, deleteDoc,
   query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -88,5 +89,27 @@ export function useHistory(coupleId: string | null) {
     } catch { /* ignore */ }
   }
 
-  return { items, addHistory }
+  const updateHistory = async (
+    itemId: string,
+    data: { title: string; memo?: string | null; date: Date },
+  ) => {
+    if (!coupleId || itemId.startsWith('opt_')) return
+    try {
+      await updateDoc(doc(db, 'couples', coupleId, 'history', itemId), {
+        title: data.title,
+        memo: data.memo ?? null,
+        date: toFirestoreDate(data.date),
+        updatedAt: serverTimestamp(),
+      })
+    } catch { /* ignore */ }
+  }
+
+  const deleteHistory = async (itemId: string) => {
+    if (!coupleId || itemId.startsWith('opt_')) return
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'history', itemId))
+    } catch { /* ignore */ }
+  }
+
+  return { items, addHistory, updateHistory, deleteHistory }
 }

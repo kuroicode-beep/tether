@@ -1,3 +1,5 @@
+// src/hooks/usePushNotification.ts
+// FCM 토큰 요청, 포그라운드 메시지, 알림 설정 관리
 import { getToken, onMessage, MessagePayload } from 'firebase/messaging'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db, VAPID_KEY, getMessagingIfSupported } from '../lib/firebase'
@@ -17,6 +19,36 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   diary: true,
 }
 
+// FCM 전용 service worker를 등록하고 registration을 반환한다
+async function getMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) return null
+
+  try {
+    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js')
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    }
+
+    registration.active?.postMessage({
+      type: 'FIREBASE_CONFIG',
+      config: {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? '',
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? '',
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? '',
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? '',
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '',
+        appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
+      },
+    })
+
+    await navigator.serviceWorker.ready
+    return registration
+  } catch (error) {
+    console.warn('[usePushNotification] SW registration failed', error)
+    return null
+  }
+}
+
 export function usePushNotification(uid: string | null) {
   const requestPermission = async (): Promise<'granted' | 'denied'> => {
     if (!('Notification' in window)) return 'denied'
@@ -31,30 +63,24 @@ export function usePushNotification(uid: string | null) {
         return 'granted'
       }
 
-      const swReg = await navigator.serviceWorker.ready
-      swReg.active?.postMessage({
-        type: 'FIREBASE_CONFIG',
-        config: {
-          apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? '',
-          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? '',
-          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? '',
-          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? '',
-          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '',
-          appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
-        },
-      })
+      const swReg = await getMessagingServiceWorker()
+      if (!swReg) {
+        localStorage.setItem(LS_GRANTED, 'true')
+        return 'granted'
+      }
 
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: swReg,
       })
 
-      if (uid) {
+      if (uid && token) {
         await updateDoc(doc(db, 'users', uid), { fcmToken: token })
       }
 
       localStorage.setItem(LS_GRANTED, 'true')
-    } catch {
+    } catch (error) {
+      console.warn('[usePushNotification] requestPermission failed', error)
       localStorage.setItem(LS_GRANTED, 'true')
     }
 
@@ -92,4 +118,17 @@ export function usePushNotification(uid: string | null) {
   }
 
   return { requestPermission, onForegroundMessage, isGranted, loadSettings, saveSettings }
+}
+
+export function isIOSBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+}
+
+export function isStandalonePwa(): boolean {
+  if (typeof window === 'undefined') return false
+  if ('standalone' in window.navigator && (window.navigator as Navigator & { standalone?: boolean }).standalone) {
+    return true
+  }
+  return window.matchMedia('(display-mode: standalone)').matches
 }

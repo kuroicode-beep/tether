@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { ImageViewer } from '../components/ImageViewer'
 import { useDiary, DiaryEntry } from '../hooks/useDiary'
+import { useUnreadBadges } from '../hooks/useUnreadBadges'
 import { useApp } from '../context/AppContext'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
@@ -117,9 +118,11 @@ interface ReadViewProps {
   onBack: () => void
   onReply: () => void
   onImageTap: (url: string) => void
+  onEdit: () => void
+  onDelete: () => void
 }
 
-function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, onImageTap }: ReadViewProps) {
+function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, onImageTap, onEdit, onDelete }: ReadViewProps) {
   const isMe = entry.authorUid === myUid
   const authorName = isMe ? myNickname : partnerNickname
 
@@ -129,7 +132,17 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
         <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
           <span className="material-symbols-outlined text-primary">arrow_back</span>
         </button>
-        <span className="font-label-md text-label-md text-on-surface-variant">{formatTs(entry.createdAt)}</span>
+        <span className="font-label-md text-label-md text-on-surface-variant flex-1">{formatTs(entry.createdAt)}</span>
+        {isMe && (
+          <div className="flex items-center gap-xs">
+            <button onClick={onEdit} className="px-sm py-xs rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface">
+              수정
+            </button>
+            <button onClick={onDelete} className="px-sm py-xs rounded-full bg-error/10 font-label-sm text-label-sm text-error">
+              삭제
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 px-margin-mobile py-lg overflow-y-auto pb-32">
@@ -204,13 +217,18 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
 
 export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   const { uid, coupleId, myNickname, partnerNickname } = useApp()
-  const { entries, writeDiary, markDiaryRead, writeReply } = useDiary(coupleId, uid)
+  const { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary } = useDiary(coupleId, uid)
+  const { markTabRead } = useUnreadBadges(coupleId, uid)
   const [view, setView] = useState<View>('list')
   const [selected, setSelected] = useState<DiaryEntry | null>(null)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
+
+  useEffect(() => {
+    if (view === 'list') markTabRead('diary')
+  }, [view, coupleId, uid, markTabRead])
 
   const handleCardTap = async (entry: DiaryEntry) => {
     setSelected(entry)
@@ -251,6 +269,19 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
           onBack={() => { setView('list'); setSelected(null) }}
           onReply={() => setView('reply')}
           onImageTap={setViewerUrl}
+          onEdit={() => {
+            const title = window.prompt('제목 수정', selected.title) ?? selected.title
+            const content = window.prompt('내용 수정', selected.content) ?? selected.content
+            if (!title.trim() || !content.trim()) return
+            updateDiary(selected.id, { title: title.trim(), content: content.trim() })
+            setSelected({ ...selected, title: title.trim(), content: content.trim() })
+          }}
+          onDelete={() => {
+            if (!window.confirm('일기를 삭제할까요?')) return
+            deleteDiary(selected.id)
+            setView('list')
+            setSelected(null)
+          }}
         />
         {viewerUrl && <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />}
       </>

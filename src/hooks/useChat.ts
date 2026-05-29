@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   collection, addDoc, onSnapshot,
   query, orderBy, limit, startAfter,
-  serverTimestamp, doc, updateDoc, arrayUnion, getDocs,
+  serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs,
   QueryDocumentSnapshot, DocumentData, Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -152,5 +152,22 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     } catch { /* ignore */ }
   }, [coupleId, myUid])
 
-  return { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead }
+  const updateMessage = useCallback(async (messageId: string, text: string) => {
+    if (!coupleId || !myUid || messageId.startsWith('opt_') || !text.trim()) return
+    try {
+      await updateDoc(doc(db, 'couples', coupleId, 'messages', messageId), {
+        text: text.trim(),
+        editedAt: serverTimestamp(),
+      })
+    } catch { /* ignore */ }
+  }, [coupleId, myUid])
+
+  const deleteMessage = useCallback(async (messageId: string) => {
+    if (!coupleId || messageId.startsWith('opt_')) return
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'messages', messageId))
+    } catch { /* ignore */ }
+  }, [coupleId])
+
+  return { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead, updateMessage, deleteMessage }
 }

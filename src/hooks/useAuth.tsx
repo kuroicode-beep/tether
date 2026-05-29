@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsub: (() => void) | undefined
 
     const init = async () => {
-      // ① redirect 결과 우선 처리
+      // ① redirect 결과 우선 처리 — 이후에도 onAuthStateChanged는 반드시 구독한다
       try {
         const redirectResult = await getRedirectResult(auth)
         if (cancelledRef.current) return
@@ -156,8 +156,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (redirectResult?.user) {
           markRedirecting(false)
           await syncProfile(redirectResult.user)
-          if (!cancelledRef.current) setLoading(false)
-          return
         }
       } catch (error) {
         const code = (error as AuthError)?.code ?? ''
@@ -169,15 +167,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const result = await signInWithCredential(auth, credential)
               markRedirecting(false)
               await syncProfile(result.user)
-              if (!cancelledRef.current) setLoading(false)
-              return
             } catch (innerError) {
               console.warn('[useAuth] signInWithCredential fallback failed', innerError)
             }
           }
+        } else {
+          console.warn('[useAuth] getRedirectResult failed', error)
+          if (code) setAuthError(`로그인을 마무리하지 못했어요 (${code})`)
         }
-        console.warn('[useAuth] getRedirectResult failed', error)
-        if (code) setAuthError(`로그인을 마무리하지 못했어요 (${code})`)
       }
 
       if (cancelledRef.current) return

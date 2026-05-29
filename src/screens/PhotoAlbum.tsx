@@ -57,8 +57,12 @@ interface DetailViewProps {
   onZoom: () => void
 }
 
-function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom }: DetailViewProps) {
+function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom, onEdit, onDelete }: DetailViewProps & {
+  onEdit?: () => void
+  onDelete?: () => void
+}) {
   const uploaderName = photo.uploadedBy === myUid ? myNickname : partnerNickname
+  const isMe = photo.uploadedBy === myUid
   const dateStr = photo.createdAt
     ? format(new Date(photo.createdAt), 'yyyy년 M월 d일 (EEE)', { locale: ko })
     : ''
@@ -81,7 +85,23 @@ function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom
           {photo.caption && (
             <p className="font-body-md text-body-md mb-xs">{photo.caption}</p>
           )}
-          <p className="font-label-sm text-label-sm opacity-70">{uploaderName} · {dateStr}</p>
+          <div className="flex items-center justify-between gap-sm">
+            <p className="font-label-sm text-label-sm opacity-70">{uploaderName} · {dateStr}</p>
+            {isMe && (
+              <div className="flex gap-sm">
+                {onEdit && (
+                  <button onClick={onEdit} className="px-sm py-xs rounded-full bg-white/20 font-label-sm text-label-sm">
+                    수정
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={onDelete} className="px-sm py-xs rounded-full bg-red-500/40 font-label-sm text-label-sm">
+                    삭제
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -90,7 +110,7 @@ function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom
 
 export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
   const { uid, coupleId, myNickname, partnerNickname } = useApp()
-  const { photos, uploading, uploadPhoto } = usePhotos(coupleId, uid)
+  const { photos, uploading, uploadPhoto, updatePhoto, deletePhoto } = usePhotos(coupleId, uid)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingPreview, setPendingPreview] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
@@ -167,7 +187,8 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
       <button
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        className="fixed bottom-8 right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
+        className="fixed right-6 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
+        style={{ bottom: 'var(--fab-bottom-offset)' }}
       >
         <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
       </button>
@@ -187,6 +208,16 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
           partnerNickname={partnerName}
           onClose={() => setSelectedPhoto(null)}
           onZoom={() => setViewerUrl(selectedPhoto.imageUrl)}
+          onEdit={() => {
+            const caption = window.prompt('캡션 수정', selectedPhoto.caption ?? '') ?? selectedPhoto.caption
+            updatePhoto(selectedPhoto.id, caption?.trim() || null)
+            setSelectedPhoto({ ...selectedPhoto, caption: caption?.trim() || null })
+          }}
+          onDelete={() => {
+            if (!window.confirm('사진을 삭제할까요?')) return
+            deletePhoto(selectedPhoto.id)
+            setSelectedPhoto(null)
+          }}
         />
       )}
 

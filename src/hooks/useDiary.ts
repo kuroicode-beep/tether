@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   collection, addDoc, onSnapshot, doc,
-  updateDoc, query, orderBy, serverTimestamp, Timestamp,
+  updateDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
@@ -139,5 +139,26 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
     } catch { /* ignore */ }
   }
 
-  return { entries, writeDiary, markDiaryRead, writeReply }
+  const updateDiary = async (
+    diaryId: string,
+    data: { title: string; content: string },
+  ) => {
+    if (!coupleId || diaryId.startsWith('opt_')) return
+    try {
+      await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
+        title: data.title,
+        content: data.content,
+        updatedAt: serverTimestamp(),
+      })
+    } catch { /* ignore */ }
+  }
+
+  const deleteDiary = async (diaryId: string) => {
+    if (!coupleId || diaryId.startsWith('opt_')) return
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'diary', diaryId))
+    } catch { /* ignore */ }
+  }
+
+  return { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary }
 }
