@@ -1,3 +1,5 @@
+// scripts/test-e2e-firebase.ts
+// 실제 Firestore에 두 사용자를 만들어 connectCouple 트랜잭션과 양방향 데이터 공유를 검증한다
 import { readFileSync } from 'node:fs'
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app'
 import {
@@ -15,6 +17,7 @@ import {
   getDocs,
   getFirestore,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -55,8 +58,7 @@ async function deleteAuthUser(user: User) {
   try {
     await deleteUser(user)
   } catch {
-    // Auth cleanup is best-effort because recently-created anonymous users can
-    // still be purged by Firebase automatically if client deletion is denied.
+    // best-effort: 익명 사용자 자동 폐기에 의존
   }
 }
 
@@ -97,22 +99,50 @@ async function main() {
       createdAt: serverTimestamp(),
     })
 
+    // ① 초대 코드 검색
     const inviteSnap = await getDocs(query(collection(dbB, 'users'), where('inviteCode', '==', codeA)))
     if (inviteSnap.empty) throw new Error('Authenticated invite lookup failed')
 
+    // ② 트랜잭션으로 커플 연결 (코드 입력자 B 컨텍스트)
     coupleId = [userA.uid, userB.uid].sort().join('_')
-    await setDoc(doc(dbB, 'couples', coupleId), {
-      members: [userA.uid, userB.uid].sort(),
-    }, { merge: true })
-    await updateDoc(doc(dbB, 'users', userB.uid), { coupleId })
-    await updateDoc(doc(dbB, 'users', userA.uid), { coupleId })
+    await runTransaction(dbB, async (tx) => {
+      const coupleRef = doc(dbB, 'couples', coupleId)
+      const myRef = doc(dbB, 'users', userB!.uid)
+      const partnerRef = doc(dbB, 'users', userA!.uid)
+      // 모든 read를 write보다 먼저 수행
+      const coupleSnap = await tx.get(coupleRef)
+      const mySnap = await tx.get(myRef)
+      const partnerSnap = await tx.get(partnerRef)
+      if (!mySnap.exists() || !partnerSnap.exists()) {
+        throw new Error('user docs missing in transaction')
+      }
+      if (!coupleSnap.exists()) {
+        tx.set(coupleRef, {
+          members: [userA!.uid, userB!.uid].sort(),
+          createdAt: serverTimestamp(),
+        })
+      } else {
+        tx.update(coupleRef, { members: [userA!.uid, userB!.uid].sort() })
+      }
+      tx.update(myRef, { coupleId })
+      tx.update(partnerRef, { coupleId })
+    })
 
+    // ③ 양쪽 사용자 모두에서 coupleId가 보이는지 확인
     const restoredA = await getDoc(doc(dbA, 'users', userA.uid))
     const restoredB = await getDoc(doc(dbB, 'users', userB.uid))
     if (restoredA.data()?.coupleId !== coupleId || restoredB.data()?.coupleId !== coupleId) {
       throw new Error('coupleId restore failed')
     }
 
+    // ④ 양쪽 사용자 모두에서 couples 문서를 읽을 수 있는지 확인
+    const coupleFromA = await getDoc(doc(dbA, 'couples', coupleId))
+    const coupleFromB = await getDoc(doc(dbB, 'couples', coupleId))
+    if (!coupleFromA.exists() || !coupleFromB.exists()) {
+      throw new Error('couples doc not readable from both members')
+    }
+
+    // ⑤ A → B 메시지 전송
     const messageRef = await addDoc(collection(dbA, 'couples', coupleId, 'messages'), {
       senderUid: userA.uid,
       type: 'text',
@@ -127,6 +157,7 @@ async function main() {
       throw new Error('Partner shared data read failed: A to B')
     }
 
+    // ⑥ B → A 답장 전송
     const replyRef = await addDoc(collection(dbB, 'couples', coupleId, 'messages'), {
       senderUid: userB.uid,
       type: 'text',
@@ -141,6 +172,7 @@ async function main() {
       throw new Error('Partner shared data read failed: B to A')
     }
 
+    // ⑦ 기념일 공유
     await setDoc(doc(dbB, 'couples', coupleId), {
       anniversaries: [{
         id: 'e2e-first-met',
@@ -156,7 +188,7 @@ async function main() {
       throw new Error('Couple document shared update failed')
     }
 
-    console.log('Firebase E2E passed: invite lookup, couple linking, bidirectional messages, anniversaries')
+    console.log('Firebase E2E passed: invite lookup, transactional couple linking, bidirectional messages, anniversaries, couple doc readable from both members')
   } finally {
     if (userA && userB && coupleId) {
       try {

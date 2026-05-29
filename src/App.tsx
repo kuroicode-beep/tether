@@ -1,3 +1,5 @@
+// src/App.tsx
+// 앱 루트: Auth/AppContext 제공 + 화면 라우팅 + Auth↔AppContext 동기화
 import { useState, useEffect, useCallback } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { LockScreen } from './screens/LockScreen'
@@ -21,7 +23,7 @@ type Screen =
   | 'settings' | 'photo' | 'history' | 'anniversary'
 
 function AppContent() {
-  const { isConnected, uid: appUid, coupleId: appCoupleId, connect } = useApp()
+  const { isConnected, uid: appUid, coupleId: appCoupleId, connect, disconnect, syncWithAuthUid } = useApp()
   const { user, coupleId, connection, loading: authLoading } = useAuth()
   useTheme()
   const [screen, setScreen] = useState<Screen>('lock')
@@ -45,12 +47,27 @@ function AppContent() {
     return () => unsubscribe?.()
   }, [appUid])
 
+  // 인증 사용자의 uid가 바뀌면 AppContext의 stale 상태를 즉시 정리한다
+  useEffect(() => {
+    if (authLoading) return
+    syncWithAuthUid(user?.uid ?? null)
+  }, [user?.uid, authLoading, syncWithAuthUid])
+
+  // 로그아웃되면 AppContext도 깨끗이 비운다
+  useEffect(() => {
+    if (authLoading) return
+    if (!user && (appUid || appCoupleId)) {
+      disconnect()
+    }
+  }, [user, authLoading, appUid, appCoupleId, disconnect])
+
+  // useAuth가 복원한 connection을 AppContext에 반영하고, 잠금이 풀린 상태면 홈으로 보낸다
   useEffect(() => {
     if (!connection) return
     if (isConnected && appUid === connection.uid && appCoupleId === connection.coupleId) return
     connect(connection)
     if (unlocked) setScreen('home')
-  }, [connection, isConnected, appUid, appCoupleId, unlocked])
+  }, [connection, isConnected, appUid, appCoupleId, unlocked, connect])
 
   const handleUnlocked = () => {
     setUnlocked(true)

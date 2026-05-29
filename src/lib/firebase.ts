@@ -1,6 +1,13 @@
+// src/lib/firebase.ts
+// Firebase 초기화 + Auth Persistence 명시 설정
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import {
+  browserLocalPersistence,
+  GoogleAuthProvider,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from 'firebase/auth'
 import { getStorage } from 'firebase/storage'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
@@ -25,11 +32,20 @@ const app = initializeApp(firebaseConfig)
 
 export const db = getFirestore(app)
 export const storage = getStorage(app)
-export const auth = getAuth(app)
+
+// Android Chrome / iOS Safari의 cross-site storage 제한 환경에서도 redirect 토큰이
+// 유실되지 않도록 IndexedDB → LocalStorage 순서로 영속성을 명시한다.
+// 이 설정을 하지 않으면 redirect 복귀 시 getRedirectResult()가 null을 반환하면서
+// 로그인 무한 루프가 발생할 수 있다.
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+})
+
 export const googleProvider = new GoogleAuthProvider()
+googleProvider.setCustomParameters({ prompt: 'select_account' })
 
 export const isMobile = () =>
-  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? ''
 

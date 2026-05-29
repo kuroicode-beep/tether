@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+// src/screens/OnboardingScreen.tsx
+// 닉네임/Google 시작 → 초대 코드 생성·입력 → 커플 연결 흐름
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
   createUserProfile,
@@ -19,7 +21,15 @@ interface OnboardingScreenProps {
 
 export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const { connect } = useApp()
-  const { user, signInAnon, signInWithGoogle, setCoupleId, redirecting } = useAuth()
+  const {
+    user,
+    signInAnon,
+    signInWithGoogle,
+    setCoupleId,
+    redirecting,
+    authError,
+    clearAuthError,
+  } = useAuth()
   const [step, setStep] = useState<Step>('nickname')
   const [nickname, setNickname] = useState('')
   const [uid, setUid] = useState('')
@@ -30,16 +40,23 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [copied, setCopied] = useState(false)
   const [showPushSheet, setShowPushSheet] = useState(false)
   const push = usePushNotification(uid || null)
+  const autoPreparedRef = useRef<string | null>(null)
 
+  // 커플 정보가 복원되면 즉시 홈으로 진입시킨다
   const enterConnectedApp = async (connectedUid: string) => {
-    const restored = await restoreConnectionFromProfile(connectedUid)
-    if (!restored) return false
-    setCoupleId(restored.coupleId)
-    connect(restored)
-    onConnected()
-    return true
+    try {
+      const restored = await restoreConnectionFromProfile(connectedUid)
+      if (!restored) return false
+      await setCoupleId(restored.coupleId)
+      connect(restored)
+      onConnected()
+      return true
+    } catch {
+      return false
+    }
   }
 
+  // user 문서를 만들고 커플 복원을 시도한다 — 실패해도 흐름은 끊기지 않는다
   const prepareUser = async (
     nextUid: string,
     nextNickname: string,
@@ -54,26 +71,35 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     if (!connected) setStep('choice')
   }
 
+  // Google 로그인 후 자동 호출 — 비로그인 익명 사용자는 무시한다
   const prepareGoogleUser = async (googleUser = user) => {
     if (!googleUser || googleUser.isAnonymous) return
+    if (autoPreparedRef.current === googleUser.uid) return
+    autoPreparedRef.current = googleUser.uid
+
     setLoading(true)
     setError('')
     try {
       const nextNickname = googleUser.displayName?.trim() || nickname.trim() || '나'
       await prepareUser(googleUser.uid, nextNickname, googleUser.displayName)
     } catch {
+      // 자동 흐름 실패 시 사용자가 다시 시도할 수 있도록 가드만 풀어준다
+      autoPreparedRef.current = null
       setError('Google 로그인 정보를 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
   }
 
+  // Google redirect 복귀 후 user가 생기면 자동으로 prepare 흐름을 탄다
   useEffect(() => {
-    if (!uid && user && !user.isAnonymous) {
-      prepareGoogleUser(user)
-    }
-  }, [user, uid])
+    if (!user || user.isAnonymous) return
+    if (autoPreparedRef.current === user.uid) return
+    if (uid && uid === user.uid) return
+    prepareGoogleUser(user)
+  }, [user, uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 코드 생성 화면에 머무는 동안 상대방의 코드 입력을 실시간 감지한다
   useEffect(() => {
     if (!uid || step !== 'create') return
 
@@ -85,7 +111,15 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     })
 
     return () => unsub()
-  }, [uid, step])
+  }, [uid, step]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // useAuth가 보고하는 글로벌 에러를 화면 에러 영역으로 동기화한다
+  useEffect(() => {
+    if (authError) {
+      setError(authError)
+      clearAuthError()
+    }
+  }, [authError, clearAuthError])
 
   const handleNicknameNext = async () => {
     if (!nickname.trim()) return
@@ -138,7 +172,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       }
 
       const nextCoupleId = await linkCouple(uid, partner.uid)
-      setCoupleId(nextCoupleId)
+      await setCoupleId(nextCoupleId)
       connect({
         uid,
         coupleId: nextCoupleId,
@@ -152,8 +186,10 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       } else {
         onConnected()
       }
-    } catch {
-      setError('커플 연결에 실패했어요. 잠시 후 다시 시도해주세요.')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      if (message === 'SELF_INVITE') setError('내 초대 코드는 입력할 수 없어요.')
+      else setError('커플 연결에 실패했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -188,8 +224,10 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
         {step === 'nickname' && (
           <div className="space-y-lg">
             <div className="text-center">
-              <h2 className="font-headline-md text-headline-md text-on-surface">닉네임을 알려주세요</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">상대방에게 표시될 이름이에요</p>
+              <h2 className="font-headline-md text-headline-md text-on-surface">시작하기</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+                Google 로그인을 권장해요. 다른 기기에서도 같은 데이터로 접속할 수 있어요.
+              </p>
             </div>
             <button
               onClick={handleGoogleStart}
@@ -197,14 +235,11 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               className="w-full bg-white text-on-surface rounded-full py-md px-lg font-label-md text-label-md border border-outline-variant/40 flex items-center justify-center gap-sm disabled:opacity-40 active:scale-95 transition-transform"
             >
               <span className="font-bold text-primary">G</span>
-              Google로 로그인
+              Google로 시작하기
             </button>
-            <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
-              같은 계정으로 접속하면 커플 연결을 다시 불러와요
-            </p>
             <div className="flex items-center gap-md">
               <div className="h-px bg-outline-variant/40 flex-1" />
-              <span className="font-label-sm text-label-sm text-on-surface-variant">또는</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">또는 닉네임만으로</span>
               <div className="h-px bg-outline-variant/40 flex-1" />
             </div>
             <input
@@ -224,6 +259,9 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             >
               {loading ? '잠시만요...' : '닉네임만으로 시작하기'}
             </button>
+            <p className="text-center font-label-sm text-label-sm text-on-surface-variant opacity-80">
+              닉네임으로 시작하면 이 기기에서만 사용 가능해요. 나중에 설정에서 Google 계정을 연결할 수 있어요.
+            </p>
             {error && <p className="text-center font-label-sm text-label-sm text-error">{error}</p>}
           </div>
         )}
