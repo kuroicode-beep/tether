@@ -14,7 +14,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
 }
 
-// Firebase 미설정 시 데모 모드로 폴백
+// Firebase 설정 누락 시 localStorage 기반 폴백 유지
 export const isConfigured = !!firebaseConfig.apiKey
 
 const app = initializeApp(firebaseConfig)
@@ -22,7 +22,7 @@ const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 
-// auth: API 키 없으면 null (데모 모드에서는 coupleAuth가 localStorage로 폴백)
+// auth: API 키 없으면 null (coupleAuth가 localStorage로 폴백)
 export let auth: ReturnType<typeof getAuth> | null = null
 if (isConfigured) {
   try {

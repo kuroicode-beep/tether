@@ -165,9 +165,15 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
   }
 
   return (
-    <div className="bg-background text-on-background min-h-screen pb-xxl">
+    <div
+      className="min-h-screen pb-xxl"
+      style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
+    >
       {/* Header */}
-      <header className="w-full top-0 sticky z-40 bg-surface flex justify-between items-center px-margin-mobile py-sm">
+      <header
+        className="w-full top-0 sticky z-40 flex justify-between items-center px-margin-mobile py-sm"
+        style={{ background: 'var(--color-surface)' }}
+      >
         <div className="flex items-center gap-md">
           <button
             onClick={onBack}
@@ -189,7 +195,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             커플 정보
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {/* 내 닉네임 */}
             <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
@@ -288,7 +294,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Account
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {isGoogleLinked ? (
               <div className="flex items-center justify-between p-md">
                 <div className="flex items-center gap-md">
@@ -326,7 +332,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Appearance
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {/* Theme */}
             <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
@@ -386,7 +392,10 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
                   </button>
                 ))}
               </div>
-              <div className="mt-md p-lg bg-surface-container-lowest rounded-xl border border-outline-variant/10 text-center transition-all duration-300">
+              <div
+                className="mt-md p-lg rounded-xl border text-center transition-all duration-300"
+                style={{ background: 'var(--color-surface-2)', borderColor: 'var(--color-border)' }}
+              >
                 <p
                   className="text-primary font-medium"
                   style={{ fontSize: PREVIEW_SIZES[scale] }}
@@ -403,7 +412,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Notifications
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {/* 권한 미허용 배너 */}
             {!pushGranted && (
               <button
@@ -455,7 +464,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Security
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             <button
               onClick={handleChangePin}
               className="w-full flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left"
@@ -492,7 +501,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect }: SettingsSc
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Misc
           </h2>
-          <div className="bg-surface-container rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(49,98,72,0.04)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
                 <span className="material-symbols-outlined text-secondary">info</span>

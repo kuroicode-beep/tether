@@ -32,7 +32,7 @@ function timeAgo(ts: number | null): string {
 
 // 기본 시작 날짜 (startDate 없을 때 처음 만난 날 설정 UI를 보여줌)
 function parseStartDate(iso: string | null): Date {
-  if (!iso) return new Date('2023-01-01') // 데모 기본값
+  if (!iso) return new Date('2023-01-01') // 기본 시작일
   return new Date(iso)
 }
 
