@@ -54,7 +54,13 @@ export function useStatus(
         () => { /* Firebase 미설정 — 로컬 상태 유지 */ },
       )
     } catch { /* ignore */ }
-    return () => unsub?.()
+    return () => {
+      try {
+        unsub?.()
+      } catch {
+        // Firestore SDK cleanup can throw after a failed listen; keep local/demo UI alive.
+      }
+    }
   }, [coupleId, partnerUid])
 
   const updateMyStatus = async (data: Omit<UserStatus, 'updatedAt'>) => {
