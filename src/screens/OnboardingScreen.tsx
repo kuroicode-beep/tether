@@ -42,6 +42,14 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const push = usePushNotification(uid || null)
   const autoPreparedRef = useRef<string | null>(null)
 
+  // AuthProvider에서 설정한 redirect/로그인 오류를 화면에 반영한다
+  useEffect(() => {
+    if (authError) {
+      setError(authError)
+      clearAuthError()
+    }
+  }, [authError, clearAuthError])
+
   // 커플 정보가 복원되면 즉시 홈으로 진입시킨다
   const enterConnectedApp = async (connectedUid: string) => {
     try {
@@ -140,9 +148,20 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     setError('')
     try {
       const googleUser = await signInWithGoogle()
-      if (googleUser) await prepareGoogleUser(googleUser)
-    } catch {
-      setError('Google 로그인을 완료하지 못했어요.')
+      if (googleUser) {
+        await prepareGoogleUser(googleUser)
+      }
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? ''
+      if (code === 'auth/popup-blocked') {
+        setError('팝업이 차단됐어요. 주소창 오른쪽에서 팝업 허용 후 다시 시도해주세요.')
+      } else if (code === 'auth/popup-closed-by-user') {
+        setError('Google 로그인 창이 닫혔어요.')
+      } else if (authError) {
+        setError(authError)
+      } else {
+        setError('Google 로그인을 완료하지 못했어요.')
+      }
     } finally {
       setLoading(false)
     }
@@ -235,7 +254,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               className="w-full bg-white text-on-surface rounded-full py-md px-lg font-label-md text-label-md border border-outline-variant/40 flex items-center justify-center gap-sm disabled:opacity-40 active:scale-95 transition-transform"
             >
               <span className="font-bold text-primary">G</span>
-              Google로 시작하기
+              {loading ? 'Google 로그인 중...' : 'Google로 시작하기'}
             </button>
             <div className="flex items-center gap-md">
               <div className="h-px bg-outline-variant/40 flex-1" />

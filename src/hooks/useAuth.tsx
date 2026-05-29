@@ -54,6 +54,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
   const [authError, setAuthError] = useState<string | null>(null)
   const cancelledRef = useRef(false)
+  const authBootstrappedRef = useRef(false)
+
+  // Firebase Auth 에러 코드를 사용자에게 보여줄 문구로 변환한다
+  const toAuthErrorMessage = (error: unknown): string => {
+    const code = (error as AuthError)?.code ?? ''
+    if (code === 'auth/popup-blocked') {
+      return '팝업이 차단됐어요. 브라우저 주소창 오른쪽에서 팝업을 허용하거나, 잠시 후 다시 시도해주세요.'
+    }
+    if (code === 'auth/popup-closed-by-user') {
+      return 'Google 로그인 창이 닫혔어요. 다시 시도해주세요.'
+    }
+    if (code === 'auth/cancelled-popup-request') {
+      return '이미 Google 로그인 창이 열려 있어요. 잠시 후 다시 시도해주세요.'
+    }
+    if (code === 'auth/operation-not-allowed') {
+      return 'Google 로그인이 아직 활성화되지 않았어요. Firebase 콘솔 설정을 확인해주세요.'
+    }
+    if (code === 'auth/network-request-failed') {
+      return '네트워크 연결을 확인한 뒤 다시 시도해주세요.'
+    }
+    return code
+      ? `Google 로그인을 완료하지 못했어요 (${code})`
+      : 'Google 로그인을 완료하지 못했어요.'
+  }
 
   // redirect 진입 직전과 복귀 후 sessionStorage를 동기화한다.
   const markRedirecting = (next: boolean) => {
@@ -162,8 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       unsub = onAuthStateChanged(auth, async (nextUser) => {
         if (cancelledRef.current) return
         markRedirecting(false)
-        setCoupleIdState(undefined)
+        // 최초 1회만 coupleId 로딩 상태로 — Google popup 완료 시 OnboardingScreen이 날아가지 않게
+        if (!authBootstrappedRef.current) {
+          setCoupleIdState(undefined)
+        }
         await syncProfile(nextUser)
+        authBootstrappedRef.current = true
         if (!cancelledRef.current) setLoading(false)
       })
     }
@@ -265,6 +293,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return result.user
             }
           }
+          if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
+            markRedirecting(true)
+            await linkWithRedirect(auth.currentUser, googleProvider)
+            return null
+          }
           throw error
         }
       }
@@ -275,11 +308,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null
       }
 
-      const result = await signInWithPopup(auth, googleProvider)
-      await syncProfile(result.user)
-      return result.user
+      try {
+        const result = await signInWithPopup(auth, googleProvider)
+        await syncProfile(result.user)
+        return result.user
+      } catch (error) {
+        const code = (error as AuthError)?.code ?? ''
+        if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
+          markRedirecting(true)
+          await signInWithRedirect(auth, googleProvider)
+          return null
+        }
+        throw error
+      }
     } catch (error) {
       markRedirecting(false)
+      setAuthError(toAuthErrorMessage(error))
       throw error
     }
   }

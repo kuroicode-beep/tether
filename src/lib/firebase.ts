@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import {
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   indexedDBLocalPersistence,
   initializeAuth,
@@ -39,6 +40,7 @@ export const storage = getStorage(app)
 // 로그인 무한 루프가 발생할 수 있다.
 export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  popupRedirectResolver: browserPopupRedirectResolver,
 })
 
 export const googleProvider = new GoogleAuthProvider()
