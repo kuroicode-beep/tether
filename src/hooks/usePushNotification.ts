@@ -20,31 +20,25 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 }
 
 // FCM 전용 service worker를 등록하고 registration을 반환한다
-async function getMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null
+async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  console.log('[Push] SW support:', 'serviceWorker' in navigator)
+  console.log('[Push] Notification support:', 'Notification' in window)
+  console.log('[Push] Permission:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A')
+
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[Push] ServiceWorker 미지원')
+    return null
+  }
 
   try {
-    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js')
-    if (!registration) {
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    }
-
-    registration.active?.postMessage({
-      type: 'FIREBASE_CONFIG',
-      config: {
-        apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? '',
-        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? '',
-        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? '',
-        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? '',
-        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '',
-        appId: import.meta.env.VITE_FIREBASE_APP_ID ?? '',
-      },
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
     })
-
     await navigator.serviceWorker.ready
+    console.log('[Push] SW registered:', registration.scope)
     return registration
   } catch (error) {
-    console.warn('[usePushNotification] SW registration failed', error)
+    console.error('[Push] SW registration failed:', error)
     return null
   }
 }
@@ -52,37 +46,85 @@ async function getMessagingServiceWorker(): Promise<ServiceWorkerRegistration | 
 // FCM 토큰을 발급하고 Firestore users 문서에 저장한다
 async function syncFcmToken(uid: string | null): Promise<string | null> {
   try {
-    const messaging = await getMessagingIfSupported()
-    if (!messaging || !VAPID_KEY) return null
+    if (!VAPID_KEY) {
+      console.error('[Push] VAPID 키 없음 — VITE_FIREBASE_VAPID_KEY 확인')
+      return null
+    }
 
-    const swReg = await getMessagingServiceWorker()
-    if (!swReg) return null
+    const messaging = await getMessagingIfSupported()
+    if (!messaging) {
+      console.warn('[Push] FCM 미지원 브라우저')
+      return null
+    }
+
+    const registration = await registerMessagingServiceWorker()
+    if (!registration) return null
 
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: swReg,
+      serviceWorkerRegistration: registration,
     })
 
-    if (uid && token) {
-      await updateDoc(doc(db, 'users', uid), { fcmToken: token })
+    console.log('[Push] FCM token:', token ? `${token.substring(0, 20)}...` : 'FAILED')
+
+    if (!token) {
+      console.error('[Push] 토큰 발급 실패 — VAPID 키 또는 SW 확인')
+      return null
     }
 
-    if (token) localStorage.setItem(LS_GRANTED, 'true')
+    if (uid) {
+      await updateDoc(doc(db, 'users', uid), {
+        fcmToken: token,
+        fcmUpdatedAt: new Date().toISOString(),
+      })
+      console.log('[Push] Token saved to Firestore')
+    }
+
+    localStorage.setItem(LS_GRANTED, 'true')
     return token
   } catch (error) {
-    console.warn('[usePushNotification] syncFcmToken failed', error)
+    console.error('[Push] 오류:', error)
     return null
   }
 }
 
+// 권한 요청 후 FCM 토큰을 발급·저장한다 (WI #22 진단용 export)
+export async function requestAndSavePushToken(uid: string): Promise<boolean> {
+  if (!('Notification' in window)) {
+    console.warn('[Push] Notification API 미지원')
+    return false
+  }
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[Push] ServiceWorker 미지원')
+    return false
+  }
+
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') {
+    console.warn('[Push] 권한 거부:', permission)
+    return false
+  }
+
+  const token = await syncFcmToken(uid)
+  return Boolean(token)
+}
+
 export function usePushNotification(uid: string | null) {
   const syncToken = async (): Promise<string | null> => {
-    if (!uid) return null
+    if (!uid) {
+      console.warn('[Push] uid 없음 — syncToken 건너뜀')
+      return null
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      console.warn('[Push] permission not granted:', Notification.permission)
+      return null
+    }
     return syncFcmToken(uid)
   }
 
   const requestPermission = async (): Promise<'granted' | 'denied'> => {
     if (!('Notification' in window)) return 'denied'
+    if (!uid) return 'denied'
 
     if (Notification.permission === 'granted') {
       await syncFcmToken(uid)
@@ -90,12 +132,15 @@ export function usePushNotification(uid: string | null) {
     }
 
     if (Notification.permission === 'denied') {
-      console.warn('[usePushNotification] notifications blocked in browser settings')
+      console.warn('[Push] notifications blocked in browser settings')
       return 'denied'
     }
 
     const permission = await Notification.requestPermission()
-    if (permission !== 'granted') return 'denied'
+    if (permission !== 'granted') {
+      console.warn('[Push] 권한 거부:', permission)
+      return 'denied'
+    }
 
     await syncFcmToken(uid)
     return 'granted'

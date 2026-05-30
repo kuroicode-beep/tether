@@ -20,7 +20,7 @@
   --color-chip-text:   #3A6B4F;
 
   /* 레이아웃 */
-  --app-max-width: 430px;
+  --app-max-width: 720px;
   --font-scale: 1.0;
   --bottom-nav-height: 56px;
   --fab-bottom-offset: calc(var(--bottom-nav-height) + 24px);
@@ -56,7 +56,7 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #1a1a1a;
+  background: #000;
   color: var(--color-text);
   min-height: 100dvh;
   margin: 0;
@@ -208,9 +208,18 @@ body {
   color: #0D0D0D;
 }
 
-@media (min-width: 431px) {
+@media (max-width: 720px) {
   .app-container {
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+    max-width: 100%;
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 721px) {
+  .app-container {
+    box-shadow:
+      0 0 0 1px rgba(255, 230, 0, 0.15),
+      0 0 40px rgba(0, 0, 0, 0.3);
   }
 }
 
