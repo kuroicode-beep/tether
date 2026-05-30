@@ -1,25 +1,32 @@
 import { useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { useHistory } from '../hooks/useHistory'
+import { useHistory, HistoryItem } from '../hooks/useHistory'
 import { useApp } from '../context/AppContext'
 import { ImageViewer } from '../components/ImageViewer'
+import { ContentActionSheet } from '../components/ContentActionSheet'
 
 interface HistoryScreenProps {
   onBack: () => void
 }
 
-interface AddSheetProps {
+interface HistoryFormSheetProps {
+  initial?: HistoryItem
   onSave: (data: { title: string; memo?: string; date: Date; imageFile?: File }) => void
   onClose: () => void
 }
 
-function AddSheet({ onSave, onClose }: AddSheetProps) {
-  const [title, setTitle] = useState('')
-  const [memo, setMemo] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+// 기억 추가/수정 바텀시트
+function HistoryFormSheet({ initial, onSave, onClose }: HistoryFormSheetProps) {
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [memo, setMemo] = useState(initial?.memo ?? '')
+  const [date, setDate] = useState(() =>
+    initial
+      ? new Date(initial.date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0],
+  )
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(initial?.imageUrl ?? null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,9 +52,10 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
       <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
       <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
-        <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-lg">기억 추가</h2>
+        <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-lg">
+          {initial ? '기억 수정' : '기억 추가'}
+        </h2>
 
-        {/* 날짜 */}
         <label className="block font-label-sm text-label-sm text-on-surface-variant mb-xs">날짜</label>
         <input
           type="date"
@@ -56,7 +64,6 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
           className="w-full bg-surface-container rounded-xl px-lg py-md font-body-md text-body-md text-on-surface outline-none mb-sm"
         />
 
-        {/* 제목 */}
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -65,7 +72,6 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
           className="w-full bg-surface-container rounded-xl px-lg py-md font-body-md text-body-md text-on-surface placeholder-on-surface-variant/40 outline-none mb-sm"
         />
 
-        {/* 메모 */}
         <textarea
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
@@ -74,7 +80,6 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
           className="w-full bg-surface-container rounded-xl px-lg py-md font-body-md text-body-md text-on-surface placeholder-on-surface-variant/40 outline-none resize-none mb-sm"
         />
 
-        {/* 사진 첨부 */}
         {preview ? (
           <div className="relative mb-sm">
             <img src={preview} alt="미리보기" className="w-full rounded-xl max-h-40 object-cover" />
@@ -109,14 +114,16 @@ function AddSheet({ onSave, onClose }: AddSheetProps) {
 }
 
 export function HistoryScreen({ onBack }: HistoryScreenProps) {
-  const { coupleId } = useApp()
-  const { items, addHistory } = useHistory(coupleId)
+  const { uid, coupleId } = useApp()
+  const { items, addHistory, updateHistory, deleteHistory } = useHistory(coupleId, uid)
   const [showAdd, setShowAdd] = useState(false)
+  const [editing, setEditing] = useState<HistoryItem | null>(null)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+
+  const isOwnItem = (item: HistoryItem) => Boolean(uid && item.authorUid === uid)
 
   return (
     <div className="screen bg-[#EEE9DC] min-h-screen">
-      {/* 헤더 */}
       <header className="w-full top-0 sticky z-40 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
         <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
           <span className="material-symbols-outlined text-primary">arrow_back</span>
@@ -124,7 +131,6 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
         <h1 className="font-headline-md text-headline-md font-semibold text-primary flex-1">우리의 기록 📖</h1>
       </header>
 
-      {/* 타임라인 */}
       <main className="w-full px-margin-mobile py-lg pb-32">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-xxl text-center gap-md min-h-[60vh]">
@@ -135,13 +141,11 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
           </div>
         ) : (
           <div className="relative">
-            {/* 세로선 */}
             <div className="absolute left-[19px] top-0 bottom-0 w-[2px] bg-primary/20 rounded-full" />
 
             <div className="space-y-lg">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-md">
-                  {/* 타임라인 점 */}
                   <div className="flex flex-col items-center shrink-0">
                     <div className="w-10 h-10 rounded-full bg-primary-container border-2 border-primary flex items-center justify-center z-10">
                       <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -150,38 +154,36 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
                     </div>
                   </div>
 
-                  {/* 내용 카드 */}
-                  <div className="flex-1 bg-[#F5F2EB] rounded-xl p-md shadow-sm pb-md">
-                    {/* 날짜 */}
-                    <p className="font-label-sm text-label-sm text-primary mb-xs">
-                      {format(new Date(item.date), 'yyyy년 M월 d일 (EEE)', { locale: ko })}
-                    </p>
-
-                    {/* 제목 */}
-                    <h3 className="font-label-md text-label-md font-semibold text-on-surface mb-xs">{item.title}</h3>
-
-                    {/* 메모 */}
-                    {item.memo && (
-                      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed text-sm mb-sm">
-                        {item.memo}
+                  <ContentActionSheet
+                    enabled={isOwnItem(item)}
+                    onEdit={() => setEditing(item)}
+                    onDelete={() => deleteHistory(item.id)}
+                  >
+                    <div className="flex-1 bg-[#F5F2EB] rounded-xl p-md shadow-sm pb-md">
+                      <p className="font-label-sm text-label-sm text-primary mb-xs">
+                        {format(new Date(item.date), 'yyyy년 M월 d일 (EEE)', { locale: ko })}
                       </p>
-                    )}
-
-                    {/* 이미지 */}
-                    {item.imageUrl && (
-                      <button
-                        onClick={() => setViewerUrl(item.imageUrl!)}
-                        className="w-full active:scale-95 transition-transform"
-                      >
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="w-full rounded-lg object-cover max-h-48"
-                          loading="lazy"
-                        />
-                      </button>
-                    )}
-                  </div>
+                      <h3 className="font-label-md text-label-md font-semibold text-on-surface mb-xs">{item.title}</h3>
+                      {item.memo && (
+                        <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed text-sm mb-sm">
+                          {item.memo}
+                        </p>
+                      )}
+                      {item.imageUrl && (
+                        <button
+                          onClick={() => setViewerUrl(item.imageUrl!)}
+                          className="w-full active:scale-95 transition-transform"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full rounded-lg object-cover max-h-48"
+                            loading="lazy"
+                          />
+                        </button>
+                      )}
+                    </div>
+                  </ContentActionSheet>
                 </div>
               ))}
             </div>
@@ -189,7 +191,6 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
         )}
       </main>
 
-      {/* FAB */}
       <button
         onClick={() => setShowAdd(true)}
         className="app-fixed-fab fixed w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-90 transition-transform"
@@ -198,7 +199,19 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
         <span className="material-symbols-outlined text-2xl">add</span>
       </button>
 
-      {showAdd && <AddSheet onSave={addHistory} onClose={() => setShowAdd(false)} />}
+      {showAdd && (
+        <HistoryFormSheet
+          onSave={addHistory}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+      {editing && (
+        <HistoryFormSheet
+          initial={editing}
+          onSave={(data) => updateHistory(editing.id, data)}
+          onClose={() => setEditing(null)}
+        />
+      )}
       {viewerUrl && <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />}
     </div>
   )

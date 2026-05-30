@@ -13,6 +13,7 @@ function toFirestoreDate(date: Date) {
 
 export interface HistoryItem {
   id: string
+  authorUid: string | null
   title: string
   memo: string | null
   date: number
@@ -25,6 +26,7 @@ function toItem(data: Record<string, unknown>, id: string): HistoryItem {
   const createdTs = data['createdAt'] as Timestamp | null
   return {
     id,
+    authorUid: (data['authorUid'] as string | null) ?? null,
     title: (data['title'] as string) ?? '',
     memo: (data['memo'] as string | null) ?? null,
     date: dateTs?.toMillis() ?? Date.now(),
@@ -33,7 +35,7 @@ function toItem(data: Record<string, unknown>, id: string): HistoryItem {
   }
 }
 
-export function useHistory(coupleId: string | null) {
+export function useHistory(coupleId: string | null, myUid: string | null) {
   const [items, setItems] = useState<HistoryItem[]>([])
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function useHistory(coupleId: string | null) {
     date: Date
     imageFile?: File
   }) => {
-    if (!coupleId) return
+    if (!coupleId || !myUid) return
     let imageUrl: string | null = null
     if (data.imageFile) {
       try {
@@ -70,6 +72,7 @@ export function useHistory(coupleId: string | null) {
 
     const optimistic: HistoryItem = {
       id: `opt_${Date.now()}`,
+      authorUid: myUid,
       title: data.title,
       memo: data.memo ?? null,
       date: data.date.getTime(),
@@ -80,6 +83,7 @@ export function useHistory(coupleId: string | null) {
 
     try {
       await addDoc(collection(db, 'couples', coupleId, 'history'), {
+        authorUid: myUid,
         title: data.title,
         memo: data.memo ?? null,
         date: toFirestoreDate(data.date),
@@ -91,14 +95,23 @@ export function useHistory(coupleId: string | null) {
 
   const updateHistory = async (
     itemId: string,
-    data: { title: string; memo?: string | null; date: Date },
+    data: { title: string; memo?: string | null; date: Date; imageFile?: File },
   ) => {
     if (!coupleId || itemId.startsWith('opt_')) return
+    let imageUrl: string | undefined
+    if (data.imageFile) {
+      try {
+        const path = `couples/${coupleId}/history/${Date.now()}_${data.imageFile.name}`
+        await uploadBytes(ref(storage, path), data.imageFile)
+        imageUrl = await getDownloadURL(ref(storage, path))
+      } catch { /* ignore upload failure */ }
+    }
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'history', itemId), {
         title: data.title,
         memo: data.memo ?? null,
         date: toFirestoreDate(data.date),
+        ...(imageUrl ? { imageUrl } : {}),
         updatedAt: serverTimestamp(),
       })
     } catch { /* ignore */ }

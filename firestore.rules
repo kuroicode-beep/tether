@@ -85,7 +85,11 @@ service cloud.firestore {
       }
 
       match /history/{itemId} {
-        allow read, write: if isCoupleMember();
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember()
+                      && request.resource.data.authorUid == request.auth.uid;
+        allow update, delete: if isCoupleMember()
+                              && resource.data.authorUid == request.auth.uid;
       }
     }
   }
