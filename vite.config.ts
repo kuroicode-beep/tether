@@ -70,7 +70,9 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // FCM background handler를 PWA SW(/sw.js)에 통합 — 별도 scope 충돌 방지 (#22 Codex)
+        importScripts: ['firebase-messaging-sw.js'],
       }
     }),
     injectSwEnvPlugin(mode),

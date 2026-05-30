@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   diary: true,
 }
 
-// FCM 전용 service worker를 등록하고 registration을 반환한다
+// VitePWA가 등록한 root SW(/sw.js)를 반환한다 — FCM handler는 workbox.importScripts로 로드됨
 async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   console.log('[Push] SW support:', 'serviceWorker' in navigator)
   console.log('[Push] Notification support:', 'Notification' in window)
@@ -31,11 +31,9 @@ async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistrati
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/',
-    })
-    await navigator.serviceWorker.ready
+    const registration = await navigator.serviceWorker.ready
     console.log('[Push] SW registered:', registration.scope)
+    console.log('[Push] SW active script:', registration.active?.scriptURL ?? 'none')
     return registration
   } catch (error) {
     console.error('[Push] SW registration failed:', error)

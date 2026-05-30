@@ -71,12 +71,19 @@ body {
   background: #000;
 }
 
-/* PC: 모바일 너비 컨테이너로 앱 가두기 */
-.app-container {
+/* PC: body flex 자식 #root가 viewport까지 확장 후 max 720px (#22) */
+#root {
   width: 100%;
   max-width: var(--app-max-width);
   min-height: 100dvh;
   margin: 0 auto;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.app-container {
+  width: 100%;
+  min-height: 100dvh;
   position: relative;
   background: var(--color-bg);
   isolation: isolate;
@@ -209,14 +216,14 @@ body {
 }
 
 @media (max-width: 720px) {
-  .app-container {
+  #root {
     max-width: 100%;
     box-shadow: none;
   }
 }
 
 @media (min-width: 721px) {
-  .app-container {
+  #root {
     box-shadow:
       0 0 0 1px rgba(255, 230, 0, 0.15),
       0 0 40px rgba(0, 0, 0, 0.3);
