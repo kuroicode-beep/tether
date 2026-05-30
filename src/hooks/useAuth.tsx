@@ -14,7 +14,7 @@ import {
   signInWithRedirect,
   User,
 } from 'firebase/auth'
-import { auth, googleProvider, isMobile } from '../lib/firebase'
+import { auth, googleProvider, shouldUseGoogleRedirect } from '../lib/firebase'
 import {
   createOrGetUserDoc,
   getMyCoupleId,
@@ -80,6 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (code === 'auth/network-request-failed') {
       return '네트워크 연결을 확인한 뒤 다시 시도해주세요.'
+    }
+    if (code === 'auth/missing-initial-state') {
+      return '브라우저 저장소 제한으로 로그인을 이어갈 수 없어요. Chrome에서 tether-d1dab.web.app 을 직접 열고 다시 시도해주세요.'
     }
     return code
       ? `Google 로그인을 완료하지 못했어요 (${code})`
@@ -194,7 +197,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           console.warn('[useAuth] getRedirectResult failed', error)
-          if (code) setAuthError(`로그인을 마무리하지 못했어요 (${code})`)
+          markRedirecting(false)
+          if (code === 'auth/missing-initial-state') {
+            setAuthError(toAuthErrorMessage(error))
+          } else if (code) {
+            setAuthError(`로그인을 마무리하지 못했어요 (${code})`)
+          }
         }
       } finally {
         redirectCheckDoneRef.current = true
@@ -276,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser) throw new Error('로그인 정보가 없습니다.')
 
     try {
-      if (isMobile()) {
+      if (shouldUseGoogleRedirect()) {
         markRedirecting(true)
         await linkWithRedirect(auth.currentUser, googleProvider)
         return
@@ -302,7 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        if (isMobile()) {
+        if (shouldUseGoogleRedirect()) {
           markRedirecting(true)
           await signInWithRedirect(auth, googleProvider)
         } else {
@@ -315,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       markRedirecting(false)
       throw error
     } finally {
-      if (!isMobile()) markRedirecting(false)
+      if (!shouldUseGoogleRedirect()) markRedirecting(false)
     }
   }
 
@@ -323,7 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       if (auth.currentUser?.isAnonymous) {
-        if (isMobile()) {
+        if (shouldUseGoogleRedirect()) {
           markRedirecting(true)
           await linkWithRedirect(auth.currentUser, googleProvider)
           return null
@@ -352,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (isMobile()) {
+      if (shouldUseGoogleRedirect()) {
         markRedirecting(true)
         await signInWithRedirect(auth, googleProvider)
         return null
