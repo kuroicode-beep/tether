@@ -14,7 +14,7 @@ import {
   signInWithRedirect,
   User,
 } from 'firebase/auth'
-import { auth, googleProvider, shouldUseGoogleRedirect } from '../lib/firebase'
+import { auth, googleProvider, isAndroid, shouldUseGoogleRedirect } from '../lib/firebase'
 import {
   createOrGetUserDoc,
   getMyCoupleId,
@@ -67,6 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const toAuthErrorMessage = (error: unknown): string => {
     const code = (error as AuthError)?.code ?? ''
     if (code === 'auth/popup-blocked') {
+      if (isAndroid()) {
+        return '카카오톡 등 앱 안 브라우저에서는 Google 로그인이 안 될 수 있어요. Chrome에서 tether-d1dab.web.app 을 직접 열어주세요.'
+      }
       return '팝업이 차단됐어요. 브라우저 주소창 오른쪽에서 팝업을 허용하거나, 잠시 후 다시 시도해주세요.'
     }
     if (code === 'auth/popup-closed-by-user') {
@@ -83,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (code === 'auth/missing-initial-state') {
       return '브라우저 저장소 제한으로 로그인을 이어갈 수 없어요. Chrome에서 tether-d1dab.web.app 을 직접 열고 다시 시도해주세요.'
+    }
+    if (code === 'auth/unauthorized-domain') {
+      return '이 도메인은 Firebase 승인 목록에 없어요. Firebase Console → Authentication → 승인된 도메인을 확인해주세요.'
     }
     return code
       ? `Google 로그인을 완료하지 못했어요 (${code})`
@@ -352,6 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
+            if (isAndroid()) throw error
             markRedirecting(true)
             await linkWithRedirect(auth.currentUser, googleProvider)
             return null
@@ -373,6 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         const code = (error as AuthError)?.code ?? ''
         if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
+          if (isAndroid()) throw error
           markRedirecting(true)
           await signInWithRedirect(auth, googleProvider)
           return null

@@ -13,18 +13,28 @@ import { getStorage } from 'firebase/storage'
 import { getFunctions } from 'firebase/functions'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
-// Hosting origin과 authDomain이 다르면 redirect 로그인 시 sessionStorage가 끊긴다 (Android Chrome M115+).
-// https://firebase.google.com/docs/auth/web/redirect-best-practices
-const resolveAuthDomain = (projectId: string, configured?: string): string => {
-  if (typeof window !== 'undefined') {
-    const { hostname } = window.location
-    if (hostname.endsWith('.web.app') || hostname.endsWith('.firebaseapp.com')) {
-      return hostname
-    }
-  }
-  if (configured && !configured.endsWith('.firebaseapp.com')) return configured
-  return `${projectId}.web.app`
+export const isMobile = () =>
+  typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+export const isAndroid = () =>
+  typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+
+export const isAndroidChrome = () => {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  return /Android/i.test(ua) && /Chrome/i.test(ua) && !/Edg|OPR|SamsungBrowser/i.test(ua)
 }
+
+// Android는 redirect 금지 (OAuth redirect_uri + storage 이슈). popup만 사용한다.
+export const shouldUseGoogleRedirect = () => {
+  if (typeof navigator === 'undefined') return false
+  if (isAndroid()) return false
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+// Google OAuth redirect URI는 firebaseapp.com에 등록되어 있다. web.app authDomain은 Console 등록 전 사용 금지.
+const resolveAuthDomain = (projectId: string, configured?: string): string =>
+  configured || `${projectId}.firebaseapp.com`
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -65,18 +75,6 @@ export const functions = getFunctions(app, 'us-central1')
 
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
-
-export const isMobile = () =>
-  typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-
-export const isAndroidChrome = () => {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent
-  return /Android/i.test(ua) && /Chrome/i.test(ua) && !/Edg|OPR|SamsungBrowser/i.test(ua)
-}
-
-// Android Chrome은 redirect 대신 popup을 쓰면 cross-origin storage 문제를 피할 수 있다.
-export const shouldUseGoogleRedirect = () => isMobile() && !isAndroidChrome()
 
 export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? ''
 
