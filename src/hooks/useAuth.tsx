@@ -5,17 +5,13 @@ import {
   AuthError,
   GoogleAuthProvider,
   getRedirectResult,
-  linkWithPopup,
-  linkWithRedirect,
   onAuthStateChanged,
   signInAnonymously,
   signInWithCredential,
-  signInWithPopup,
-  signInWithRedirect,
   User,
 } from 'firebase/auth'
-import { auth, googleProvider, isAndroid, shouldUseGoogleRedirect } from '../lib/firebase'
-import { linkGoogleViaGsi, signInWithGoogleViaGsi } from '../lib/googleSignIn'
+import { auth, isAndroid } from '../lib/firebase'
+import { signInOrLinkGoogleViaGsi } from '../lib/googleSignIn'
 import {
   createOrGetUserDoc,
   getMyCoupleId,
@@ -90,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (code === 'auth/unauthorized-domain') {
       return '이 도메인은 Firebase 승인 목록에 없어요. Firebase Console → Authentication → 승인된 도메인을 확인해주세요.'
+    }
+    if (code === 'auth/credential-already-in-use') {
+      return '이 Google 계정은 이미 등록되어 있어요. 잠시 후 다시 시도해주세요.'
     }
     const message = error instanceof Error ? error.message : ''
     if (message.includes('access_denied') || message.includes('popup_closed')) {
@@ -290,155 +289,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Google 자격이 이미 다른 계정에 묶여 있으면 해당 계정으로 로그인한다
-  const signInWithExistingGoogleCredential = async (error: unknown) => {
-    const credential = GoogleAuthProvider.credentialFromError(error as AuthError)
-    if (!credential) return null
-    const result = await signInWithCredential(auth, credential)
-    markRedirecting(false)
-    await syncProfile(result.user)
-    return result.user
-  }
-
-  // 현재 사용자에 Google 계정을 연결한다. 이미 사용 중인 자격이면 Google 직접 로그인으로 fallback
+  // Link the current session with Google via GIS token credentials.
   const linkGoogle = async () => {
     if (!auth.currentUser) throw new Error('로그인 정보가 없습니다.')
 
     try {
-      if (isAndroid()) {
-        try {
-          const linked = await linkGoogleViaGsi(auth.currentUser)
-          await syncProfile(linked)
-          return
-        } catch (error) {
-          const code = (error as AuthError)?.code ?? ''
-          if (code === 'auth/provider-already-linked') return
-          if (code === 'auth/credential-already-in-use') {
-            await signInWithExistingGoogleCredential(error)
-            return
-          }
-          throw error
-        }
-      }
-
-      if (shouldUseGoogleRedirect()) {
-        markRedirecting(true)
-        await linkWithRedirect(auth.currentUser, googleProvider)
-        return
-      }
-
-      const result = await linkWithPopup(auth.currentUser, googleProvider)
-      await syncProfile(result.user)
+      const linked = await signInOrLinkGoogleViaGsi(auth.currentUser)
+      await syncProfile(linked)
+      markRedirecting(false)
     } catch (error) {
       const code = (error as AuthError)?.code ?? ''
       if (code === 'auth/provider-already-linked') return
-
-      // Google 자격이 이미 다른 계정에 사용 중이면 그쪽 계정으로 직접 로그인한다
-      if (code === 'auth/credential-already-in-use') {
-        const credential = GoogleAuthProvider.credentialFromError(error as AuthError)
-        if (credential) {
-          try {
-            const result = await signInWithCredential(auth, credential)
-            markRedirecting(false)
-            await syncProfile(result.user)
-            return
-          } catch (innerError) {
-            console.warn('[useAuth] credential signin failed', innerError)
-          }
-        }
-
-        if (shouldUseGoogleRedirect()) {
-          markRedirecting(true)
-          await signInWithRedirect(auth, googleProvider)
-        } else {
-          const result = await signInWithPopup(auth, googleProvider)
-          await syncProfile(result.user)
-        }
-        return
-      }
-
       markRedirecting(false)
       throw error
-    } finally {
-      if (!shouldUseGoogleRedirect()) markRedirecting(false)
     }
   }
 
-  // OnboardingScreen에서 호출. 익명 상태면 link, 아니면 직접 로그인.
+  // Sign in with Google via GIS token credentials so OAuth redirect URIs are never used.
   const signInWithGoogle = async () => {
     try {
-      if (isAndroid()) {
-        if (auth.currentUser?.isAnonymous) {
-          try {
-            const linked = await linkGoogleViaGsi(auth.currentUser)
-            await syncProfile(linked)
-            return linked
-          } catch (error) {
-            const code = (error as AuthError)?.code ?? ''
-            if (code === 'auth/credential-already-in-use') {
-              const existing = await signInWithExistingGoogleCredential(error)
-              if (existing) return existing
-            }
-            throw error
-          }
-        }
-
-        const user = await signInWithGoogleViaGsi()
-        await syncProfile(user)
-        return user
-      }
-
-      if (auth.currentUser?.isAnonymous) {
-        if (shouldUseGoogleRedirect()) {
-          markRedirecting(true)
-          await linkWithRedirect(auth.currentUser, googleProvider)
-          return null
-        }
-
-        try {
-          const result = await linkWithPopup(auth.currentUser, googleProvider)
-          await syncProfile(result.user)
-          return result.user
-        } catch (error) {
-          const code = (error as AuthError)?.code ?? ''
-          if (code === 'auth/credential-already-in-use') {
-            const credential = GoogleAuthProvider.credentialFromError(error as AuthError)
-            if (credential) {
-              const result = await signInWithCredential(auth, credential)
-              await syncProfile(result.user)
-              return result.user
-            }
-          }
-          if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
-            if (isAndroid()) throw error
-            markRedirecting(true)
-            await linkWithRedirect(auth.currentUser, googleProvider)
-            return null
-          }
-          throw error
-        }
-      }
-
-      if (shouldUseGoogleRedirect()) {
-        markRedirecting(true)
-        await signInWithRedirect(auth, googleProvider)
-        return null
-      }
-
-      try {
-        const result = await signInWithPopup(auth, googleProvider)
-        await syncProfile(result.user)
-        return result.user
-      } catch (error) {
-        const code = (error as AuthError)?.code ?? ''
-        if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request') {
-          if (isAndroid()) throw error
-          markRedirecting(true)
-          await signInWithRedirect(auth, googleProvider)
-          return null
-        }
-        throw error
-      }
+      const user = await signInOrLinkGoogleViaGsi(auth.currentUser)
+      await syncProfile(user)
+      markRedirecting(false)
+      return user
     } catch (error) {
       markRedirecting(false)
       setAuthError(toAuthErrorMessage(error))
