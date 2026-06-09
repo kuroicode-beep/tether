@@ -11,7 +11,7 @@ import {
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
 import { usePushNotification } from '../hooks/usePushNotification'
-import { useAuth } from '../hooks/useAuth'
+import { useSession } from '../context/SessionContext'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join'
 
@@ -27,11 +27,11 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     user,
     signInAnon,
     signInWithGoogle,
-    setCoupleId,
+    notifyCoupleLinked,
     redirecting,
     authError,
     clearAuthError,
-  } = useAuth()
+  } = useSession()
   const [step, setStep] = useState<Step>('nickname')
   const [nickname, setNickname] = useState('')
   const [uid, setUid] = useState('')
@@ -57,7 +57,8 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     try {
       const restored = await restoreConnectionFromProfile(connectedUid)
       if (!restored) return false
-      await setCoupleId(restored.coupleId)
+      const ok = await notifyCoupleLinked()
+      if (!ok) return false
       connect(restored)
       onConnected()
       return true
@@ -198,7 +199,11 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       }
 
       const { coupleId: nextCoupleId, partnerUid } = await claimInviteAndConnect(uid, code)
-      await setCoupleId(nextCoupleId)
+      const linked = await notifyCoupleLinked()
+      if (!linked) {
+        setError('연결은 됐지만 정보를 불러오지 못했어요. 다시 시도해주세요.')
+        return
+      }
       connect({
         uid,
         coupleId: nextCoupleId,

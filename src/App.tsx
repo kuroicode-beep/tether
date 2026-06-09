@@ -1,9 +1,11 @@
 // src/App.tsx
-// 앱 루트: Auth/AppContext 제공 + 화면 라우팅 + Auth↔AppContext 동기화
+// 앱 루트: Session/AppContext 제공 + status 기반 라우팅
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
+import { SessionProvider, useSession } from './context/SessionContext'
 import { LockScreen } from './screens/LockScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
+import { RestoreFailedScreen } from './screens/RestoreFailedScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { DiaryScreen } from './screens/DiaryScreen'
@@ -24,7 +26,6 @@ import {
 } from './lib/notificationAlert'
 import { debugLog } from './lib/debugLog'
 import { useTheme } from './hooks/useTheme'
-import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useCoupleSession } from './hooks/useCoupleSession'
 import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 
@@ -33,22 +34,21 @@ type Screen =
   | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory'
 
 function AppContent() {
-  const { isConnected, uid: appUid, coupleId: appCoupleId, connect, disconnect, syncWithAuthUid } = useApp()
-  const { user, coupleId, connection, isLoading, redirecting } = useAuth()
+  const { connect, disconnect } = useApp()
+  const session = useSession()
   useTheme()
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
-  const push = usePushNotification(appUid)
+  const push = usePushNotification(session.uid)
   const pushSyncedRef = useRef<string | null>(null)
 
-  // 알림 허용 시 FCM 토큰 동기화 (로그인 + PWA 복귀 시)
   useEffect(() => {
-    if (!appUid || isLoading) return
+    if (!session.uid || session.isLoading) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
 
     const sync = () => {
-      pushSyncedRef.current = appUid
+      pushSyncedRef.current = session.uid!
       void push.syncToken()
     }
 
@@ -59,13 +59,7 @@ function AppContent() {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [appUid, isLoading, push])
-
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('[App] isLoading:', isLoading, 'user:', user?.uid, 'coupleId:', coupleId)
-    }
-  }, [isLoading, user?.uid, coupleId])
+  }, [session.uid, session.isLoading, push])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
@@ -80,7 +74,6 @@ function AppContent() {
     }
   }, [unlocked])
 
-  // 백그라운드 SW가 보낸 차임 재생 요청 (앱이 살아 있을 때)
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
@@ -105,9 +98,7 @@ function AppContent() {
       const settings = push.loadSettings()
 
       const willAlert = shouldAlertForType(type, settings)
-      // #region agent log
       debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert }, 'H4')
-      // #endregion
       if (willAlert) {
         playNotificationSound()
         showSystemNotification(title, body, type ?? 'tether-fg')
@@ -116,45 +107,33 @@ function AppContent() {
       setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [appUid])
+  }, [session.uid])
 
-  // 인증 사용자의 uid가 바뀌면 AppContext의 stale 상태를 즉시 정리한다
+  // 세션이 앱 진입 가능 상태를 벗어나면 잠금 상태와 AppContext 캐시를 정리한다.
   useEffect(() => {
-    if (isLoading) return
-    syncWithAuthUid(user?.uid ?? null)
-  }, [user?.uid, isLoading, syncWithAuthUid])
-
-  // 로그아웃되면 AppContext도 깨끗이 비운다
-  useEffect(() => {
-    if (isLoading) return
-    if (!user && (appUid || appCoupleId)) {
+    if (session.status === 'signed_out') {
       disconnect()
     }
-  }, [user, isLoading, appUid, appCoupleId, disconnect])
-
-  // Auth coupleId와 AppContext 캐시가 어긋나면 stale 데이터 구독을 막는다
-  useEffect(() => {
-    if (isLoading) return
-    if (coupleId === null && appCoupleId) {
-      disconnect()
-      return
+    if (
+      session.status === 'signed_out'
+      || session.status === 'no_couple'
+      || session.status === 'restore_failed'
+    ) {
+      setUnlocked(false)
+      setScreen('lock')
     }
-    if (coupleId && appCoupleId && coupleId !== appCoupleId) {
-      disconnect()
-    }
-  }, [isLoading, coupleId, appCoupleId, disconnect])
+  }, [session.status, disconnect])
 
-  // useAuth가 복원한 connection을 AppContext에 반영하고, 잠금이 풀린 상태면 홈으로 보낸다
+  // connected 세션 → AppContext 캐시 동기화
   useEffect(() => {
-    if (!connection) return
-    if (isConnected && appUid === connection.uid && appCoupleId === connection.coupleId) return
-    connect(connection)
+    if (session.status !== 'connected' || !session.connection) return
+    connect(session.connection)
     if (unlocked) setScreen('home')
-  }, [connection, isConnected, appUid, appCoupleId, unlocked, connect])
+  }, [session.status, session.connection, unlocked, connect])
 
   const handleUnlocked = () => {
     setUnlocked(true)
-    setScreen(isConnected ? 'home' : 'onboarding')
+    setScreen(session.status === 'connected' ? 'home' : 'onboarding')
   }
 
   const handleChangePin = () => {
@@ -163,26 +142,35 @@ function AppContent() {
   }
 
   const handleDisconnect = () => {
+    disconnect()
     setScreen('onboarding')
   }
 
-  if (isLoading) {
+  if (session.status === 'loading' || session.status === 'restoring') {
     return (
       <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
         <p className="font-body-md text-body-md" style={{ color: 'var(--color-text-muted)' }}>
-          {redirecting ? 'Google 로그인을 마무리하고 있어요' : '로그인 정보를 확인하고 있어요'}
+          {session.redirecting ? 'Google 로그인을 마무리하고 있어요' : '연결 정보를 확인하고 있어요'}
         </p>
       </div>
     )
   }
 
-  if (!user) {
+  if (session.status === 'signed_out' || session.status === 'no_couple') {
     return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
   }
 
-  if (coupleId === null) {
-    return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
+  if (session.status === 'restore_failed') {
+    return <RestoreFailedScreen />
+  }
+
+  if (session.status !== 'connected' || !session.connection) {
+    return (
+      <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)' }}>
+        <p className="font-body-md text-body-md text-on-surface-variant">세션을 준비하고 있어요...</p>
+      </div>
+    )
   }
 
   if (!unlocked || screen === 'lock') {
@@ -231,11 +219,11 @@ function AppWithBadges() {
 export default function App() {
   return (
     <div className="app-container">
-      <AuthProvider>
+      <SessionProvider>
         <AppProvider>
           <AppWithBadges />
         </AppProvider>
-      </AuthProvider>
+      </SessionProvider>
     </div>
   )
 }

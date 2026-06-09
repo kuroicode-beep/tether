@@ -42,19 +42,19 @@ const EMPTY_STATE: AppState = {
   startDate: null,
 }
 
-// localStorage에 저장된 직전 상태를 안전하게 복원한다 — 깨진 JSON은 무시한다
+// localStorage에서 UI 캐시만 복원 — coupleId/uid는 Session이 source of truth
 function loadState(): AppState {
   try {
     const stored = localStorage.getItem(LS_KEY)
     if (stored) {
       const parsed = JSON.parse(stored) as Partial<AppState>
       return {
-        uid: parsed.uid ?? null,
-        coupleId: parsed.coupleId ?? null,
+        uid: null,
+        coupleId: null,
+        partnerUid: null,
+        isConnected: false,
         myNickname: parsed.myNickname ?? '',
         partnerNickname: parsed.partnerNickname ?? '',
-        partnerUid: parsed.partnerUid ?? null,
-        isConnected: !!parsed.coupleId,
         startDate: parsed.startDate ?? null,
       }
     }
@@ -62,11 +62,22 @@ function loadState(): AppState {
   return EMPTY_STATE
 }
 
-// 상태를 동시에 메모리/스토리지에 반영한다
+// 상태를 localStorage에 캐시한다 — coupleId 없으면 닉네임/날짜만 보존
 function persistState(next: AppState) {
   try {
-    if (!next.coupleId) localStorage.removeItem(LS_KEY)
-    else localStorage.setItem(LS_KEY, JSON.stringify(next))
+    if (!next.coupleId) {
+      if (next.myNickname || next.partnerNickname || next.startDate) {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+          myNickname: next.myNickname,
+          partnerNickname: next.partnerNickname,
+          startDate: next.startDate,
+        }))
+      } else {
+        localStorage.removeItem(LS_KEY)
+      }
+      return
+    }
+    localStorage.setItem(LS_KEY, JSON.stringify(next))
   } catch { /* ignore */ }
 }
 
@@ -147,12 +158,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const parsed = JSON.parse(event.newValue) as Partial<AppState>
         setState({
-          uid: parsed.uid ?? null,
-          coupleId: parsed.coupleId ?? null,
+          uid: null,
+          coupleId: null,
           myNickname: parsed.myNickname ?? '',
           partnerNickname: parsed.partnerNickname ?? '',
-          partnerUid: parsed.partnerUid ?? null,
-          isConnected: !!parsed.coupleId,
+          partnerUid: null,
+          isConnected: false,
           startDate: parsed.startDate ?? null,
         })
       } catch { /* ignore */ }

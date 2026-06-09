@@ -5,7 +5,7 @@ import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
 import { usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
-import { useAuth } from '../hooks/useAuth'
+import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 
@@ -80,7 +80,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     uid, myNickname, partnerNickname, startDate,
     disconnect, setStartDate, setMyNickname, setPartnerNickname,
   } = useApp()
-  const { user, linkGoogle, isGoogleLinked } = useAuth()
+  const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
