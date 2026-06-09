@@ -352,24 +352,27 @@ body {
 .message-partner .bubble,
 .message-mine .bubble {
   max-width: 100%;
+  width: fit-content;
   padding: 10px 14px;
-  overflow-wrap: break-word;
   line-height: 1.55;
   font-size: 15px;
   white-space: pre-wrap;
-}
-
-.message-partner .bubble {
   word-break: keep-all;
-}
-
-.message-mine .bubble {
-  word-break: break-word;
+  overflow-wrap: break-word;
+  line-break: strict;
 }
 
 .message-action-wrap {
   max-width: 68%;
   min-width: 0;
+  width: fit-content;
+  margin-left: auto;
+}
+
+.message-action-wrap .message-mine {
+  max-width: 100%;
+  width: 100%;
+  margin-left: 0;
 }
 
 .message-partner .bubble {
@@ -383,7 +386,7 @@ body {
   background: var(--color-primary);
   border: 1.5px solid var(--color-primary);
   border-radius: 18px 4px 18px 18px;
-  color: var(--color-surface-2);
+  color: #ffffff;
   font-weight: 500;
 }
 
@@ -396,7 +399,12 @@ body {
 [data-theme="high-contrast"] .message-mine .bubble {
   background: #FFE600;
   border-color: #FFE600;
-  color: #0D0D0D;
+  color: #000000 !important;
+  font-weight: 700;
+}
+
+[data-theme="high-contrast"] .message-mine .message-time {
+  color: #CCBB00;
 }
 
 .message-time {

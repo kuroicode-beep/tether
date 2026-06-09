@@ -16,6 +16,11 @@ import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
+import {
+  playNotificationSound,
+  shouldAlertForType,
+  showSystemNotification,
+} from './lib/notificationAlert'
 import { useTheme } from './hooks/useTheme'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
@@ -34,13 +39,23 @@ function AppContent() {
   const push = usePushNotification(appUid)
   const pushSyncedRef = useRef<string | null>(null)
 
-  // 이미 알림 허용된 브라우저는 로그인 후 FCM 토큰을 1회 자동 동기화한다
+  // 알림 허용 시 FCM 토큰 동기화 (로그인 + PWA 복귀 시)
   useEffect(() => {
     if (!appUid || isLoading) return
-    if (pushSyncedRef.current === appUid) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
-    pushSyncedRef.current = appUid
-    push.syncToken()
+
+    const sync = () => {
+      pushSyncedRef.current = appUid
+      void push.syncToken()
+    }
+
+    sync()
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sync()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [appUid, isLoading, push])
 
   useEffect(() => {
@@ -68,6 +83,13 @@ function AppContent() {
       const title = payload.notification?.title ?? 'Tether'
       const body = payload.notification?.body ?? ''
       const type = (payload.data?.type as string) ?? undefined
+      const settings = push.loadSettings()
+
+      if (shouldAlertForType(type, settings)) {
+        playNotificationSound()
+        showSystemNotification(title, body, type ?? 'tether-fg')
+      }
+
       setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()

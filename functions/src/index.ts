@@ -141,8 +141,11 @@ export const onStatusUpdate = functions.firestore
       },
       data: { type: 'status', uid, url: '/?screen=home' },
       webpush: {
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
+        headers: { Urgency: 'high' },
+        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
+        fcmOptions: { link: '/?screen=home' },
       },
+      android: { priority: 'high' as const },
     })
   })
 
@@ -169,8 +172,11 @@ export const onNewMessage = functions.firestore
       notification: { title: senderName, body },
       data: { type: 'message', coupleId, url: '/?screen=chat' },
       webpush: {
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
+        headers: { Urgency: 'high' },
+        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
+        fcmOptions: { link: '/?screen=chat' },
       },
+      android: { priority: 'high' as const },
     })
   })
 
@@ -199,7 +205,10 @@ export const onNewDiary = functions.firestore
       },
       data: { type: 'diary', coupleId, url: '/?screen=diary' },
       webpush: {
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png' },
+        headers: { Urgency: 'high' },
+        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
+        fcmOptions: { link: '/?screen=diary' },
       },
+      android: { priority: 'high' as const },
     })
   })

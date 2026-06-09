@@ -1,6 +1,6 @@
 // public/firebase-messaging-sw.js — FCM 백그라운드 알림 (빌드 시 __VITE_*__ 치환)
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
   apiKey:            '__VITE_FIREBASE_API_KEY__',
@@ -25,6 +25,7 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/icon-192.png',
     tag: data.type ?? 'tether-msg',
     renotify: true,
+    silent: false,
     vibrate: [200, 100, 200],
     data: { url: data.url ?? '/', ...data },
   });
