@@ -3,7 +3,7 @@ import { isSameDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
 import { useChat, ChatMessage } from '../hooks/useChat'
 import { ContentActionSheet } from '../components/ContentActionSheet'
-import { useUnreadBadges } from '../hooks/useUnreadBadges'
+import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
 import { ChatInput } from '../components/ChatInput'
@@ -38,7 +38,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     coupleId,
     uid,
   )
-  const { markTabRead } = useUnreadBadges(coupleId, uid)
+  const { markTabRead } = useUnreadBadges()
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -48,10 +48,10 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
 
-  // 채팅 탭 진입 시 미읽음 배지 해제
+  // 채팅 화면에 있는 동안 배지 해제 유지
   useEffect(() => {
     markTabRead('chat')
-  }, [coupleId, uid, markTabRead])
+  }, [coupleId, uid, messages.length, markTabRead])
 
   // 신규 메시지 도착 시 자동 스크롤 (초기 로드 포함)
   useEffect(() => {
@@ -190,6 +190,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                       {isMe && msg.type === 'text' ? (
                         <ContentActionSheet
                           enabled
+                          wrapperClassName="message-action-wrap"
                           onEdit={() => {
                             const next = window.prompt('메시지 수정', msg.text ?? '')
                             if (next?.trim()) updateMessage(msg.id, next)

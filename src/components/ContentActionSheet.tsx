@@ -6,10 +6,17 @@ interface ContentActionSheetProps {
   enabled: boolean
   onEdit: () => void
   onDelete: () => void
+  wrapperClassName?: string
   children: ReactNode
 }
 
-export function ContentActionSheet({ enabled, onEdit, onDelete, children }: ContentActionSheetProps) {
+export function ContentActionSheet({
+  enabled,
+  onEdit,
+  onDelete,
+  wrapperClassName,
+  children,
+}: ContentActionSheetProps) {
   const [open, setOpen] = useState(false)
   const timerRef = useRef<number | null>(null)
 
@@ -35,6 +42,7 @@ export function ContentActionSheet({ enabled, onEdit, onDelete, children }: Cont
   return (
     <>
       <div
+        className={wrapperClassName}
         onTouchStart={handleTouchStart}
         onTouchEnd={clearTimer}
         onTouchMove={clearTimer}

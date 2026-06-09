@@ -1,7 +1,6 @@
 // src/components/BottomNav.tsx
 // 하단 네비게이션 + 미읽음 배지
-import { useApp } from '../context/AppContext'
-import { NavTab, useUnreadBadges } from '../hooks/useUnreadBadges'
+import { NavTab, useUnreadBadges } from '../context/UnreadBadgesContext'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 
@@ -11,8 +10,7 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ active, onNavigate }: BottomNavProps) {
-  const { coupleId, uid } = useApp()
-  const { badges, markTabRead } = useUnreadBadges(coupleId, uid)
+  const { badges, markTabRead } = useUnreadBadges()
 
   const items: { id: Screen; tab?: NavTab; icon: string; label: string }[] = [
     { id: 'home', icon: 'home', label: 'Home' },
@@ -28,6 +26,9 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
 
   const renderBadge = (tab?: NavTab) => {
     if (!tab) return null
+    if (tab === 'chat' && active === 'chat') return null
+    if (tab === 'diary' && active === 'diary') return null
+    if (tab === 'more' && active === 'more') return null
     const count = badges[tab]
     if (count <= 0) return null
     return (

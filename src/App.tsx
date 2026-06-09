@@ -18,6 +18,7 @@ import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { useTheme } from './hooks/useTheme'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
@@ -159,12 +160,21 @@ function AppContent() {
   )
 }
 
+function AppWithBadges() {
+  const { uid, coupleId } = useApp()
+  return (
+    <UnreadBadgesProvider coupleId={coupleId} uid={uid}>
+      <AppContent />
+    </UnreadBadgesProvider>
+  )
+}
+
 export default function App() {
   return (
     <div className="app-container">
       <AuthProvider>
         <AppProvider>
-          <AppContent />
+          <AppWithBadges />
         </AppProvider>
       </AuthProvider>
     </div>

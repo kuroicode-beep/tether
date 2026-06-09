@@ -58,22 +58,41 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // messages: 작성자만 create/update/delete
+      // messages: 작성자 create/delete, readBy는 수신자도 갱신 가능
       match /messages/{messageId} {
+        function isReadByOnlyUpdate() {
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
+        }
+
         allow read: if isCoupleMember();
         allow create: if isCoupleMember()
                       && request.resource.data.senderUid == request.auth.uid;
-        allow update, delete: if isCoupleMember()
-                              && resource.data.senderUid == request.auth.uid;
+        allow update: if isCoupleMember()
+                      && (
+                        resource.data.senderUid == request.auth.uid
+                        || isReadByOnlyUpdate()
+                      );
+        allow delete: if isCoupleMember()
+                      && resource.data.senderUid == request.auth.uid;
       }
 
-      // diary: 작성자만 create/update/delete
+      // diary: 작성자 create/update/delete, isRead는 읽는 파트너도 true로 갱신 가능
       match /diary/{diaryId} {
+        function isDiaryReadOnlyUpdate() {
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+                 && request.resource.data.isRead == true;
+        }
+
         allow read: if isCoupleMember();
         allow create: if isCoupleMember()
                       && request.resource.data.authorUid == request.auth.uid;
-        allow update, delete: if isCoupleMember()
-                              && resource.data.authorUid == request.auth.uid;
+        allow update: if isCoupleMember()
+                      && (
+                        resource.data.authorUid == request.auth.uid
+                        || isDiaryReadOnlyUpdate()
+                      );
+        allow delete: if isCoupleMember()
+                      && resource.data.authorUid == request.auth.uid;
       }
 
       match /photos/{photoId} {

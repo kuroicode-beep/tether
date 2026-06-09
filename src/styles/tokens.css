@@ -138,10 +138,12 @@ body {
 
 .pin-keypad {
   width: 100%;
-  padding: 0 32px;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 0 16px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 12px;
   box-sizing: border-box;
 }
 
@@ -351,11 +353,23 @@ body {
 .message-mine .bubble {
   max-width: 100%;
   padding: 10px 14px;
-  word-break: keep-all;
   overflow-wrap: break-word;
   line-height: 1.55;
   font-size: 15px;
   white-space: pre-wrap;
+}
+
+.message-partner .bubble {
+  word-break: keep-all;
+}
+
+.message-mine .bubble {
+  word-break: break-word;
+}
+
+.message-action-wrap {
+  max-width: 68%;
+  min-width: 0;
 }
 
 .message-partner .bubble {
