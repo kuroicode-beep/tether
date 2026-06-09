@@ -314,6 +314,19 @@ body {
 }
 
 /* Scrollbar hide utility */
+.hide-scrollbar,
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -662,7 +675,8 @@ body {
   border-top-color: #222;
 }
 
-.chat-input-bar textarea {
+.chat-input-bar textarea,
+.chat-input-editor {
   flex: 1;
   background: var(--color-surface-2);
   border: 1.5px solid var(--color-border);
@@ -675,20 +689,30 @@ body {
   line-height: 1.4;
   font-family: inherit;
   min-height: 40px;
+  max-height: 120px;
+  overflow-y: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: var(--color-primary);
 }
 
-[data-theme="high-contrast"] .chat-input-bar textarea {
+[data-theme="high-contrast"] .chat-input-bar textarea,
+[data-theme="high-contrast"] .chat-input-editor {
   background: #1A1A1A;
   border-color: #333;
   color: #F0F0F0;
 }
 
-.chat-input-bar textarea::placeholder {
+.chat-input-bar textarea::placeholder,
+.chat-input-editor[data-empty="true"]::before {
+  content: attr(data-placeholder);
   color: var(--color-text-muted);
   opacity: 0.6;
+  pointer-events: none;
 }
 
-.chat-input-bar textarea:focus {
+.chat-input-bar textarea:focus,
+.chat-input-editor:focus {
   border-color: var(--color-primary);
 }
 
