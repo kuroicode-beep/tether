@@ -1,7 +1,8 @@
 // src/lib/coupleAuth.ts
 // 사용자/커플 문서 관리 — invite 토큰 + Cloud Function claim 기반 안전 연결
-import { db, functions } from './firebase'
+import { db, functions, storage } from './firebase'
 import { httpsCallable } from 'firebase/functions'
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import {
   doc,
   getDoc,
@@ -16,6 +17,7 @@ export type UserProfile = {
   nickname: string
   inviteCode: string
   coupleId: string | null
+  photoUrl: string | null
 }
 
 export type RestoredConnection = {
@@ -25,6 +27,8 @@ export type RestoredConnection = {
   partnerNickname: string
   partnerUid: string
   startDate?: string
+  myPhotoUrl?: string | null
+  partnerPhotoUrl?: string | null
 }
 
 export type ClaimInviteResult = {
@@ -79,6 +83,7 @@ export const createOrGetUserDoc = async (
       nickname: shouldApplyNickname ? candidateNickname : existingNickname || candidateNickname || '나',
       inviteCode,
       coupleId: data.coupleId ?? null,
+      photoUrl: data.photoUrl ?? null,
     }
 
     const updates: Record<string, unknown> = {}
@@ -99,6 +104,7 @@ export const createOrGetUserDoc = async (
     nickname: initialNickname,
     inviteCode: generateInviteCode(),
     coupleId: null,
+    photoUrl: null,
   }
 
   await setDoc(userRef, {
@@ -195,6 +201,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     nickname: data.nickname ?? '',
     inviteCode: data.inviteCode ?? '',
     coupleId: data.coupleId ?? null,
+    photoUrl: data.photoUrl ?? null,
   }
 }
 
@@ -230,9 +237,11 @@ export const restoreConnectionFromProfile = async (
   if (!partnerUid) return null
 
   let partnerNickname = '상대방'
+  let partnerPhotoUrl: string | null = null
   try {
     const partner = await getUserProfile(partnerUid)
     if (partner?.nickname) partnerNickname = partner.nickname
+    partnerPhotoUrl = partner?.photoUrl ?? null
   } catch {
     // 파트너 문서를 읽을 수 없어도 커플 복원 자체는 성공시킨다
   }
@@ -244,7 +253,20 @@ export const restoreConnectionFromProfile = async (
     partnerNickname,
     partnerUid,
     startDate: toIsoDate(couple.startDate) ?? toIsoDate(couple.createdAt),
+    myPhotoUrl: profile.photoUrl ?? null,
+    partnerPhotoUrl,
   }
+}
+
+// Uploads and publishes the user's profile photo to private and public profile docs.
+export const updateUserProfilePhoto = async (uid: string, file: File): Promise<string> => {
+  const safeName = file.name.replace(/[^\w.-]+/g, '_') || 'profile.jpg'
+  const storageRef = ref(storage, `users/${uid}/profile/${Date.now()}_${safeName}`)
+  await uploadBytes(storageRef, file, { contentType: file.type || 'image/jpeg' })
+  const photoUrl = await getDownloadURL(storageRef)
+  await updateDoc(doc(db, 'users', uid), { photoUrl })
+  await setDoc(doc(db, 'publicProfiles', uid), { photoUrl }, { merge: true })
+  return photoUrl
 }
 
 // invite 코드 claim — Cloud Function(Admin SDK)으로 couple 생성 + 양쪽 coupleId 설정

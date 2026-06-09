@@ -10,6 +10,7 @@ import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
 import { ChatInput } from '../components/ChatInput'
 import { ImageViewer } from '../components/ImageViewer'
+import { ProfileAvatar } from '../components/ProfileAvatar'
 
 interface ChatScreenProps {
   onBack: () => void
@@ -36,7 +37,7 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
 
 export function ChatScreen({ onBack }: ChatScreenProps) {
   const { uid, coupleId } = useCoupleSession()
-  const { partnerNickname, partnerUid } = useApp()
+  const { partnerNickname, partnerUid, myPhotoUrl, partnerPhotoUrl, myNickname } = useApp()
   const { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
@@ -168,7 +169,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
         </button>
 
         <div className="avatar">
-          <span className="material-symbols-outlined text-primary">person</span>
+          <ProfileAvatar src={partnerPhotoUrl} name={partnerName} size="md" />
           <span className="online-dot" />
         </div>
 
@@ -243,7 +244,8 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                     {needsDivider(msg, flatIndex) && msg.createdAt && (
                       <DateDivider timestamp={msg.createdAt} />
                     )}
-                    <div className={`message-row flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`message-row flex items-end gap-xs ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      {!isMe && <ProfileAvatar src={partnerPhotoUrl} name={partnerName} size="sm" />}
                       {isMe && msg.type === 'text' ? (
                         <ContentActionSheet
                           enabled
@@ -259,6 +261,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                       ) : (
                         bubble
                       )}
+                      {isMe && <ProfileAvatar src={myPhotoUrl} name={myNickname} size="sm" />}
                     </div>
                   </div>
                 )

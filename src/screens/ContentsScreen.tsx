@@ -5,6 +5,7 @@ import { useContents, ContentCategory, ContentItem, ContentStatus } from '../hoo
 import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
+import { ProfileAvatar } from '../components/ProfileAvatar'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 interface ContentsScreenProps { onNavigate: (screen: Screen) => void }
@@ -136,7 +137,7 @@ function DoneSheet({ item, onSave, onClose }: DoneSheetProps) {
 
 export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
   const { uid, coupleId } = useCoupleSession()
-  const { myNickname, partnerNickname } = useApp()
+  const { myNickname, partnerNickname, myPhotoUrl, partnerPhotoUrl } = useApp()
   const { items, addContent, updateStatus, updateContent, deleteContent } = useContents(coupleId, uid)
   const { markTabRead } = useUnreadBadges()
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('전체')
@@ -221,6 +222,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
           <div style={{ columnCount: 2, columnGap: '12px' }}>
             {filtered.map((item) => {
               const addedByName = item.addedBy === uid ? myName : partnerName
+              const addedByPhotoUrl = item.addedBy === uid ? myPhotoUrl : partnerPhotoUrl
               const statusInfo = STATUS_INFO[item.status]
               return (
                 <div key={item.id} style={{ breakInside: 'avoid', marginBottom: '12px' }}>
@@ -262,9 +264,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
                     {/* 추가한 사람 + 상태 변경 버튼 */}
                     <div className="flex items-center justify-between pt-xs border-t border-outline-variant/10">
                       <div className="flex items-center gap-xs">
-                        <div className="w-5 h-5 rounded-full bg-secondary-container flex items-center justify-center text-[9px] font-bold text-primary">
-                          {addedByName.slice(0, 1)}
-                        </div>
+                        <ProfileAvatar src={addedByPhotoUrl} name={addedByName} size="xs" />
                         <span className="text-[10px] text-on-surface-variant">{addedByName}</span>
                       </div>
                       <div className="relative">

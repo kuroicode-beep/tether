@@ -336,6 +336,33 @@ async function main() {
       throw new Error('Authenticated user should read publicProfiles')
     }
 
+    const profilePhotoPath = `users/${userA.uid}/profile/e2e-${Date.now()}.txt`
+    const profilePhotoStorageRef = ref(getStorage(appA), profilePhotoPath)
+    await uploadBytes(profilePhotoStorageRef, new Blob(['e2e-profile-photo']), {
+      contentType: 'text/plain',
+    })
+    storagePaths.push(profilePhotoPath)
+    const profilePhotoUrl = await getDownloadURL(profilePhotoStorageRef)
+    await updateDoc(doc(dbA, 'users', userA.uid), { photoUrl: profilePhotoUrl })
+    await setDoc(doc(dbA, 'publicProfiles', userA.uid), { photoUrl: profilePhotoUrl }, { merge: true })
+
+    const partnerProfileSnap = await getDoc(doc(dbB, 'users', userA.uid))
+    if (partnerProfileSnap.data()?.photoUrl !== profilePhotoUrl) {
+      throw new Error('Partner should read coupled user profile photo URL')
+    }
+    const publicProfilePhotoSnap = await getDoc(doc(dbC, 'publicProfiles', userA.uid))
+    if (publicProfilePhotoSnap.data()?.photoUrl !== profilePhotoUrl) {
+      throw new Error('Authenticated user should read public profile photo URL')
+    }
+
+    await expectStorageDenied('non-owner profile photo storage upload', () =>
+      uploadBytes(
+        ref(getStorage(appC!), `users/${userA.uid}/profile/e2e-denied-${Date.now()}.txt`),
+        new Blob(['denied']),
+        { contentType: 'text/plain' },
+      ),
+    )
+
     await expectDenied('self coupleId tamper', () =>
       updateDoc(doc(dbA, 'users', userA.uid), { coupleId: 'fake-couple-id' }),
     )

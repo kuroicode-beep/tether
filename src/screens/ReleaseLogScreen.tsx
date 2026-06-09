@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-10-update-profile-photo-thumbnails',
+    date: '2026.06.10',
+    type: 'update',
+    title: '프로필 사진 업로드 및 썸네일 표시 적용.',
+    detail: '설정에서 프로필 사진을 업로드하고, 채팅 메시지와 일기/콘텐츠/사진첩 게시글 작성자 영역에 썸네일을 표시합니다.',
+  },
+  {
     id: '2026-06-10-release-rc-v0-1',
     date: '2026.06.10',
     type: 'release',

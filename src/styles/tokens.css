@@ -406,6 +406,17 @@ body {
   max-width: 68%;
 }
 
+.profile-avatar {
+  border: 1px solid color-mix(in srgb, var(--color-outline-variant) 65%, transparent);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+[data-theme="high-contrast"] .profile-avatar {
+  border-color: var(--color-primary);
+  background: var(--color-surface-container-highest);
+  color: var(--color-primary);
+}
+
 .message-mine {
   margin-left: auto;
   align-items: flex-end;

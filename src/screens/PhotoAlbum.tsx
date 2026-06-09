@@ -7,6 +7,7 @@ import { useCoupleSession } from '../hooks/useCoupleSession'
 import { ImageViewer } from '../components/ImageViewer'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { ProfileAvatar } from '../components/ProfileAvatar'
 
 interface PhotoAlbumProps {
   onBack: () => void
@@ -56,15 +57,18 @@ interface DetailViewProps {
   myUid: string
   myNickname: string
   partnerNickname: string
+  myPhotoUrl: string | null
+  partnerPhotoUrl: string | null
   onClose: () => void
   onZoom: () => void
 }
 
-function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom, onEdit, onDelete }: DetailViewProps & {
+function DetailView({ photo, myUid, myNickname, partnerNickname, myPhotoUrl, partnerPhotoUrl, onClose, onZoom, onEdit, onDelete }: DetailViewProps & {
   onEdit?: () => void
   onDelete?: () => void
 }) {
   const uploaderName = photo.uploadedBy === myUid ? myNickname : partnerNickname
+  const uploaderPhotoUrl = photo.uploadedBy === myUid ? myPhotoUrl : partnerPhotoUrl
   const isMe = photo.uploadedBy === myUid
   const dateStr = photo.createdAt
     ? format(new Date(photo.createdAt), 'yyyy년 M월 d일 (EEE)', { locale: ko })
@@ -89,7 +93,10 @@ function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom
             <p className="font-body-md text-body-md mb-xs">{photo.caption}</p>
           )}
           <div className="flex items-center justify-between gap-sm">
-            <p className="font-label-sm text-label-sm opacity-70">{uploaderName} · {dateStr}</p>
+            <div className="flex items-center gap-sm min-w-0">
+              <ProfileAvatar src={uploaderPhotoUrl} name={uploaderName} size="sm" className="border border-white/30" />
+              <p className="font-label-sm text-label-sm opacity-80 truncate">{uploaderName} · {dateStr}</p>
+            </div>
             {isMe && (
               <div className="flex gap-sm">
                 {onEdit && (
@@ -113,7 +120,7 @@ function DetailView({ photo, myUid, myNickname, partnerNickname, onClose, onZoom
 
 export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
   const { uid, coupleId, partnerUid, isLoading: sessionLoading } = useCoupleSession()
-  const { myNickname, partnerNickname } = useApp()
+  const { myNickname, partnerNickname, myPhotoUrl, partnerPhotoUrl } = useApp()
   const { photos, loading, uploading, error, uploadPhoto, updatePhoto, deletePhoto, clearError } = usePhotos(
     coupleId,
     uid,
@@ -235,6 +242,8 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
           myUid={uid ?? ''}
           myNickname={myName}
           partnerNickname={partnerName}
+          myPhotoUrl={myPhotoUrl}
+          partnerPhotoUrl={partnerPhotoUrl}
           onClose={() => setSelectedPhoto(null)}
           onZoom={() => setViewerUrl(selectedPhoto.imageUrl)}
           onEdit={() => {

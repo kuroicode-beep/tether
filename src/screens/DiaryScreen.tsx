@@ -6,6 +6,7 @@ import { ImageViewer } from '../components/ImageViewer'
 import { useDiary, DiaryEntry } from '../hooks/useDiary'
 import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
+import { ProfileAvatar } from '../components/ProfileAvatar'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 type View = 'list' | 'read' | 'write' | 'reply'
@@ -115,6 +116,8 @@ interface ReadViewProps {
   myUid: string
   myNickname: string
   partnerNickname: string
+  myPhotoUrl: string | null
+  partnerPhotoUrl: string | null
   onBack: () => void
   onReply: () => void
   onImageTap: (url: string) => void
@@ -122,9 +125,10 @@ interface ReadViewProps {
   onDelete: () => void
 }
 
-function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, onImageTap, onEdit, onDelete }: ReadViewProps) {
+function ReadView({ entry, myUid, myNickname, partnerNickname, myPhotoUrl, partnerPhotoUrl, onBack, onReply, onImageTap, onEdit, onDelete }: ReadViewProps) {
   const isMe = entry.authorUid === myUid
   const authorName = isMe ? myNickname : partnerNickname
+  const authorPhotoUrl = isMe ? myPhotoUrl : partnerPhotoUrl
 
   return (
     <div className="screen flex flex-col min-h-screen bg-[#EEE9DC]">
@@ -148,9 +152,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
       <main className="flex-1 px-margin-mobile py-lg overflow-y-auto pb-32">
         {/* 작성자 */}
         <div className="flex items-center gap-sm mb-lg">
-          <div className="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center font-bold text-primary text-sm">
-            {authorName.slice(0, 1)}
-          </div>
+          <ProfileAvatar src={authorPhotoUrl} name={authorName} size="md" />
           <span className="font-label-md text-label-md text-on-surface font-semibold">{authorName}</span>
         </div>
 
@@ -217,7 +219,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
 
 export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
-  const { myNickname, partnerNickname } = useApp()
+  const { myNickname, partnerNickname, myPhotoUrl, partnerPhotoUrl } = useApp()
   const { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary } = useDiary(coupleId, uid)
   const [view, setView] = useState<View>('list')
   const [selected, setSelected] = useState<DiaryEntry | null>(null)
@@ -262,6 +264,8 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
           myUid={uid ?? ''}
           myNickname={myName}
           partnerNickname={partnerName}
+          myPhotoUrl={myPhotoUrl}
+          partnerPhotoUrl={partnerPhotoUrl}
           onBack={() => { setView('list'); setSelected(null) }}
           onReply={() => setView('reply')}
           onImageTap={setViewerUrl}
@@ -321,6 +325,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
             {entries.map((entry) => {
               const isMe = entry.authorUid === uid
               const authorName = isMe ? myName : partnerName
+              const authorPhotoUrl = isMe ? myPhotoUrl : partnerPhotoUrl
               const isUnread = !isMe && !entry.isRead
 
               return (
@@ -334,9 +339,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
                   {/* 헤더 */}
                   <div className="flex justify-between items-start mb-sm">
                     <div className="flex items-center gap-sm">
-                      <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary text-xs font-bold">
-                        {authorName.slice(0, 1)}
-                      </div>
+                      <ProfileAvatar src={authorPhotoUrl} name={authorName} size="sm" />
                       <div>
                         <p className="font-label-md text-label-md font-semibold text-on-surface">{authorName}</p>
                         <p className="font-label-sm text-label-sm text-on-surface-variant">{formatTs(entry.createdAt)}</p>

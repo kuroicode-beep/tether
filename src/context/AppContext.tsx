@@ -8,6 +8,8 @@ interface AppState {
   myNickname: string
   partnerNickname: string
   partnerUid: string | null
+  myPhotoUrl: string | null
+  partnerPhotoUrl: string | null
   isConnected: boolean
   startDate: string | null   // ISO 날짜 문자열 (처음 만난 날, YYYY-MM-DD)
 }
@@ -19,6 +21,8 @@ interface ConnectInput {
   partnerNickname: string
   partnerUid: string
   startDate?: string
+  myPhotoUrl?: string | null
+  partnerPhotoUrl?: string | null
 }
 
 interface AppContextType extends AppState {
@@ -28,6 +32,7 @@ interface AppContextType extends AppState {
   setStartDate: (date: string) => void
   setMyNickname: (name: string) => void
   setPartnerNickname: (name: string) => void
+  setMyPhotoUrl: (url: string | null) => void
 }
 
 const LS_KEY = 'tether_app_state'
@@ -38,6 +43,8 @@ const EMPTY_STATE: AppState = {
   myNickname: '',
   partnerNickname: '',
   partnerUid: null,
+  myPhotoUrl: null,
+  partnerPhotoUrl: null,
   isConnected: false,
   startDate: null,
 }
@@ -55,6 +62,8 @@ function loadState(): AppState {
         isConnected: false,
         myNickname: parsed.myNickname ?? '',
         partnerNickname: parsed.partnerNickname ?? '',
+        myPhotoUrl: parsed.myPhotoUrl ?? null,
+        partnerPhotoUrl: parsed.partnerPhotoUrl ?? null,
         startDate: parsed.startDate ?? null,
       }
     }
@@ -66,10 +75,12 @@ function loadState(): AppState {
 function persistState(next: AppState) {
   try {
     if (!next.coupleId) {
-      if (next.myNickname || next.partnerNickname || next.startDate) {
+      if (next.myNickname || next.partnerNickname || next.startDate || next.myPhotoUrl || next.partnerPhotoUrl) {
         localStorage.setItem(LS_KEY, JSON.stringify({
           myNickname: next.myNickname,
           partnerNickname: next.partnerNickname,
+          myPhotoUrl: next.myPhotoUrl,
+          partnerPhotoUrl: next.partnerPhotoUrl,
           startDate: next.startDate,
         }))
       } else {
@@ -102,6 +113,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...data,
         myNickname: sameCouple && prev.myNickname ? prev.myNickname : data.myNickname,
         partnerNickname: sameCouple && prev.partnerNickname ? prev.partnerNickname : data.partnerNickname,
+        myPhotoUrl: data.myPhotoUrl ?? (sameCouple ? prev.myPhotoUrl : null),
+        partnerPhotoUrl: data.partnerPhotoUrl ?? (sameCouple ? prev.partnerPhotoUrl : null),
         isConnected: true,
         startDate: data.startDate ?? keepStartDate,
       }
@@ -150,6 +163,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setMyPhotoUrl = useCallback((url: string | null) => {
+    setState((prev) => {
+      const next = { ...prev, myPhotoUrl: url }
+      persistState(next)
+      return next
+    })
+  }, [])
+
   // 다른 탭/창에서 발생한 storage 이벤트를 수신해 상태를 동기화한다
   useEffect(() => {
     const handler = (event: StorageEvent) => {
@@ -165,6 +186,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           coupleId: null,
           myNickname: parsed.myNickname ?? '',
           partnerNickname: parsed.partnerNickname ?? '',
+          myPhotoUrl: parsed.myPhotoUrl ?? null,
+          partnerPhotoUrl: parsed.partnerPhotoUrl ?? null,
           partnerUid: null,
           isConnected: false,
           startDate: parsed.startDate ?? null,
@@ -184,6 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setStartDate,
       setMyNickname,
       setPartnerNickname,
+      setMyPhotoUrl,
     }}>
       {children}
     </AppContext.Provider>

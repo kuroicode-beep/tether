@@ -25,10 +25,15 @@ service cloud.firestore {
     // Invite preview nickname.
     match /publicProfiles/{uid} {
       function validPublicProfileWrite() {
-        return request.resource.data.keys().hasOnly(['nickname'])
+        return request.resource.data.keys().hasOnly(['nickname', 'photoUrl'])
                && request.resource.data.nickname is string
                && request.resource.data.nickname.size() > 0
-               && request.resource.data.nickname.size() <= 40;
+               && request.resource.data.nickname.size() <= 40
+               && (
+                 !request.resource.data.keys().hasAny(['photoUrl'])
+                 || request.resource.data.photoUrl == null
+                 || request.resource.data.photoUrl is string
+               );
       }
 
       allow read: if request.auth != null;
@@ -57,6 +62,7 @@ service cloud.firestore {
           'fcmUpdatedAt',
           'notificationSettings',
           'lastRead',
+          'photoUrl',
         ]);
       }
 

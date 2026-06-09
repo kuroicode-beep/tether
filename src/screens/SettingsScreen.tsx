@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
 import { useFontScale } from '../hooks/useFontScale'
 import { useBiometric } from '../hooks/useBiometric'
@@ -8,7 +8,8 @@ import { canRequestPushPermission, usePushNotification, NotificationSettings } f
 import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { updateUserNickname } from '../lib/coupleAuth'
+import { ProfileAvatar } from '../components/ProfileAvatar'
+import { updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -78,8 +79,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const bio = useBiometric()
   const { clearPin } = usePinAuth()
   const {
-    uid, myNickname, partnerNickname, startDate,
-    disconnect, setStartDate, setMyNickname, setPartnerNickname,
+    uid, myNickname, partnerNickname, myPhotoUrl, startDate,
+    disconnect, setStartDate, setMyNickname, setPartnerNickname, setMyPhotoUrl,
   } = useApp()
   const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
@@ -98,6 +99,9 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const [partnerNickInput, setPartnerNickInput] = useState(partnerNickname)
   const [editingDate, setEditingDate] = useState(false)
   const [dateInput, setDateInput] = useState(() => startDate ?? new Date().toISOString().split('T')[0])
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null)
 
   // 연결 해제 확인 다이얼로그
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
@@ -167,6 +171,28 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     setEditingMyNick(false)
   }
 
+  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !uid || photoUploading) return
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('이미지 파일만 업로드할 수 있어요.')
+      return
+    }
+
+    setPhotoUploading(true)
+    setPhotoError('')
+    try {
+      const nextUrl = await updateUserProfilePhoto(uid, file)
+      setMyPhotoUrl(nextUrl)
+    } catch (err) {
+      console.warn('[SettingsScreen] profile photo upload failed', err)
+      setPhotoError('프로필 사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
   const handleSavePartnerNick = () => {
     const trimmed = partnerNickInput.trim()
     if (trimmed) setPartnerNickname(trimmed)
@@ -185,9 +211,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
         title="설정"
         onBack={onBack}
         right={(
-          <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary">person</span>
-          </div>
+          <ProfileAvatar src={myPhotoUrl} name={myNickname} size="md" />
         )}
       />
 
@@ -199,6 +223,36 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
             커플 정보
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+            <div className="flex items-center justify-between gap-md p-md border-b border-outline-variant/20">
+              <div className="flex items-center gap-md min-w-0">
+                <ProfileAvatar src={myPhotoUrl} name={myNickname} size="lg" />
+                <div className="min-w-0">
+                  <p className="font-body-md text-body-md text-on-surface">프로필 사진</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant truncate">
+                    채팅과 게시글에 표시돼요
+                  </p>
+                  {photoError && (
+                    <p className="font-label-sm text-label-sm text-error mt-xs">{photoError}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => profilePhotoInputRef.current?.click()}
+                disabled={photoUploading || !uid}
+                className="min-h-[50px] px-md rounded-full bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-50 active:scale-95 transition-transform"
+              >
+                {photoUploading ? '업로드 중' : '변경'}
+              </button>
+              <input
+                ref={profilePhotoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePhotoChange}
+              />
+            </div>
+
             {/* 내 닉네임 */}
             <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
               <div className="flex items-center gap-md">
