@@ -43,32 +43,47 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const isInitialLoad = useRef(true)
+  const isInitialLoadRef = useRef(true)
+  const lastMessageIdRef = useRef<string | null>(null)
   const inputFocusedRef = useRef(false)
   const markingReadRef = useRef<Set<string>>(new Set())
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
 
-  // 신규 메시지 도착 시 자동 스크롤 (입력 중에는 즉시 스크롤해 키보드 유지)
-  useEffect(() => {
-    if (messages.length === 0) return
+  // 메시지 목록 맨 아래로 스크롤한다
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const list = listRef.current
     if (!list) return
+    list.scrollTo({ top: list.scrollHeight, behavior })
+  }, [])
 
-    if (isInitialLoad.current) {
-      list.scrollTop = list.scrollHeight
-      isInitialLoad.current = false
+  // 초기 진입·전송·상대 메시지 수신 시 맨 아래로 스크롤 (이전 메시지 로드는 제외)
+  useEffect(() => {
+    if (messages.length === 0) return
+
+    const lastId = messages[messages.length - 1]?.id
+    if (!lastId) return
+
+    const runScroll = (behavior: ScrollBehavior) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollToBottom(behavior))
+      })
+    }
+
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      lastMessageIdRef.current = lastId
+      runScroll('auto')
       return
     }
 
-    if (inputFocusedRef.current) {
-      list.scrollTop = list.scrollHeight
-      return
-    }
+    if (lastMessageIdRef.current === lastId) return
 
-    list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
-  }, [messages.length])
+    lastMessageIdRef.current = lastId
+    const behavior = inputFocusedRef.current ? 'auto' : 'smooth'
+    runScroll(behavior)
+  }, [messages, scrollToBottom])
 
   // 상단 도달 시 이전 메시지 로드 (IntersectionObserver)
   useEffect(() => {
