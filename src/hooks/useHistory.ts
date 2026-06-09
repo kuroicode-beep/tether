@@ -6,7 +6,8 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
-import { isOptimisticId, mergeByDateDesc, reconcilePending } from '../lib/syncHelpers'
+import { createClientId, createOptimisticId } from '../lib/clientId'
+import { isOptimisticId, mergeByDateDesc, readClientId, reconcilePending } from '../lib/syncHelpers'
 
 function toFirestoreDate(date: Date) {
   return Timestamp.fromDate(date)
@@ -14,6 +15,7 @@ function toFirestoreDate(date: Date) {
 
 export interface HistoryItem {
   id: string
+  clientId?: string
   authorUid: string | null
   title: string
   memo: string | null
@@ -27,6 +29,7 @@ function toItem(data: Record<string, unknown>, id: string): HistoryItem {
   const createdTs = data['createdAt'] as Timestamp | null
   return {
     id,
+    clientId: readClientId(data),
     authorUid: (data['authorUid'] as string | null) ?? null,
     title: (data['title'] as string) ?? '',
     memo: (data['memo'] as string | null) ?? null,
@@ -51,7 +54,7 @@ export function useHistory(coupleId: string | null, myUid: string | null, partne
       p.authorUid === s.authorUid
       && p.title === s.title
       && Math.abs(p.date - s.date) < 86_400_000,
-    )
+    (s) => s.clientId)
     setItems(mergeByDateDesc(server, [...pendingRef.current.values()]))
   }, [])
 
@@ -146,8 +149,10 @@ export function useHistory(coupleId: string | null, myUid: string | null, partne
       }
     }
 
+    const clientId = createClientId('history')
     const optimistic: HistoryItem = {
-      id: `opt_${Date.now()}`,
+      id: createOptimisticId(clientId),
+      clientId,
       authorUid: myUid,
       title: data.title,
       memo: data.memo ?? null,
@@ -161,6 +166,7 @@ export function useHistory(coupleId: string | null, myUid: string | null, partne
     try {
       const now = Timestamp.now()
       await addDoc(collection(db, 'couples', coupleId, 'history'), {
+        clientId,
         authorUid: myUid,
         title: data.title,
         memo: data.memo ?? null,

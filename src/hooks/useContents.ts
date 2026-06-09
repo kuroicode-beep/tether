@@ -4,13 +4,15 @@ import {
   updateDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { isOptimisticId, mergeByCreatedAtDesc, reconcilePending } from '../lib/syncHelpers'
+import { createClientId, createOptimisticId } from '../lib/clientId'
+import { isOptimisticId, mergeByCreatedAtDesc, readClientId, reconcilePending } from '../lib/syncHelpers'
 
 export type ContentCategory = 'book' | 'movie' | 'drama' | 'youtube' | 'etc'
 export type ContentStatus = 'want' | 'watching' | 'done'
 
 export interface ContentItem {
   id: string
+  clientId?: string
   addedBy: string
   category: ContentCategory
   title: string
@@ -25,6 +27,7 @@ function toItem(data: Record<string, unknown>, id: string): ContentItem {
   const ts = data['createdAt'] as Timestamp | null
   return {
     id,
+    clientId: readClientId(data),
     addedBy: (data['addedBy'] as string) ?? '',
     category: (data['category'] as ContentCategory) ?? 'etc',
     title: (data['title'] as string) ?? '',
@@ -62,7 +65,7 @@ export function useContents(coupleId: string | null, myUid: string | null) {
           && p.createdAt != null
           && s.createdAt != null
           && Math.abs(p.createdAt - s.createdAt) < 120_000,
-        )
+        (s) => s.clientId)
         setItems(mergeByCreatedAtDesc(server, [...pendingRef.current.values()]))
       },
       (err) => console.warn('[useContents] listener error', err),
@@ -72,8 +75,10 @@ export function useContents(coupleId: string | null, myUid: string | null) {
 
   const addContent = async (data: { category: ContentCategory; title: string; memo?: string }) => {
     if (!coupleId || !myUid) return
+    const clientId = createClientId('content')
     const optimistic: ContentItem = {
-      id: `opt_${Date.now()}`,
+      id: createOptimisticId(clientId),
+      clientId,
       addedBy: myUid,
       category: data.category,
       title: data.title,
@@ -88,6 +93,7 @@ export function useContents(coupleId: string | null, myUid: string | null) {
 
     try {
       await addDoc(collection(db, 'couples', coupleId, 'contents'), {
+        clientId,
         addedBy: myUid,
         category: data.category,
         title: data.title,
@@ -110,7 +116,11 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     status: ContentStatus,
     extra?: { rating?: number; review?: string },
   ) => {
-    setItems((prev) => prev.map((i) => i.id === contentId ? { ...i, status, ...extra } : i))
+    let previous: ContentItem | undefined
+    setItems((prev) => {
+      previous = prev.find((i) => i.id === contentId)
+      return prev.map((i) => i.id === contentId ? { ...i, status, ...extra } : i)
+    })
     if (!coupleId || isOptimisticId(contentId)) return
 
     try {
@@ -121,6 +131,10 @@ export function useContents(coupleId: string | null, myUid: string | null) {
       })
     } catch (err) {
       console.warn('[useContents] updateStatus failed', err)
+      if (previous) {
+        const rollback = previous
+        setItems((prev) => prev.map((i) => i.id === contentId ? rollback : i))
+      }
     }
   }
 

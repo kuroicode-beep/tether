@@ -8,9 +8,11 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
 import { debugLog } from '../lib/debugLog'
+import { createClientId, createOptimisticId } from '../lib/clientId'
 import {
   isOptimisticId,
   mergeChatMessages,
+  readClientId,
   reconcilePending,
   revokeBlobUrl,
 } from '../lib/syncHelpers'
@@ -19,6 +21,7 @@ const PAGE_SIZE = 30
 
 export interface ChatMessage {
   id: string
+  clientId?: string
   senderUid: string
   type: 'text' | 'image'
   text?: string
@@ -31,6 +34,7 @@ function toMessage(d: DocumentData, id: string): ChatMessage {
   const ts = d['createdAt'] as Timestamp | null
   return {
     id,
+    clientId: readClientId(d),
     senderUid: d['senderUid'] as string ?? '',
     type: (d['type'] as 'text' | 'image') ?? 'text',
     text: d['text'] as string | undefined,
@@ -95,7 +99,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         liveRef.current = live
         lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null
         setHasMore(snap.docs.length === PAGE_SIZE)
-        reconcilePending(pendingRef.current, live, chatMatchesPending)
+        reconcilePending(pendingRef.current, live, chatMatchesPending, (s) => s.clientId)
         applyMerge()
       },
       (err) => {
@@ -147,8 +151,10 @@ export function useChat(coupleId: string | null, myUid: string | null) {
   const sendText = useCallback(async (text: string) => {
     if (!text.trim() || !coupleId || !myUid) return
 
+    const clientId = createClientId('msg')
     const optimistic: ChatMessage = {
-      id: `opt_${Date.now()}`,
+      id: createOptimisticId(clientId),
+      clientId,
       senderUid: myUid,
       type: 'text',
       text: text.trim(),
@@ -161,6 +167,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     try {
       const createdAt = Timestamp.now()
       await addDoc(collection(db, 'couples', coupleId, 'messages'), {
+        clientId,
         senderUid: myUid,
         type: 'text',
         text: text.trim(),
@@ -176,9 +183,11 @@ export function useChat(coupleId: string | null, myUid: string | null) {
   const sendImage = useCallback(async (file: File) => {
     if (!coupleId || !myUid) return
 
+    const clientId = createClientId('img')
     const localUrl = URL.createObjectURL(file)
     const optimistic: ChatMessage = {
-      id: `opt_img_${Date.now()}`,
+      id: createOptimisticId(clientId),
+      clientId,
       senderUid: myUid,
       type: 'image',
       imageUrl: localUrl,
@@ -198,6 +207,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       const imageUrl = await getDownloadURL(storageRef)
       const createdAt = Timestamp.now()
       await addDoc(collection(db, 'couples', coupleId, 'messages'), {
+        clientId,
         senderUid: myUid,
         type: 'image',
         imageUrl,

@@ -6,15 +6,18 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
+import { createClientId, createOptimisticId } from '../lib/clientId'
 import {
   isOptimisticId,
   mergeByCreatedAtDesc,
+  readClientId,
   reconcilePending,
   revokeBlobUrl,
 } from '../lib/syncHelpers'
 
 export interface Photo {
   id: string
+  clientId?: string
   uploadedBy: string
   imageUrl: string
   caption: string | null
@@ -25,6 +28,7 @@ function toPhoto(data: Record<string, unknown>, id: string): Photo {
   const ts = data['createdAt'] as Timestamp | null
   return {
     id,
+    clientId: readClientId(data),
     uploadedBy: (data['uploadedBy'] as string) ?? '',
     imageUrl: (data['imageUrl'] as string) ?? '',
     caption: (data['caption'] as string | null) ?? null,
@@ -50,7 +54,7 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
       && p.createdAt != null
       && s.createdAt != null
       && Math.abs(p.createdAt - s.createdAt) < 120_000,
-    )
+    (s) => s.clientId)
     setPhotos(mergeByCreatedAtDesc(server, [...pendingRef.current.values()]))
   }, [])
 
@@ -67,7 +71,6 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     setLoading(true)
     setError(null)
 
-    // 커플 멤버십 확인 — 권한 없으면 빈 목록 대신 오류 표시
     const verifyMembership = async () => {
       try {
         const coupleSnap = await getDoc(doc(db, 'couples', coupleId))
@@ -100,7 +103,6 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     void verifyMembership().then((ok) => {
       if (cancelled || !ok) return
 
-      // orderBy 없이 전체 수집 — createdAt 없는 문서도 포함 (상대 업로드 누락 방지)
       unsub = onSnapshot(
         collection(db, 'couples', coupleId, 'photos'),
         (snap) => {
@@ -130,9 +132,11 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     setUploading(true)
     setError(null)
 
+    const clientId = createClientId('photo')
     const localUrl = URL.createObjectURL(file)
     const optimistic: Photo = {
-      id: `opt_${Date.now()}`,
+      id: createOptimisticId(clientId),
+      clientId,
       uploadedBy: myUid,
       imageUrl: localUrl,
       caption: caption ?? null,
@@ -146,6 +150,7 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
       await uploadBytes(ref(storage, storagePath), file)
       const imageUrl = await getDownloadURL(ref(storage, storagePath))
       await addDoc(collection(db, 'couples', coupleId, 'photos'), {
+        clientId,
         uploadedBy: myUid,
         imageUrl,
         caption: caption ?? null,
@@ -164,10 +169,18 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
 
   const updatePhoto = async (photoId: string, caption: string | null) => {
     if (!coupleId || isOptimisticId(photoId)) return
+    let previousCaption: string | null = null
+    setPhotos((prev) => {
+      const photo = prev.find((p) => p.id === photoId)
+      previousCaption = photo?.caption ?? null
+      return prev.map((p) => (p.id === photoId ? { ...p, caption } : p))
+    })
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'photos', photoId), { caption })
     } catch (err) {
       console.warn('[usePhotos] update failed', err)
+      const rollback = previousCaption
+      setPhotos((prev) => prev.map((p) => (p.id === photoId ? { ...p, caption: rollback } : p)))
       setError('사진 수정에 실패했어요')
     }
   }

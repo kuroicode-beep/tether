@@ -47,11 +47,15 @@ export function useAnniversaries(coupleId: string | null) {
 
   const persist = useCallback(async (next: Anniversary[]) => {
     if (!coupleId) return
+    const previous = anniversaries
     setAnniversaries(next)
     try {
       await setDoc(doc(db, 'couples', coupleId), { anniversaries: next }, { merge: true })
-    } catch { /* ignore */ }
-  }, [coupleId])
+    } catch (err) {
+      console.warn('[useAnniversaries] persist failed', err)
+      setAnniversaries(previous)
+    }
+  }, [coupleId, anniversaries])
 
   const getTargetDate = useCallback((anniversary: Anniversary) => {
     const target = parseDate(anniversary.date)

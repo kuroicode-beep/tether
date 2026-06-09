@@ -5,6 +5,12 @@ export function isOptimisticId(id: string): boolean {
   return id.startsWith('opt_')
 }
 
+export function readClientId(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null) return undefined
+  const value = (data as { clientId?: unknown }).clientId
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
 // blob URL이면 해제한다
 export function revokeBlobUrl(url: string | null | undefined) {
   if (url?.startsWith('blob:')) {
@@ -12,15 +18,21 @@ export function revokeBlobUrl(url: string | null | undefined) {
   }
 }
 
-// 서버 문서와 매칭된 pending 항목을 제거한다
-export function reconcilePending<T extends { id: string }, S>(
+// 서버 문서와 매칭된 pending 항목을 제거한다 (clientId 우선, fallback 매처)
+export function reconcilePending<T extends { id: string; clientId?: string }, S>(
   pending: Map<string, T>,
   serverItems: S[],
   isMatch: (pending: T, server: S) => boolean,
+  getServerClientId: (server: S) => string | undefined = (server) =>
+    readClientId(server as unknown),
 ) {
   for (const server of serverItems) {
+    const serverClientId = getServerClientId(server)
     for (const [id, item] of [...pending.entries()]) {
-      if (isMatch(item, server)) {
+      const hasClientIdPair = !!item.clientId && !!serverClientId
+      const clientIdMatch = hasClientIdPair && item.clientId === serverClientId
+      const fallbackMatch = !item.clientId && !serverClientId && isMatch(item, server)
+      if (clientIdMatch || fallbackMatch) {
         pending.delete(id)
         const maybeUrl = (item as { imageUrl?: string }).imageUrl
         revokeBlobUrl(maybeUrl)
