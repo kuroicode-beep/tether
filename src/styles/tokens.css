@@ -298,6 +298,37 @@ body {
   color: var(--color-text) !important;
 }
 
+[data-theme="high-contrast"] .home-status-card .mood-chip {
+  color: #FFFFFF !important;
+  background: #111111 !important;
+  border-color: #FFFFFF !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] .home-status-card .mood-chip[style*="scale(1.2)"] {
+  color: #000000 !important;
+  background: #FFE600 !important;
+  border-color: #FFE600 !important;
+}
+
+[data-theme="high-contrast"] .home-status-message {
+  color: #FFFFFF !important;
+  background: #111111 !important;
+  border: 2px solid #FFFFFF !important;
+  border-radius: 12px !important;
+  min-height: 50px !important;
+  padding: 6px 10px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] .home-status-message .text-on-surface-variant\/60,
+[data-theme="high-contrast"] .home-status-message span {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
 /* 이미지 뷰어 닫기 버튼 safe-area */
 .image-viewer-close {
   top: calc(16px + env(safe-area-inset-top, 0px));

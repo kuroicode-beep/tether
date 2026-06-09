@@ -57,6 +57,13 @@ const RELEASE_LOGS: ReleaseLogEntry[] = [
     title: '채팅 이미지 표시 및 사진첩 보내기 핫픽스.',
     detail: '상대가 보낸 사진 표시, 채팅 사진의 사진첩 등록, 메시지 상태 표정 표시를 추가했습니다.',
   },
+  {
+    id: '2026-06-10-hotfix-high-contrast-photo-verify',
+    date: '2026.06.10',
+    type: 'hotfix',
+    title: '고대비 상태 가독성 및 사진첩 검증 핫픽스.',
+    detail: '고대비 테마의 상태 태그와 상태 메시지 대비를 보강하고, 사진첩 업로드 및 표시 검증을 강화했습니다.',
+  },
 ]
 
 export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {

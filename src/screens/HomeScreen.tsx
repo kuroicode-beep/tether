@@ -106,15 +106,6 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         <PushPermissionBanner />
 
         <section className="relative grid grid-cols-2 gap-gutter">
-          <button
-            type="button"
-            onClick={() => onNavigate('statusHistory')}
-            className="absolute -top-1 right-0 z-10 flex items-center gap-[4px] font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
-            aria-label="상태 로그 보기"
-          >
-            상태 로그
-          </button>
-
           <div className="home-status-card flex flex-col items-center space-y-sm rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md text-center shadow-sm">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{myName}</span>
@@ -164,12 +155,12 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 onBlur={handleMsgBlur}
                 onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
                 maxLength={30}
-                className="h-11 w-full border-b border-primary/40 bg-transparent text-center font-label-md text-[15px] text-on-surface outline-none"
+                className="home-status-message h-11 w-full border-b border-primary/40 bg-transparent text-center font-label-md text-[15px] text-on-surface outline-none"
               />
             ) : (
               <button
                 onClick={() => setIsEditingMsg(true)}
-                className="flex h-11 w-full items-center justify-center text-center font-label-md text-[15px] leading-snug text-on-surface transition-colors hover:text-primary"
+                className="home-status-message flex h-11 w-full items-center justify-center text-center font-label-md text-[15px] leading-snug text-on-surface transition-colors hover:text-primary"
               >
                 {myStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
               </button>
@@ -190,7 +181,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 <MoodChip key={tag} label={tag} active={tag !== '—'} />
               ))}
             </div>
-            <p className="flex h-11 items-center text-center font-label-md text-[15px] leading-snug text-on-surface">
+            <p className="home-status-message flex h-11 items-center text-center font-label-md text-[15px] leading-snug text-on-surface">
               {partnerStatus.message || '아직 메시지가 없어요'}
             </p>
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>

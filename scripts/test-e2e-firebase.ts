@@ -409,6 +409,11 @@ async function main() {
     })
     photoIds.push(photoRef.id)
 
+    const partnerPhotoSnap = await getDoc(doc(dbB, 'couples', coupleId, 'photos', photoRef.id))
+    if (partnerPhotoSnap.data()?.imageUrl !== photoUrl) {
+      throw new Error('Partner photo album display read failed')
+    }
+
     await expectDenied('partner photo caption overwrite', () =>
       updateDoc(doc(dbB, 'couples', coupleId, 'photos', photoRef.id), {
         caption: 'hacked',
