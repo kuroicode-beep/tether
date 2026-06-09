@@ -8,6 +8,7 @@ import { canRequestPushPermission, usePushNotification, NotificationSettings } f
 import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { updateUserNickname } from '../lib/coupleAuth'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -149,10 +150,20 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     }
   }
 
-  const handleSaveMyNick = () => {
+  const handleSaveMyNick = async () => {
     const trimmed = myNickInput.trim()
-    if (trimmed) setMyNickname(trimmed)
-    else setMyNickInput(myNickname)
+    if (trimmed) {
+      setMyNickname(trimmed)
+      if (uid) {
+        try {
+          await updateUserNickname(uid, trimmed)
+        } catch (err) {
+          console.warn('[SettingsScreen] update nickname failed', err)
+        }
+      }
+    } else {
+      setMyNickInput(myNickname)
+    }
     setEditingMyNick(false)
   }
 

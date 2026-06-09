@@ -56,9 +56,10 @@ export function useRecentFeed(
     }
 
     const merge = () => {
+      const memberUids = new Set([myUid, partnerUid])
       const merged = Object.values(buckets)
         .flat()
-        .filter((item) => item.authorUid === partnerUid && item.createdAt >= since)
+        .filter((item) => memberUids.has(item.authorUid) && item.createdAt >= since)
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, FEED_LIMIT)
       setItems(merged)
@@ -141,20 +142,44 @@ export function useRecentFeed(
           merge()
         },
       ),
-      onSnapshot(doc(db, 'couples', coupleId, 'status', partnerUid), (snap) => {
+      onSnapshot(doc(db, 'couples', coupleId, 'status', myUid), (snap) => {
+        const partnerStatus = buckets.status.filter((item) => item.authorUid === partnerUid)
         if (!snap.exists()) {
-          buckets.status = []
+          buckets.status = partnerStatus
           merge()
           return
         }
         const createdAt = toMillis(snap.data().updatedAt) ?? Date.now()
-        buckets.status = [{
-          id: `status_${partnerUid}`,
-          category: 'status',
-          authorUid: partnerUid,
-          createdAt,
-          screen: 'home',
-        }]
+        buckets.status = [
+          ...partnerStatus,
+          {
+            id: `status_${myUid}`,
+            category: 'status',
+            authorUid: myUid,
+            createdAt,
+            screen: 'home',
+          },
+        ]
+        merge()
+      }),
+      onSnapshot(doc(db, 'couples', coupleId, 'status', partnerUid), (snap) => {
+        const myStatus = buckets.status.filter((item) => item.authorUid === myUid)
+        if (!snap.exists()) {
+          buckets.status = myStatus
+          merge()
+          return
+        }
+        const createdAt = toMillis(snap.data().updatedAt) ?? Date.now()
+        buckets.status = [
+          ...myStatus,
+          {
+            id: `status_${partnerUid}`,
+            category: 'status',
+            authorUid: partnerUid,
+            createdAt,
+            screen: 'home',
+          },
+        ]
         merge()
       }),
     ]

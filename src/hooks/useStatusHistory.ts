@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { db } from '../lib/firebase'
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore'
-import type { Condition } from './useStatus'
+import { CONDITION_EMOJI, type Condition } from './useStatus'
 
 export interface StatusHistoryEntry {
   id: string
@@ -12,6 +12,19 @@ export interface StatusHistoryEntry {
   mood: string[]
   message: string
   createdAt: number | null
+}
+
+const LEGACY_CONDITION: Record<string, Condition> = {
+  tired: 'bad',
+  normal: 'normal',
+  good: 'good',
+}
+
+// Converts legacy status history values into the current 5-step condition model.
+const toCondition = (value: unknown): Condition => {
+  const raw = String(value ?? 'good')
+  if (raw in CONDITION_EMOJI) return raw as Condition
+  return LEGACY_CONDITION[raw] ?? 'good'
 }
 
 export function useStatusHistory(coupleId: string | null) {
@@ -45,7 +58,7 @@ export function useStatusHistory(coupleId: string | null) {
             return {
               id: d.id,
               uid: (data.uid as string) ?? '',
-              condition: (data.condition as Condition) ?? 'good',
+              condition: toCondition(data.condition),
               mood: Array.isArray(data.mood) ? (data.mood as string[]) : [],
               message: (data.message as string) ?? '',
               createdAt:

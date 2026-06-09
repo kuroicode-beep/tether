@@ -1,36 +1,43 @@
-import { useState, useEffect } from 'react'
+// src/screens/HomeScreen.tsx
+// Main dashboard for status, recent activity, and quick navigation.
+import { useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
 import { RecentFeed } from '../components/RecentFeed'
-import { useStatus, Condition, CONDITION_EMOJI } from '../hooks/useStatus'
-import { useRecentFeed } from '../hooks/useRecentFeed'
-import { useAnniversaries } from '../hooks/useAnniversaries'
 import { PushPermissionBanner } from '../components/PushPermissionBanner'
 import { useApp } from '../context/AppContext'
+import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useCoupleSession } from '../hooks/useCoupleSession'
+import { useRecentFeed } from '../hooks/useRecentFeed'
+import { CONDITION_EMOJI, Condition, useStatus } from '../hooks/useStatus'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
 }
 
-const CONDITIONS: Condition[] = ['good', 'normal', 'tired']
-const MOOD_TAGS = ['설렘', '평온', '힘듦', '보고싶어']
+const APP_VERSION = 'v0.1.0'
+const CONDITIONS: Condition[] = ['very_good', 'good', 'normal', 'bad', 'very_bad']
+const MOOD_TAGS = ['설렘', '평온', '힘듦', '보고싶어', '행복', '기쁨', '고마움', '슬픔', '우울', '화남']
 
 const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
-  { icon: 'chat',              label: '채팅',     screen: 'chat' },
-  { icon: 'calendar_month',   label: '기념일',   screen: 'anniversary' },
-  { icon: 'auto_stories',     label: '교환일기', screen: 'diary' },
-  { icon: 'featured_play_list', label: '컨텐츠', screen: 'contents' },
-  { icon: 'photo_library',    label: '사진첩',   screen: 'photo' },
-  { icon: 'history',          label: '히스토리', screen: 'history' },
+  { icon: 'chat', label: '채팅', screen: 'chat' },
+  { icon: 'calendar_month', label: '기념일', screen: 'anniversary' },
+  { icon: 'auto_stories', label: '교환일기', screen: 'diary' },
+  { icon: 'featured_play_list', label: '콘텐츠', screen: 'contents' },
+  { icon: 'photo_library', label: '사진첩', screen: 'photo' },
+  { icon: 'history', label: '히스토리', screen: 'history' },
 ]
 
+// Formats a relative timestamp for status cards.
 function timeAgo(ts: number | null): string {
   if (!ts) return '방금 전'
-  try { return formatDistanceToNow(ts, { addSuffix: true, locale: ko }) }
-  catch { return '방금 전' }
+  try {
+    return formatDistanceToNow(ts, { addSuffix: true, locale: ko })
+  } catch {
+    return '방금 전'
+  }
 }
 
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
@@ -43,16 +50,21 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const [editMsg, setEditMsg] = useState(myStatus.message)
   const [isEditingMsg, setIsEditingMsg] = useState(false)
 
+  // Saves the edited one-line status message.
   const handleMsgBlur = () => {
     setIsEditingMsg(false)
     updateMyStatus({ ...myStatus, message: editMsg })
   }
 
-  const toggleCondition = (c: Condition) => updateMyStatus({ ...myStatus, condition: c })
+  // Updates the current status face.
+  const toggleCondition = (condition: Condition) => {
+    updateMyStatus({ ...myStatus, condition })
+  }
 
+  // Toggles one mood tag in the current status.
   const toggleMood = (tag: string) => {
     const has = myStatus.mood.includes(tag)
-    const next = has ? myStatus.mood.filter((t) => t !== tag) : [...myStatus.mood, tag]
+    const next = has ? myStatus.mood.filter((item) => item !== tag) : [...myStatus.mood, tag]
     updateMyStatus({ ...myStatus, mood: next })
   }
 
@@ -66,54 +78,57 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
 
   return (
     <div className="screen min-h-screen text-on-surface pb-32">
-      {/* TopAppBar */}
-      <header className="home-header w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
-        <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
+      <header className="home-header sticky top-0 z-50 flex w-full items-center justify-between bg-surface px-margin-mobile py-sm">
+        <div className="flex items-baseline gap-xs">
+          <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
+          <span className="font-label-sm text-[11px] text-on-surface-variant">{APP_VERSION}</span>
+        </div>
+
         <div className="flex items-center gap-xs">
           <button
-            className="min-h-[50px] rounded-full px-md font-label-md text-label-md text-primary hover:bg-surface-container transition-colors duration-200"
+            className="min-h-[50px] rounded-full px-md font-label-md text-label-md text-primary transition-colors duration-200 hover:bg-surface-container"
             onClick={() => onNavigate('releaseLog')}
             aria-label="업데이트 로그"
           >
             Log
           </button>
-        <button
-          className="min-w-[50px] min-h-[50px] flex items-center justify-center hover:bg-surface-container transition-colors duration-200 rounded-full"
-          onClick={() => onNavigate('more')}
-          aria-label="설정"
-        >
-          <span className="material-symbols-outlined text-primary">settings</span>
-        </button>
+          <button
+            className="flex min-h-[50px] min-w-[50px] items-center justify-center rounded-full transition-colors duration-200 hover:bg-surface-container"
+            onClick={() => onNavigate('more')}
+            aria-label="설정"
+          >
+            <span className="material-symbols-outlined text-primary">settings</span>
+          </button>
         </div>
       </header>
 
-      <main className="w-full px-margin-mobile space-y-lg pt-lg">
+      <main className="w-full space-y-lg px-margin-mobile pt-lg">
         <PushPermissionBanner />
 
-        {/* Status Cards */}
-        <section className="grid grid-cols-2 gap-gutter relative">
+        <section className="relative grid grid-cols-2 gap-gutter">
           <button
             type="button"
             onClick={() => onNavigate('statusHistory')}
-            className="absolute -top-1 right-0 z-10 flex items-center gap-[4px] font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+            className="absolute -top-1 right-0 z-10 flex items-center gap-[4px] font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
             aria-label="상태 로그 보기"
           >
-            📜 로그
+            상태 로그
           </button>
-          {/* 내 카드 */}
-          <div className="home-status-card bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border-2 border-primary-container">
+
+          <div className="home-status-card flex flex-col items-center space-y-sm rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md text-center shadow-sm">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{myName}</span>
-              <div className="w-2 h-2 rounded-full bg-primary" />
+              <div className="h-2 w-2 rounded-full bg-primary" />
             </div>
-            <div className="flex justify-around w-full py-xs">
-              {CONDITIONS.map((c) => (
+
+            <div className="flex w-full justify-around py-xs">
+              {CONDITIONS.map((condition) => (
                 <button
-                  key={c}
-                  onClick={() => toggleCondition(c)}
-                  className="text-xl p-xs rounded-full transition-all duration-200"
+                  key={condition}
+                  onClick={() => toggleCondition(condition)}
+                  className="rounded-full p-xs text-xl transition-all duration-200"
                   style={
-                    myStatus.condition === c
+                    myStatus.condition === condition
                       ? {
                           background: 'var(--color-primary)',
                           transform: 'scale(1.2)',
@@ -124,14 +139,15 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                           background: 'transparent',
                           transform: 'scale(1)',
                           border: '2px solid transparent',
-                          opacity: 0.4,
+                          opacity: 0.45,
                         }
                   }
                 >
-                  {CONDITION_EMOJI[c]}
+                  {CONDITION_EMOJI[condition]}
                 </button>
               ))}
             </div>
+
             <div className="flex flex-wrap justify-center gap-xs">
               {MOOD_TAGS.map((tag) => (
                 <button key={tag} onClick={() => toggleMood(tag)}>
@@ -139,66 +155,70 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 </button>
               ))}
             </div>
+
             {isEditingMsg ? (
               <input
                 autoFocus
                 value={editMsg}
-                onChange={(e) => setEditMsg(e.target.value.slice(0, 30))}
+                onChange={(event) => setEditMsg(event.target.value.slice(0, 30))}
                 onBlur={handleMsgBlur}
-                onKeyDown={(e) => e.key === 'Enter' && handleMsgBlur()}
+                onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
                 maxLength={30}
-                className="w-full text-center font-label-md text-label-md text-on-surface-variant bg-transparent border-b border-primary/40 outline-none h-10 text-[12px]"
+                className="h-11 w-full border-b border-primary/40 bg-transparent text-center font-label-md text-[15px] text-on-surface outline-none"
               />
             ) : (
               <button
                 onClick={() => setIsEditingMsg(true)}
-                className="font-label-md text-on-surface-variant leading-tight h-10 flex items-center text-center w-full justify-center text-[12px] hover:text-on-surface transition-colors"
+                className="flex h-11 w-full items-center justify-center text-center font-label-md text-[15px] leading-snug text-on-surface transition-colors hover:text-primary"
               >
-                {myStatus.message || <span className="opacity-40">한줄 메시지...</span>}
+                {myStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
               </button>
             )}
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
           </div>
 
-          {/* 파트너 카드 */}
-          <div className="home-status-card bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border border-transparent">
+          <div className="home-status-card flex flex-col items-center space-y-sm rounded-xl border border-transparent bg-[#F5F2EB] p-md text-center shadow-sm">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
-              <div className="w-2 h-2 rounded-full bg-outline-variant" />
+              <div className="h-2 w-2 rounded-full bg-outline-variant" />
             </div>
-            <div className="flex justify-around w-full py-xs">
-              <div className="text-xl p-xs">{CONDITION_EMOJI[partnerStatus.condition]}</div>
+            <div className="flex w-full justify-around py-xs">
+              <div className="p-xs text-xl">{CONDITION_EMOJI[partnerStatus.condition]}</div>
             </div>
             <div className="flex flex-wrap justify-center gap-xs">
               {(partnerStatus.mood.length > 0 ? partnerStatus.mood : ['—']).map((tag) => (
                 <MoodChip key={tag} label={tag} active={tag !== '—'} />
               ))}
             </div>
-            <p className="font-label-md text-on-surface-variant leading-tight h-10 flex items-center text-center text-[12px]">
+            <p className="flex h-11 items-center text-center font-label-md text-[15px] leading-snug text-on-surface">
               {partnerStatus.message || '아직 메시지가 없어요'}
             </p>
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>
           </div>
         </section>
 
-        {/* Tether Line */}
         <div className="py-sm">
-          <div className="h-1 w-full bg-gradient-to-r from-primary to-primary-container rounded-full opacity-30" />
+          <div className="h-1 w-full rounded-full bg-gradient-to-r from-primary to-primary-container opacity-30" />
         </div>
 
-        <RecentFeed items={feedItems} partnerName={partnerName} onNavigate={onNavigate} />
+        <RecentFeed
+          items={feedItems}
+          myName={myName}
+          myUid={uid}
+          partnerName={partnerName}
+          onNavigate={onNavigate}
+        />
 
-        {/* Quick Nav Grid */}
-        <section className="bg-[#F5F2EB] rounded-xl p-lg shadow-sm">
-          <div className="grid grid-cols-3 gap-y-xl gap-x-gutter">
+        <section className="rounded-xl bg-[#F5F2EB] p-lg shadow-sm">
+          <div className="grid grid-cols-3 gap-x-gutter gap-y-xl">
             {NAV_ITEMS.map(({ icon, label, screen }) => (
               <button
                 key={label}
                 onClick={() => onNavigate(screen)}
-                className="flex flex-col items-center gap-xs group"
+                className="group flex flex-col items-center gap-xs"
               >
-                <div className="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-primary text-3xl">{icon}</span>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary-container transition-transform group-hover:scale-105">
+                  <span className="material-symbols-outlined text-3xl text-primary">{icon}</span>
                 </div>
                 <span className="font-label-md text-label-md text-on-surface">{label}</span>
               </button>
@@ -206,44 +226,38 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </div>
         </section>
 
-        {/* D-day 기념일 카드 */}
         <section className="relative overflow-hidden rounded-2xl bg-[#F5F2EB] shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 to-primary-container/15 pointer-events-none" />
-          <div className="relative p-lg">
-            <p className="font-label-sm text-label-sm text-primary/70 uppercase tracking-widest mb-xs">
-              Today's Memory
-            </p>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/8 to-primary-container/15" />
+          <div className="relative flex flex-wrap items-center justify-between gap-sm p-lg">
             {firstMet ? (
-              <>
-                <h3 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs">
-                  함께한 지 {getDday(firstMet)} 🌿
+              <div className="min-w-0">
+                <h3 className="font-headline-md text-headline-md text-on-surface">
+                  함께한 지 {getDday(firstMet)}
                 </h3>
                 {urgentAnniversaries.length > 0 && (
-                  <div className="flex flex-wrap gap-xs mt-md">
+                  <div className="mt-sm flex flex-wrap gap-xs">
                     {urgentAnniversaries.map(({ item }) => (
                       <span
                         key={item.id}
-                        className="px-sm py-xs rounded-full bg-primary-container/60 font-label-sm text-label-sm text-on-surface"
+                        className="rounded-full bg-primary-container/60 px-sm py-xs font-label-sm text-label-sm text-on-surface"
                       >
                         {item.label} {getDday(item)}
                       </span>
                     ))}
                   </div>
                 )}
-              </>
+              </div>
             ) : (
-              <>
-                <h3 className="font-headline-md text-headline-md text-on-surface mb-xs">
-                  첫 만난 날을 입력해보세요
-                </h3>
-                <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-                  함께한 날과 다가오는 기념일을 홈에서 볼 수 있어요.
+              <div className="min-w-0">
+                <h3 className="font-headline-md text-headline-md text-on-surface">처음 만난 날을 입력해보세요</h3>
+                <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">
+                  함께한 날을 홈에서 바로 볼 수 있어요.
                 </p>
-              </>
+              </div>
             )}
             <button
               onClick={() => onNavigate('anniversary')}
-              className="mt-md px-lg py-sm bg-primary text-on-primary rounded-full font-label-md text-label-md active:scale-95 transition-transform"
+              className="shrink-0 rounded-full bg-primary px-lg py-sm font-label-md text-label-md text-on-primary transition-transform active:scale-95"
             >
               기념일 관리
             </button>

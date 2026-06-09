@@ -58,6 +58,8 @@ function AppContent() {
   const push = usePushNotification(session.uid)
   const pushSyncedRef = useRef<string | null>(null)
   const pendingNavRef = useRef<string | null>(null)
+  const screenRef = useRef<Screen>('lock')
+  screenRef.current = screen
 
   useEffect(() => {
     if (!session.uid || session.isLoading) return
@@ -81,6 +83,27 @@ function AppContent() {
     if (target === 'more') setScreen('settings')
     else if (NAVIGATION_SCREENS.has(target)) setScreen(target as Screen)
   }, [])
+
+  useEffect(() => {
+    if (session.status !== 'connected' || !unlocked || screen === 'lock') return
+    window.history.pushState({ tetherScreen: screen }, '', window.location.href)
+  }, [screen, session.status, unlocked])
+
+  useEffect(() => {
+    if (session.status !== 'connected' || !unlocked) return
+
+    const handlePopState = () => {
+      const current = screenRef.current
+      if (current !== 'home' && current !== 'lock') {
+        setScreen('home')
+      }
+      window.history.pushState({ tetherScreen: screenRef.current }, '', window.location.href)
+    }
+
+    window.history.replaceState({ tetherScreen: screenRef.current }, '', window.location.href)
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [session.status, unlocked])
 
   const requestNavigation = useCallback((target: string | null | undefined) => {
     if (!target || !NAVIGATION_SCREENS.has(target)) return

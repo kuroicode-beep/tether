@@ -43,6 +43,13 @@ const RELEASE_LOGS: ReleaseLogEntry[] = [
     title: '히스토리 메뉴 기능 의도대로 적용.',
     detail: '두 사람의 표정 아이콘, 태그, 상태 메시지를 시간 순으로 볼 수 있게 정리했습니다.',
   },
+  {
+    id: '2026-06-10-hotfix-home-status-usability',
+    date: '2026.06.10',
+    type: 'hotfix',
+    title: '홈 사용성 및 상태 표시 핫픽스.',
+    detail: '뒤로가기 동작, 닉네임 유지, 5단계 표정, 상태 태그, 최근 활동 표시를 보강했습니다.',
+  },
 ]
 
 export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {

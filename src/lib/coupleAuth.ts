@@ -177,6 +177,14 @@ const syncPublicProfile = async (uid: string, nickname: string) => {
   await setDoc(doc(db, 'publicProfiles', uid), { nickname: trimmed }, { merge: true })
 }
 
+// Updates the user's nickname in both private profile and public invite preview profile.
+export const updateUserNickname = async (uid: string, nickname: string) => {
+  const trimmed = nickname.trim()
+  if (!trimmed) return
+  await updateDoc(doc(db, 'users', uid), { nickname: trimmed })
+  await syncPublicProfile(uid, trimmed)
+}
+
 // users/{uid} 문서를 안전하게 조회한다
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   const snap = await getDoc(doc(db, 'users', uid))

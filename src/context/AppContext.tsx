@@ -94,11 +94,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 새 커플 정보를 등록한다 — 옛 startDate를 보존한다 (uid 일치 시에만)
   const connect = useCallback((data: ConnectInput) => {
     setState((prev) => {
+      const sameCouple = !prev.coupleId || prev.coupleId === data.coupleId
       const keepStartDate = prev.uid === data.uid && prev.startDate
         ? prev.startDate
         : data.startDate ?? new Date().toISOString().split('T')[0]
       const next: AppState = {
         ...data,
+        myNickname: sameCouple && prev.myNickname ? prev.myNickname : data.myNickname,
+        partnerNickname: sameCouple && prev.partnerNickname ? prev.partnerNickname : data.partnerNickname,
         isConnected: true,
         startDate: data.startDate ?? keepStartDate,
       }

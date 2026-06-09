@@ -1,12 +1,24 @@
 // src/hooks/useStatus.ts
-// 커플 상태(컨디션/기분/한줄 메시지) 실시간 구독 및 Firestore 저장
+// Subscribes to both partners' current status and appends status changes to history.
 import { useEffect, useState } from 'react'
+import { addDoc, collection, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { doc, onSnapshot, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore'
 
-export type Condition = 'tired' | 'normal' | 'good'
+export type Condition = 'very_bad' | 'bad' | 'normal' | 'good' | 'very_good'
 
-export const CONDITION_EMOJI: Record<Condition, string> = { good: '😊', normal: '😐', tired: '😴' }
+export const CONDITION_EMOJI: Record<Condition, string> = {
+  very_bad: '😭',
+  bad: '😔',
+  normal: '🙂',
+  good: '😊',
+  very_good: '😄',
+}
+
+const LEGACY_CONDITION: Record<string, Condition> = {
+  tired: 'bad',
+  normal: 'normal',
+  good: 'good',
+}
 
 export interface UserStatus {
   condition: Condition
@@ -22,13 +34,21 @@ const DEFAULT_STATUS: UserStatus = {
   updatedAt: null,
 }
 
+// Converts legacy and current Firestore condition values into the current 5-step model.
+const toCondition = (value: unknown): Condition => {
+  const raw = String(value ?? 'good')
+  if (raw in CONDITION_EMOJI) return raw as Condition
+  return LEGACY_CONDITION[raw] ?? 'good'
+}
+
+// Converts a Firestore status document into the local status shape.
 const toStatus = (data: Record<string, unknown>): UserStatus => ({
-  condition: (data['condition'] as Condition) ?? 'good',
-  mood: (data['mood'] as string[]) ?? [],
-  message: (data['message'] as string) ?? '',
+  condition: toCondition(data.condition),
+  mood: Array.isArray(data.mood) ? (data.mood as string[]) : [],
+  message: (data.message as string) ?? '',
   updatedAt:
-    typeof data['updatedAt'] === 'object' && data['updatedAt'] !== null && 'toMillis' in data['updatedAt']
-      ? (data['updatedAt'] as { toMillis: () => number }).toMillis()
+    typeof data.updatedAt === 'object' && data.updatedAt !== null && 'toMillis' in data.updatedAt
+      ? (data.updatedAt as { toMillis: () => number }).toMillis()
       : null,
 })
 
@@ -40,7 +60,6 @@ export function useStatus(
   const [myStatus, setMyStatus] = useState<UserStatus>(DEFAULT_STATUS)
   const [partnerStatus, setPartnerStatus] = useState<UserStatus>(DEFAULT_STATUS)
 
-  // 내 상태 문서를 Firestore에서 구독한다
   useEffect(() => {
     if (!coupleId || !myUid) {
       setMyStatus(DEFAULT_STATUS)
@@ -61,7 +80,6 @@ export function useStatus(
     return () => unsub()
   }, [coupleId, myUid])
 
-  // 파트너 상태 문서를 Firestore에서 구독한다
   useEffect(() => {
     if (!coupleId || !partnerUid) {
       setPartnerStatus(DEFAULT_STATUS)
@@ -82,7 +100,6 @@ export function useStatus(
     return () => unsub()
   }, [coupleId, partnerUid])
 
-  // 내 상태를 Firestore에 저장하고 히스토리에 기록한다
   const updateMyStatus = async (data: Omit<UserStatus, 'updatedAt'>) => {
     if (!coupleId || !myUid) return
 
