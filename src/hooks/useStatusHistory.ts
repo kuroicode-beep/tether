@@ -16,12 +16,19 @@ export interface StatusHistoryEntry {
 
 export function useStatusHistory(coupleId: string | null) {
   const [history, setHistory] = useState<StatusHistoryEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!coupleId) {
       setHistory([])
+      setLoading(false)
+      setError(null)
       return
     }
+
+    setLoading(true)
+    setError(null)
 
     const q = query(
       collection(db, 'couples', coupleId, 'statusHistory'),
@@ -29,27 +36,38 @@ export function useStatusHistory(coupleId: string | null) {
       limit(50),
     )
 
-    const unsub = onSnapshot(q, (snap) => {
-      setHistory(
-        snap.docs.map((d) => {
-          const data = d.data()
-          return {
-            id: d.id,
-            uid: (data.uid as string) ?? '',
-            condition: (data.condition as Condition) ?? 'good',
-            mood: (data.mood as string[]) ?? [],
-            message: (data.message as string) ?? '',
-            createdAt:
-              typeof data.createdAt === 'object' && data.createdAt !== null && 'toMillis' in data.createdAt
-                ? (data.createdAt as { toMillis: () => number }).toMillis()
-                : null,
-          }
-        }),
-      )
-    })
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setHistory(
+          snap.docs.map((d) => {
+            const data = d.data()
+            return {
+              id: d.id,
+              uid: (data.uid as string) ?? '',
+              condition: (data.condition as Condition) ?? 'good',
+              mood: Array.isArray(data.mood) ? (data.mood as string[]) : [],
+              message: (data.message as string) ?? '',
+              createdAt:
+                typeof data.createdAt === 'object' && data.createdAt !== null && 'toMillis' in data.createdAt
+                  ? (data.createdAt as { toMillis: () => number }).toMillis()
+                  : null,
+            }
+          }),
+        )
+        setLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.warn('[useStatusHistory] listener error', err)
+        setHistory([])
+        setLoading(false)
+        setError('상태 기록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')
+      },
+    )
 
     return () => unsub()
   }, [coupleId])
 
-  return history
+  return { history, loading, error }
 }

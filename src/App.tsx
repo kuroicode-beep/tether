@@ -12,7 +12,6 @@ import { DiaryScreen } from './screens/DiaryScreen'
 import { ContentsScreen } from './screens/ContentsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
-import { HistoryScreen } from './screens/HistoryScreen'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
@@ -233,7 +232,7 @@ function AppContent() {
         {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
-        {screen === 'history'     && <HistoryScreen onBack={toHome} />}
+        {screen === 'history'     && <StatusHistoryScreen onBack={toHome} />}
         {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
         {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
         {screen === 'settings'    && (
