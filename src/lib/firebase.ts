@@ -5,7 +5,6 @@ import { getFirestore } from 'firebase/firestore'
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
-  GoogleAuthProvider,
   indexedDBLocalPersistence,
   initializeAuth,
 } from 'firebase/auth'
@@ -25,12 +24,6 @@ export const isAndroidChrome = () => {
   return /Android/i.test(ua) && /Chrome/i.test(ua) && !/Edg|OPR|SamsungBrowser/i.test(ua)
 }
 
-// Android는 redirect 금지 (OAuth redirect_uri + storage 이슈). popup만 사용한다.
-export const shouldUseGoogleRedirect = () => {
-  if (typeof navigator === 'undefined') return false
-  if (isAndroid()) return false
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
 
 // Google OAuth redirect URI는 firebaseapp.com에 등록되어 있다. web.app authDomain은 Console 등록 전 사용 금지.
 const resolveAuthDomain = (projectId: string, configured?: string): string =>
@@ -73,8 +66,6 @@ export const auth = initializeAuth(app, {
 
 export const functions = getFunctions(app, 'us-central1')
 
-export const googleProvider = new GoogleAuthProvider()
-googleProvider.setCustomParameters({ prompt: 'select_account' })
 
 export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? ''
 
