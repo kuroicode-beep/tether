@@ -145,7 +145,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
   const [statusMenu, setStatusMenu] = useState<string | null>(null) // 상태 변경 메뉴 열린 id
 
   useEffect(() => {
-    markTabRead('more')
+    markTabRead('contents')
   }, [coupleId, uid, markTabRead])
 
   const myName = myNickname || '나'

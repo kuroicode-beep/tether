@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useChat, ChatMessage } from '../hooks/useChat'
 import { ContentActionSheet } from '../components/ContentActionSheet'
-import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
 import { ChatInput } from '../components/ChatInput'
@@ -36,25 +35,20 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
 export function ChatScreen({ onBack }: ChatScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { partnerNickname } = useApp()
-  const { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead, updateMessage, deleteMessage } = useChat(
+  const { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
   )
-  const { markTabRead } = useUnreadBadges()
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const isInitialLoad = useRef(true)
   const inputFocusedRef = useRef(false)
+  const markingReadRef = useRef<Set<string>>(new Set())
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
-
-  // 채팅 화면에 있는 동안 배지 해제 유지
-  useEffect(() => {
-    markTabRead('chat')
-  }, [coupleId, uid, messages.length, markTabRead])
 
   // 신규 메시지 도착 시 자동 스크롤 (입력 중에는 즉시 스크롤해 키보드 유지)
   useEffect(() => {
@@ -98,14 +92,24 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     return () => observer.disconnect()
   }, [hasMore, loading, loadMore])
 
-  // 상대방 메시지 읽음 처리
+  // 상대방 메시지 읽음 처리 (중복 write 방지)
   useEffect(() => {
-    messages.forEach((msg) => {
-      if (msg.senderUid !== uid && !msg.readBy.includes(uid ?? '')) {
-        markAsRead(msg.id)
-      }
+    if (!uid) return
+    const unreadIds = messages
+      .filter(
+        (msg) =>
+          msg.senderUid !== uid &&
+          !msg.readBy.includes(uid) &&
+          !markingReadRef.current.has(msg.id),
+      )
+      .map((msg) => msg.id)
+    if (unreadIds.length === 0) return
+
+    unreadIds.forEach((id) => markingReadRef.current.add(id))
+    markManyAsRead(unreadIds).finally(() => {
+      unreadIds.forEach((id) => markingReadRef.current.delete(id))
     })
-  }, [messages, uid, markAsRead])
+  }, [messages, uid, markManyAsRead])
 
   // 메시지 사이에 날짜 디바이더가 필요한지 판단
   const needsDivider = useCallback(

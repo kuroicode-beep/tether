@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { ImageViewer } from '../components/ImageViewer'
 import { useDiary, DiaryEntry } from '../hooks/useDiary'
-import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 
@@ -220,17 +219,12 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname } = useApp()
   const { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary } = useDiary(coupleId, uid)
-  const { markTabRead } = useUnreadBadges()
   const [view, setView] = useState<View>('list')
   const [selected, setSelected] = useState<DiaryEntry | null>(null)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
-
-  useEffect(() => {
-    if (view === 'list' || view === 'read') markTabRead('diary')
-  }, [view, coupleId, uid, markTabRead])
 
   const handleCardTap = async (entry: DiaryEntry) => {
     setSelected(entry)

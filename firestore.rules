@@ -58,20 +58,27 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // messages: 작성자 create/delete, readBy는 수신자도 갱신 가능
+      // messages: 작성자 text/edit, 수신자 readBy만 갱신
       match /messages/{messageId} {
         function isReadByOnlyUpdate() {
           return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
+        }
+
+        function isSenderTextEdit() {
+          return resource.data.senderUid == request.auth.uid
+                 && request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['text', 'editedAt']);
+        }
+
+        function isRecipientReadByUpdate() {
+          return resource.data.senderUid != request.auth.uid && isReadByOnlyUpdate();
         }
 
         allow read: if isCoupleMember();
         allow create: if isCoupleMember()
                       && request.resource.data.senderUid == request.auth.uid;
         allow update: if isCoupleMember()
-                      && (
-                        resource.data.senderUid == request.auth.uid
-                        || isReadByOnlyUpdate()
-                      );
+                      && (isSenderTextEdit() || isRecipientReadByUpdate());
         allow delete: if isCoupleMember()
                       && resource.data.senderUid == request.auth.uid;
       }

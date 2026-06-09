@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   collection, addDoc, onSnapshot,
   query, orderBy, limit, startAfter,
-  Timestamp, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs,
+  Timestamp, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs, writeBatch,
   QueryDocumentSnapshot, DocumentData,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -210,17 +210,23 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [coupleId, myUid, applyMerge, failOptimistic])
 
-  const markAsRead = useCallback(async (messageId: string) => {
-    if (!coupleId || !myUid || isOptimisticId(messageId)) return
+  const markManyAsRead = useCallback(async (messageIds: string[]) => {
+    if (!coupleId || !myUid || messageIds.length === 0) return
+    const ids = messageIds.filter((id) => !isOptimisticId(id))
+    if (ids.length === 0) return
     try {
-      await updateDoc(
-        doc(db, 'couples', coupleId, 'messages', messageId),
-        { readBy: arrayUnion(myUid) },
-      )
-      debugLog('useChat.ts:markAsRead', 'ok', { msgIdLen: messageId.length }, 'H5')
+      const batch = writeBatch(db)
+      ids.forEach((messageId) => {
+        batch.update(doc(db, 'couples', coupleId, 'messages', messageId), {
+          readBy: arrayUnion(myUid),
+        })
+      })
+      await batch.commit()
+      debugLog('useChat.ts:markManyAsRead', 'ok', { count: ids.length }, 'H5')
     } catch (error) {
       const code = (error as { code?: string })?.code ?? 'unknown'
-      debugLog('useChat.ts:markAsRead', 'fail', { code }, 'H5')
+      debugLog('useChat.ts:markManyAsRead', 'fail', { code, count: ids.length }, 'H5')
+      console.warn('[useChat] markManyAsRead failed', error)
     }
   }, [coupleId, myUid])
 
@@ -245,5 +251,5 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [coupleId])
 
-  return { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead, updateMessage, deleteMessage }
+  return { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage }
 }

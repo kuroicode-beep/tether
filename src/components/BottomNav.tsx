@@ -1,5 +1,5 @@
 // src/components/BottomNav.tsx
-// 하단 네비게이션 + 미읽음 배지
+// 하단 네비게이션 + 미읽음 배지 (more 탭 = contents 배지, Settings 진입 시 읽음 처리 안 함)
 import { NavTab, useUnreadBadges } from '../context/UnreadBadgesContext'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
@@ -9,27 +9,28 @@ interface BottomNavProps {
   onNavigate: (screen: Screen) => void
 }
 
-export function BottomNav({ active, onNavigate }: BottomNavProps) {
-  const { badges, markTabRead } = useUnreadBadges()
+type NavItem = {
+  id: Screen
+  badgeKey?: NavTab
+  icon: string
+  label: string
+}
 
-  const items: { id: Screen; tab?: NavTab; icon: string; label: string }[] = [
+export function BottomNav({ active, onNavigate }: BottomNavProps) {
+  const { badges } = useUnreadBadges()
+
+  const items: NavItem[] = [
     { id: 'home', icon: 'home', label: 'Home' },
-    { id: 'chat', tab: 'chat', icon: 'chat_bubble', label: 'Chat' },
-    { id: 'diary', tab: 'diary', icon: 'auto_stories', label: 'Diary' },
-    { id: 'more', tab: 'more', icon: 'more_horiz', label: 'More' },
+    { id: 'chat', badgeKey: 'chat', icon: 'chat_bubble', label: 'Chat' },
+    { id: 'diary', badgeKey: 'diary', icon: 'auto_stories', label: 'Diary' },
+    { id: 'more', badgeKey: 'contents', icon: 'more_horiz', label: 'More' },
   ]
 
-  const handleNavigate = (id: Screen, tab?: NavTab) => {
-    if (tab) markTabRead(tab)
-    onNavigate(id)
-  }
-
-  const renderBadge = (tab?: NavTab) => {
-    if (!tab) return null
-    if (tab === 'chat' && active === 'chat') return null
-    if (tab === 'diary' && active === 'diary') return null
-    if (tab === 'more' && active === 'more') return null
-    const count = badges[tab]
+  const renderBadge = (badgeKey?: NavTab) => {
+    if (!badgeKey) return null
+    if (badgeKey === 'chat' && active === 'chat') return null
+    if (badgeKey === 'diary' && active === 'diary') return null
+    const count = badges[badgeKey]
     if (count <= 0) return null
     return (
       <span
@@ -46,12 +47,12 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
       className="app-fixed-x fixed bottom-0 flex justify-around items-center pt-sm pb-lg px-xl bg-surface-container-low/80 backdrop-blur-md shadow-sm z-50 rounded-t-xl"
       style={{ height: 'var(--bottom-nav-height)' }}
     >
-      {items.map(({ id, tab, icon, label }) => {
+      {items.map(({ id, badgeKey, icon, label }) => {
         const isActive = active === id
         return (
           <button
             key={id}
-            onClick={() => handleNavigate(id, tab)}
+            onClick={() => onNavigate(id)}
             className={
               isActive
                 ? 'relative flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-md py-xs scale-95 transition-transform duration-150'
@@ -65,7 +66,7 @@ export function BottomNav({ active, onNavigate }: BottomNavProps) {
               >
                 {icon}
               </span>
-              {renderBadge(tab)}
+              {renderBadge(badgeKey)}
             </span>
             <span className="font-label-sm text-label-sm">{label}</span>
           </button>
