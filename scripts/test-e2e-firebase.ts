@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth'
 import {
   addDoc,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -127,6 +128,7 @@ async function main() {
   let inviteCode = ''
   const messageIds: string[] = []
   const statusHistoryIds: string[] = []
+  const contentIds: string[] = []
 
   try {
     userA = (await signInAnonymously(authA)).user
@@ -139,6 +141,7 @@ async function main() {
       coupleId: null,
       createdAt: serverTimestamp(),
     })
+    await setDoc(doc(dbA, 'publicProfiles', userA.uid), { nickname: 'E2E A' })
     await setDoc(doc(dbB, 'users', userB.uid), {
       uid: userB.uid,
       nickname: 'E2E B',
@@ -146,6 +149,7 @@ async function main() {
       coupleId: null,
       createdAt: serverTimestamp(),
     })
+    await setDoc(doc(dbB, 'publicProfiles', userB.uid), { nickname: 'E2E B' })
 
     // ── 정상 invite claim 커플 연결 ─────────────────────────────────────────
     inviteCode = await createInvite(dbA, userA.uid)
@@ -187,6 +191,7 @@ async function main() {
       coupleId: null,
       createdAt: serverTimestamp(),
     })
+    await setDoc(doc(dbC, 'publicProfiles', userC.uid), { nickname: 'E2E C intruder' })
 
     await expectCallableError(
       'already used invite code',
@@ -295,6 +300,62 @@ async function main() {
       deleteDoc(doc(dbA, 'couples', coupleId, 'statusHistory', historyRef.id)),
     )
 
+    // ── Step 3: users / messages / contents ownership ─────────────────────
+    const partnerUserSnap = await getDoc(doc(dbB, 'users', userA.uid))
+    if (!partnerUserSnap.exists()) {
+      throw new Error('Partner should read coupled user doc')
+    }
+
+    await expectDenied('non-partner user doc read', () =>
+      getDoc(doc(dbC, 'users', userA.uid)),
+    )
+
+    const publicSnap = await getDoc(doc(dbC, 'publicProfiles', userA.uid))
+    if (!publicSnap.exists()) {
+      throw new Error('Authenticated user should read publicProfiles')
+    }
+
+    await expectDenied('self coupleId tamper', () =>
+      updateDoc(doc(dbA, 'users', userA.uid), { coupleId: 'fake-couple-id' }),
+    )
+
+    await updateDoc(doc(dbA, 'users', userA.uid), {
+      'lastRead.contents': serverTimestamp(),
+    })
+
+    await updateDoc(doc(dbB, 'couples', coupleId, 'messages', messageRef.id), {
+      readBy: arrayUnion(userB.uid),
+    })
+    const readSnap = await getDoc(doc(dbB, 'couples', coupleId, 'messages', messageRef.id))
+    if (!(readSnap.data()?.readBy ?? []).includes(userB.uid)) {
+      throw new Error('Partner readBy update failed')
+    }
+
+    await expectDenied('partner message text tamper', () =>
+      updateDoc(doc(dbB, 'couples', coupleId, 'messages', messageRef.id), {
+        text: 'hacked',
+      }),
+    )
+
+    const contentRef = await addDoc(collection(dbA, 'couples', coupleId, 'contents'), {
+      addedBy: userA.uid,
+      category: 'movie',
+      title: 'e2e-content',
+      memo: null,
+      status: 'want',
+      rating: null,
+      review: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    contentIds.push(contentRef.id)
+
+    await expectDenied('partner content delete', () =>
+      deleteDoc(doc(dbB, 'couples', coupleId, 'contents', contentRef.id)),
+    )
+
+    await deleteDoc(doc(dbA, 'couples', coupleId, 'contents', contentRef.id))
+
     // ── Codex #16/#17 보안 회귀 ───────────────────────────────────────────
     await expectDenied('forced user coupleId cross-update', () =>
       updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
@@ -325,7 +386,7 @@ async function main() {
     )
 
     console.log(
-      'Firebase E2E passed: invite claim, bidirectional share, status integrity, security regression (forced pairing blocked)',
+      'Firebase E2E passed: invite claim, bidirectional share, status integrity, Step 3 ownership rules, security regression',
     )
   } finally {
     if (userA && userB && coupleId) {
@@ -344,16 +405,19 @@ async function main() {
 
     if (userC && appC) {
       const dbC = getFirestore(appC)
+      try { await deleteDoc(doc(dbC, 'publicProfiles', userC.uid)) } catch { /* ignore */ }
       try { await deleteDoc(doc(dbC, 'users', userC.uid)) } catch { /* ignore */ }
       await deleteAuthUser(userC)
       try { await deleteApp(appC) } catch { /* ignore */ }
     }
 
     if (userA) {
+      try { await deleteDoc(doc(dbA, 'publicProfiles', userA.uid)) } catch { /* ignore */ }
       try { await deleteDoc(doc(dbA, 'users', userA.uid)) } catch { /* ignore */ }
       await deleteAuthUser(userA)
     }
     if (userB) {
+      try { await deleteDoc(doc(dbB, 'publicProfiles', userB.uid)) } catch { /* ignore */ }
       try { await deleteDoc(doc(dbB, 'users', userB.uid)) } catch { /* ignore */ }
       await deleteAuthUser(userB)
     }

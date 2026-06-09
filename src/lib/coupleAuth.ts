@@ -88,6 +88,7 @@ export const createOrGetUserDoc = async (
     if (Object.keys(updates).length > 0) {
       await setDoc(userRef, updates, { merge: true })
     }
+    await syncPublicProfile(uid, profile.nickname)
 
     return { ...profile, isNew: false }
   }
@@ -110,6 +111,7 @@ export const createOrGetUserDoc = async (
     },
     createdAt: serverTimestamp(),
   })
+  await syncPublicProfile(uid, profile.nickname)
 
   return { ...profile, isNew: true }
 }
@@ -151,6 +153,12 @@ export const findUserByInviteCode = async (
   const fromUid = invite?.fromUid as string | undefined
   if (!fromUid) return null
 
+  const publicSnap = await getDoc(doc(db, 'publicProfiles', fromUid))
+  if (publicSnap.exists()) {
+    const nickname = (publicSnap.data()?.nickname as string | undefined)?.trim()
+    return { uid: fromUid, nickname: nickname || '상대방' }
+  }
+
   const profile = await getUserProfile(fromUid)
   if (!profile) return null
 
@@ -161,6 +169,13 @@ export const findUserByInviteCode = async (
 }
 
 export const findUserByCode = findUserByInviteCode
+
+// publicProfiles/{uid}에 닉네임을 동기화한다 — 초대 미리보기용
+const syncPublicProfile = async (uid: string, nickname: string) => {
+  const trimmed = nickname.trim()
+  if (!trimmed) return
+  await setDoc(doc(db, 'publicProfiles', uid), { nickname: trimmed }, { merge: true })
+}
 
 // users/{uid} 문서를 안전하게 조회한다
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {

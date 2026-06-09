@@ -2,15 +2,77 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // users: 본인 문서만 쓰기 — coupleId cross-update 금지
-    match /users/{uid} {
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function myCoupleId() {
+      return request.auth != null
+             && userDoc(request.auth.uid).data.keys().hasAny(['coupleId'])
+             && userDoc(request.auth.uid).data.coupleId is string
+             ? userDoc(request.auth.uid).data.coupleId
+             : null;
+    }
+
+    function isPartnerUser(uid) {
+      return request.auth != null
+             && request.auth.uid != uid
+             && myCoupleId() != null
+             && userDoc(uid).data.keys().hasAny(['coupleId'])
+             && userDoc(uid).data.coupleId == myCoupleId();
+    }
+
+    // Invite preview nickname.
+    match /publicProfiles/{uid} {
+      function validPublicProfileWrite() {
+        return request.resource.data.keys().hasOnly(['nickname'])
+               && request.resource.data.nickname is string
+               && request.resource.data.nickname.size() > 0
+               && request.resource.data.nickname.size() <= 40;
+      }
+
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == uid
+                            && validPublicProfileWrite();
       allow delete: if false;
     }
 
-    // invites: 1회용 커플 연결 토큰 — 생성/조회만 클라이언트 허용, claim은 Cloud Function
+    // User docs: self and coupled partner can read; clients cannot mutate coupleId.
+    match /users/{uid} {
+      function coupleIdUnchanged() {
+        return request.resource.data.coupleId == resource.data.coupleId;
+      }
+
+      function validUserCreate() {
+        return !('coupleId' in request.resource.data)
+               || request.resource.data.coupleId == null;
+      }
+
+      function userMutableKeysOnly() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'nickname',
+          'inviteCode',
+          'fcmToken',
+          'fcmUpdatedAt',
+          'notificationSettings',
+          'lastRead',
+        ]);
+      }
+
+      allow read: if request.auth != null
+                  && (request.auth.uid == uid || isPartnerUser(uid));
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && validUserCreate();
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && coupleIdUnchanged()
+                    && userMutableKeysOnly();
+      allow delete: if false;
+    }
+
+    // Invites: clients create/read tokens; claim runs through Cloud Functions.
     match /invites/{code} {
       allow create: if request.auth != null
                     && request.resource.data.fromUid == request.auth.uid
@@ -19,7 +81,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // couples: 멤버만 read/update — create는 Admin SDK(claimInvite) 전용
+    // Couples: members read/update, creation is Admin SDK only.
     match /couples/{coupleId} {
       function isMember() {
         return request.auth != null
@@ -43,14 +105,14 @@ service cloud.firestore {
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['members']);
       allow delete: if false;
 
-      // status: 본인 문서만 create/update
+      // Status: users can write only their own status document.
       match /status/{uid} {
         allow read: if isCoupleMember();
         allow create, update: if isCoupleMember() && request.auth.uid == uid;
         allow delete: if false;
       }
 
-      // statusHistory: append-only, uid 위조 금지
+      // Status history is append-only and uid must match the writer.
       match /statusHistory/{entryId} {
         allow read: if isCoupleMember();
         allow create: if isCoupleMember()
@@ -58,7 +120,7 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // messages: 작성자 text/edit, 수신자 readBy만 갱신
+      // Messages: sender edits text; recipient can only add their own readBy uid.
       match /messages/{messageId} {
         function previousReadBy() {
           return resource.data.keys().hasAny(['readBy']) && resource.data.readBy is list
@@ -101,7 +163,7 @@ service cloud.firestore {
                       && resource.data.senderUid == request.auth.uid;
       }
 
-      // diary: 작성자 create/update/delete, isRead는 읽는 파트너도 true로 갱신 가능
+      // Diary: author owns entries; partner may only mark as read.
       match /diary/{diaryId} {
         function isDiaryReadOnlyUpdate() {
           return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
@@ -120,14 +182,57 @@ service cloud.firestore {
                       && resource.data.authorUid == request.auth.uid;
       }
 
+      // Photos: uploadedBy owns create/update/delete; only caption is editable.
       match /photos/{photoId} {
-        allow read, write: if isCoupleMember();
+        function isPhotoOwnerCreate() {
+          return request.resource.data.uploadedBy == request.auth.uid;
+        }
+
+        function isPhotoOwner() {
+          return resource.data.uploadedBy == request.auth.uid;
+        }
+
+        function isOwnerCaptionUpdate() {
+          return isPhotoOwner()
+                 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['caption']);
+        }
+
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember() && isPhotoOwnerCreate();
+        allow update: if isCoupleMember() && isOwnerCaptionUpdate();
+        allow delete: if isCoupleMember() && isPhotoOwner();
       }
 
+      // Contents: addedBy owns the item; partner can update status fields only.
       match /contents/{contentId} {
-        allow read, write: if isCoupleMember();
+        function isContentOwnerCreate() {
+          return request.resource.data.addedBy == request.auth.uid;
+        }
+
+        function isContentOwner() {
+          return resource.data.addedBy == request.auth.uid;
+        }
+
+        function isOwnerContentUpdate() {
+          return isContentOwner()
+                 && !request.resource.data.diff(resource.data).affectedKeys()
+                       .hasAny(['addedBy', 'createdAt']);
+        }
+
+        function isPartnerStatusUpdate() {
+          return resource.data.addedBy != request.auth.uid
+                 && request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['status', 'rating', 'review', 'updatedAt']);
+        }
+
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember() && isContentOwnerCreate();
+        allow update: if isCoupleMember()
+                      && (isOwnerContentUpdate() || isPartnerStatusUpdate());
+        allow delete: if isCoupleMember() && isContentOwner();
       }
 
+      // History: authorUid owns create/update/delete.
       match /history/{itemId} {
         allow read: if isCoupleMember();
         allow create: if isCoupleMember()
