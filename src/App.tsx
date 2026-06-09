@@ -15,6 +15,7 @@ import { PhotoAlbum } from './screens/PhotoAlbum'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
+import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import {
@@ -32,7 +33,7 @@ import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory'
+  | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
 
 const NAVIGATION_SCREENS = new Set<string>([
   'home',
@@ -44,6 +45,7 @@ const NAVIGATION_SCREENS = new Set<string>([
   'history',
   'anniversary',
   'statusHistory',
+  'releaseLog',
 ])
 
 function AppContent() {
@@ -235,6 +237,7 @@ function AppContent() {
         {screen === 'history'     && <StatusHistoryScreen onBack={toHome} />}
         {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
         {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
+        {screen === 'releaseLog'  && <ReleaseLogScreen onBack={toHome} />}
         {screen === 'settings'    && (
           <SettingsScreen
             onBack={toHome}

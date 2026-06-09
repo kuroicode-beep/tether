@@ -69,6 +69,14 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       {/* TopAppBar */}
       <header className="home-header w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
         <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
+        <div className="flex items-center gap-xs">
+          <button
+            className="min-h-[50px] rounded-full px-md font-label-md text-label-md text-primary hover:bg-surface-container transition-colors duration-200"
+            onClick={() => onNavigate('releaseLog')}
+            aria-label="업데이트 로그"
+          >
+            Log
+          </button>
         <button
           className="min-w-[50px] min-h-[50px] flex items-center justify-center hover:bg-surface-container transition-colors duration-200 rounded-full"
           onClick={() => onNavigate('more')}
@@ -76,6 +84,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         >
           <span className="material-symbols-outlined text-primary">settings</span>
         </button>
+        </div>
       </header>
 
       <main className="w-full px-margin-mobile space-y-lg pt-lg">

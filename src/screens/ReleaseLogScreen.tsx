@@ -1,0 +1,82 @@
+// src/screens/ReleaseLogScreen.tsx
+// Shows release, update, and hotfix notes for the app.
+import { SubScreen } from '../components/SubScreen'
+import { ScreenHeader } from '../components/ScreenHeader'
+
+interface ReleaseLogScreenProps {
+  onBack: () => void
+}
+
+type LogType = 'release' | 'update' | 'hotfix'
+
+interface ReleaseLogEntry {
+  id: string
+  date: string
+  type: LogType
+  title: string
+  detail?: string
+}
+
+const TYPE_LABEL: Record<LogType, string> = {
+  release: '릴리즈',
+  update: '업데이트',
+  hotfix: '핫픽스',
+}
+
+const TYPE_CLASS: Record<LogType, string> = {
+  release: 'bg-primary text-on-primary',
+  update: 'bg-secondary-container text-on-surface',
+  hotfix: 'bg-error-container text-on-error-container',
+}
+
+const RELEASE_LOGS: ReleaseLogEntry[] = [
+  {
+    id: '2026-06-10-release-rc-v0-1',
+    date: '2026.06.10',
+    type: 'release',
+    title: 'Tether RC v0.1 완료.',
+  },
+  {
+    id: '2026-06-10-update-history-status-timeline',
+    date: '2026.06.10',
+    type: 'update',
+    title: '히스토리 메뉴 기능 의도대로 적용.',
+    detail: '두 사람의 표정 아이콘, 태그, 상태 메시지를 시간 순으로 볼 수 있게 정리했습니다.',
+  },
+]
+
+export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
+  return (
+    <SubScreen>
+      <ScreenHeader title="Log" onBack={onBack} />
+
+      <main className="sub-screen-body w-full px-margin-mobile py-lg pb-32">
+        <section className="mb-lg rounded-xl bg-[#F5F2EB] p-md shadow-sm">
+          <h2 className="font-label-md text-label-md font-semibold text-on-surface">업데이트 기록</h2>
+          <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">
+            릴리즈, 핫픽스, 기능 변경 기록을 날짜순으로 확인할 수 있어요.
+          </p>
+        </section>
+
+        <div className="space-y-md">
+          {RELEASE_LOGS.map((entry) => (
+            <article key={entry.id} className="rounded-xl bg-surface-container p-md shadow-sm">
+              <div className="mb-sm flex flex-wrap items-center gap-xs">
+                <span className={`rounded-full px-sm py-xs font-label-sm text-label-sm ${TYPE_CLASS[entry.type]}`}>
+                  {TYPE_LABEL[entry.type]}
+                </span>
+                <time className="font-label-sm text-label-sm text-on-surface-variant">{entry.date}</time>
+              </div>
+              <h3 className="font-label-md text-label-md font-semibold text-on-surface">{entry.title}</h3>
+              {entry.detail && (
+                <p className="mt-xs font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
+                  {entry.detail}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      </main>
+    </SubScreen>
+  )
+}
