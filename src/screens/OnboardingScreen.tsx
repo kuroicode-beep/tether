@@ -10,7 +10,7 @@ import {
   waitForCoupleConnection,
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
-import { usePushNotification } from '../hooks/usePushNotification'
+import { canRequestPushPermission, usePushNotification } from '../hooks/usePushNotification'
 import { useSession } from '../context/SessionContext'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join'
@@ -212,7 +212,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
         partnerUid,
       })
 
-      if (!push.isGranted() && 'Notification' in window) {
+      if (!push.isGranted() && canRequestPushPermission()) {
         setShowPushSheet(true)
       } else {
         onConnected()

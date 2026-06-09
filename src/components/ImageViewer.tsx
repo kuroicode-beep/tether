@@ -29,7 +29,8 @@ export function ImageViewer({ url, onClose }: ImageViewerProps) {
       {/* 닫기 버튼 */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+        className="image-viewer-close absolute z-10 w-[50px] h-[50px] rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+        aria-label="닫기"
       >
         <span className="material-symbols-outlined">close</span>
       </button>

@@ -107,6 +107,10 @@ export async function requestAndSavePushToken(uid: string): Promise<boolean> {
     console.warn('[Push] ServiceWorker 미지원')
     return false
   }
+  if (!canRequestPushPermission()) {
+    console.warn('[Push] iOS Safari tab — permission blocked until standalone PWA')
+    return false
+  }
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') {
@@ -131,9 +135,10 @@ export function usePushNotification(uid: string | null) {
     return syncFcmToken(uid)
   }
 
-  const requestPermission = async (): Promise<'granted' | 'denied'> => {
+  const requestPermission = async (): Promise<'granted' | 'denied' | 'blocked'> => {
     if (!('Notification' in window)) return 'denied'
     if (!uid) return 'denied'
+    if (!canRequestPushPermission()) return 'blocked'
 
     if (Notification.permission === 'granted') {
       await syncFcmToken(uid)
@@ -199,4 +204,11 @@ export function isStandalonePwa(): boolean {
     return true
   }
   return window.matchMedia('(display-mode: standalone)').matches
+}
+
+// iOS Safari 탭에서는 push permission 요청을 막고 standalone PWA에서만 허용한다
+export function canRequestPushPermission(): boolean {
+  if (!('Notification' in window)) return false
+  if (isIOSBrowser() && !isStandalonePwa()) return false
+  return true
 }

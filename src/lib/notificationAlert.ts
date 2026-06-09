@@ -4,6 +4,7 @@ import type { NotificationSettings } from '../hooks/usePushNotification'
 
 export const NOTIFICATION_SOUND_URL = '/sounds/chime.wav'
 export const SW_PLAY_SOUND_MESSAGE = 'PLAY_NOTIFICATION_SOUND'
+export const SW_NAVIGATE_MESSAGE = 'NAVIGATE'
 
 let audioCtx: AudioContext | null = null
 let chimeAudio: HTMLAudioElement | null = null
@@ -74,9 +75,15 @@ export function playNotificationSound() {
   }
 }
 
-// 앱이 열려 있을 때 시스템 알림 표시 (소리는 playNotificationSound가 담당)
-export function showSystemNotification(title: string, body: string, tag?: string) {
+// 앱이 백그라운드일 때만 시스템 알림 표시
+export function showSystemNotification(
+  title: string,
+  body: string,
+  tag?: string,
+  onClick?: () => void,
+) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
+  if (document.visibilityState === 'visible') return
 
   try {
     const n = new Notification(title, {
@@ -89,6 +96,7 @@ export function showSystemNotification(title: string, body: string, tag?: string
     } as NotificationOptions)
     n.onclick = () => {
       window.focus()
+      onClick?.()
       n.close()
     }
   } catch {
@@ -105,4 +113,14 @@ export function shouldAlertForType(
   if (type === 'status') return settings.status !== false
   if (type === 'diary') return settings.diary !== false
   return true
+}
+
+// 알림 URL에서 screen 쿼리 파라미터를 추출한다
+export function screenFromNotificationUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url, window.location.origin)
+    return parsed.searchParams.get('screen')
+  } catch {
+    return null
+  }
 }

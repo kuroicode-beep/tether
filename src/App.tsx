@@ -20,8 +20,10 @@ import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import {
   playNotificationSound,
+  screenFromNotificationUrl,
   shouldAlertForType,
   showSystemNotification,
+  SW_NAVIGATE_MESSAGE,
   SW_PLAY_SOUND_MESSAGE,
 } from './lib/notificationAlert'
 import { debugLog } from './lib/debugLog'
@@ -33,6 +35,18 @@ type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
   | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory'
 
+const NAVIGATION_SCREENS = new Set<string>([
+  'home',
+  'chat',
+  'diary',
+  'contents',
+  'settings',
+  'photo',
+  'history',
+  'anniversary',
+  'statusHistory',
+])
+
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
@@ -42,6 +56,7 @@ function AppContent() {
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const push = usePushNotification(session.uid)
   const pushSyncedRef = useRef<string | null>(null)
+  const pendingNavRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!session.uid || session.isLoading) return
@@ -63,30 +78,42 @@ function AppContent() {
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
-    else setScreen(target as Screen)
+    else if (NAVIGATION_SCREENS.has(target)) setScreen(target as Screen)
   }, [])
+
+  const requestNavigation = useCallback((target: string | null | undefined) => {
+    if (!target || !NAVIGATION_SCREENS.has(target)) return
+    if (!unlocked) {
+      pendingNavRef.current = target
+      return
+    }
+    navigate(target)
+  }, [unlocked, navigate])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const target = params.get('screen')
-    if (target && unlocked && target !== 'lock') {
-      setScreen(target as Screen)
-    }
-  }, [unlocked])
+    if (target) requestNavigation(target)
+  }, [unlocked, requestNavigation])
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
     const onSwMessage = (event: MessageEvent) => {
-      if (event.data?.type !== SW_PLAY_SOUND_MESSAGE) return
-      const type = (event.data?.alertType as string) ?? undefined
+      const data = event.data ?? {}
+      if (data.type === SW_NAVIGATE_MESSAGE) {
+        requestNavigation(data.screen as string | undefined)
+        return
+      }
+      if (data.type !== SW_PLAY_SOUND_MESSAGE) return
+      const type = (data.alertType as string) ?? undefined
       if (!shouldAlertForType(type, push.loadSettings())) return
       playNotificationSound()
     }
 
     navigator.serviceWorker.addEventListener('message', onSwMessage)
     return () => navigator.serviceWorker.removeEventListener('message', onSwMessage)
-  }, [push])
+  }, [push, requestNavigation])
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
@@ -95,19 +122,25 @@ function AppContent() {
       const title = payload.notification?.title ?? data.title ?? 'Tether'
       const body = payload.notification?.body ?? data.body ?? ''
       const type = (data.type as string) ?? undefined
+      const target = (data.screen as string | undefined) ?? screenFromNotificationUrl((data.url as string | undefined) ?? '')
       const settings = push.loadSettings()
 
       const willAlert = shouldAlertForType(type, settings)
-      debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert }, 'H4')
+      const isVisible = document.visibilityState === 'visible'
+      debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert, isVisible }, 'H4')
       if (willAlert) {
-        playNotificationSound()
-        showSystemNotification(title, body, type ?? 'tether-fg')
+        if (isVisible) {
+          playNotificationSound()
+          setToast({ title, body, type })
+        } else {
+          showSystemNotification(title, body, type ?? 'tether-fg', () => requestNavigation(target))
+        }
+        return
       }
-
-      setToast({ title, body, type })
+      if (isVisible) setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [session.uid])
+  }, [session.uid, push, requestNavigation])
 
   // 세션이 앱 진입 가능 상태를 벗어나면 잠금 상태와 AppContext 캐시를 정리한다.
   useEffect(() => {
@@ -128,11 +161,21 @@ function AppContent() {
   useEffect(() => {
     if (session.status !== 'connected' || !session.connection) return
     connect(session.connection)
-    if (unlocked) setScreen('home')
-  }, [session.status, session.connection, unlocked, connect])
+  }, [session.status, session.connection, connect])
 
   const handleUnlocked = () => {
     setUnlocked(true)
+    const pending = pendingNavRef.current
+    if (pending) {
+      pendingNavRef.current = null
+      navigate(pending)
+      return
+    }
+    const urlScreen = screenFromNotificationUrl(window.location.href)
+    if (urlScreen) {
+      navigate(urlScreen)
+      return
+    }
     setScreen(session.status === 'connected' ? 'home' : 'onboarding')
   }
 

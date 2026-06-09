@@ -4,7 +4,7 @@ import { useFontScale } from '../hooks/useFontScale'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
-import { usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
+import { canRequestPushPermission, usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
 import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
@@ -132,6 +132,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   }
 
   const handleRequestPush = async () => {
+    if (!canRequestPushPermission()) return
     const result = await push.requestPermission()
     if (result === 'granted') setPushGranted(true)
   }
@@ -416,10 +417,10 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {/* 권한 미허용 배너 */}
-            {!pushGranted && (
+            {!pushGranted && canRequestPushPermission() && (
               <button
                 onClick={handleRequestPush}
-                className="w-full flex items-center gap-md p-md border-b border-outline-variant/20 bg-secondary-container/30 hover:bg-secondary-container/50 transition-colors text-left"
+                className="w-full flex items-center gap-md p-md border-b border-outline-variant/20 bg-secondary-container/30 hover:bg-secondary-container/50 transition-colors text-left min-h-[50px]"
               >
                 <span className="material-symbols-outlined text-secondary">notifications_off</span>
                 <div className="flex-1">
@@ -448,7 +449,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                   </div>
                   <button
                     onClick={() => handleNotifToggle(key)}
-                    className="relative inline-flex items-center cursor-pointer"
+                    className="relative inline-flex items-center cursor-pointer min-w-[50px] min-h-[50px] justify-end"
                     aria-label={`${label} 알림 토글`}
                   >
                     <div className={`w-11 h-6 rounded-full transition-colors relative ${on ? 'bg-[#4A7B5F]' : 'bg-outline-variant'}`}>

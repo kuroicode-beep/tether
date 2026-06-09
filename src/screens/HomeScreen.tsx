@@ -67,11 +67,12 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   return (
     <div className="screen min-h-screen text-on-surface pb-32">
       {/* TopAppBar */}
-      <header className="w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
+      <header className="home-header w-full top-0 sticky bg-surface flex justify-between items-center px-margin-mobile py-sm z-50">
         <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
         <button
-          className="p-xs hover:bg-surface-container transition-colors duration-200 rounded-full"
+          className="min-w-[50px] min-h-[50px] flex items-center justify-center hover:bg-surface-container transition-colors duration-200 rounded-full"
           onClick={() => onNavigate('more')}
+          aria-label="설정"
         >
           <span className="material-symbols-outlined text-primary">settings</span>
         </button>
@@ -91,7 +92,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
             📜 로그
           </button>
           {/* 내 카드 */}
-          <div className="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border-2 border-primary-container">
+          <div className="home-status-card bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border-2 border-primary-container">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{myName}</span>
               <div className="w-2 h-2 rounded-full bg-primary" />
@@ -151,7 +152,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </div>
 
           {/* 파트너 카드 */}
-          <div className="bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border border-transparent">
+          <div className="home-status-card bg-[#F5F2EB] rounded-xl p-md shadow-sm flex flex-col items-center text-center space-y-sm border border-transparent">
             <div className="flex items-center gap-xs">
               <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
               <div className="w-2 h-2 rounded-full bg-outline-variant" />

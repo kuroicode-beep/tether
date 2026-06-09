@@ -13,6 +13,15 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function screenFromUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl, self.location.origin);
+    return url.searchParams.get('screen');
+  } catch {
+    return null;
+  }
+}
+
 // 백그라운드 FCM 메시지를 시스템 알림으로 표시한다 (data-only 페이로드)
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
@@ -20,9 +29,11 @@ messaging.onBackgroundMessage((payload) => {
   const title = data.title ?? payload.notification?.title ?? 'Tether 💕';
   const body = data.body ?? payload.notification?.body ?? '';
   const type = data.type ?? 'tether-msg';
+  const targetUrl = data.url ?? '/';
 
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
     const hasClient = clients.length > 0;
+    const screen = data.screen ?? screenFromUrl(targetUrl);
     clients.forEach((client) => {
       client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
     });
@@ -35,15 +46,16 @@ messaging.onBackgroundMessage((payload) => {
       renotify: true,
       silent: hasClient,
       vibrate: [80, 50, 80],
-      data: { url: data.url ?? '/', ...data },
+      data: { url: targetUrl, screen, ...data },
     });
   });
 });
 
-// 알림 클릭 시 앱 창 포커스 또는 해당 URL로 이동한다
+// 알림 클릭 시 앱 창 포커스 + React 라우팅 메시지 전송
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const rawUrl = event.notification.data?.url ?? '/';
+  const screen = event.notification.data?.screen ?? screenFromUrl(rawUrl) ?? 'home';
   const urlToOpen = rawUrl.startsWith('http')
     ? rawUrl
     : self.location.origin + (rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`);
@@ -51,7 +63,8 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
-        if (client.url.includes('tether') && 'focus' in client) {
+        if ('focus' in client) {
+          client.postMessage({ type: 'NAVIGATE', screen });
           if ('navigate' in client && urlToOpen !== client.url) {
             return client.navigate(urlToOpen).then(() => client.focus());
           }

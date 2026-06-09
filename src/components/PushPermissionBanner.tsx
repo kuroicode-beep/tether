@@ -1,7 +1,7 @@
 // src/components/PushPermissionBanner.tsx
 // PC/모바일 Web Push 권한 유도 배너 (한 번 닫으면 재표시 안 함)
 import { useState } from 'react'
-import { usePushNotification } from '../hooks/usePushNotification'
+import { canRequestPushPermission, usePushNotification } from '../hooks/usePushNotification'
 import { useApp } from '../context/AppContext'
 
 const LS_DISMISSED = 'pushDismissed'
@@ -13,7 +13,7 @@ export function PushPermissionBanner() {
   const [hidden, setHidden] = useState(() => localStorage.getItem(LS_DISMISSED) === 'true')
 
   if (hidden) return null
-  if (!('Notification' in window)) return null
+  if (!canRequestPushPermission()) return null
   if (Notification.permission !== 'default') return null
   if (push.isGranted()) return null
 
