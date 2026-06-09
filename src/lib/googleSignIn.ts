@@ -2,7 +2,6 @@
 // Android 등에서 redirect_uri_mismatch를 피하기 위해 GIS 토큰 → signInWithCredential 사용
 import {
   AuthCredential,
-  AuthError,
   GoogleAuthProvider,
   linkWithCredential,
   signInWithCredential,
@@ -143,25 +142,3 @@ export async function linkGoogleViaGsi(currentUser: User): Promise<User> {
   return result.user
 }
 
-// 익명이면 link, 이미 쓰는 Google 계정이면 같은 credential로 sign-in 전환
-export async function signInOrLinkGoogleViaGsi(currentUser: User | null): Promise<User> {
-  const credential = await requestGoogleCredential()
-
-  if (currentUser?.isAnonymous) {
-    try {
-      const result = await linkWithCredential(currentUser, credential)
-      return result.user
-    } catch (error) {
-      const code = (error as AuthError)?.code ?? ''
-      if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
-        const result = await signInWithCredential(auth, credential)
-        return result.user
-      }
-      if (code === 'auth/provider-already-linked') return currentUser
-      throw error
-    }
-  }
-
-  const result = await signInWithCredential(auth, credential)
-  return result.user
-}

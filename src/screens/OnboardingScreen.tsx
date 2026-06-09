@@ -258,7 +258,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             <div className="text-center">
               <h2 className="font-headline-md text-headline-md text-on-surface">시작하기</h2>
               <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                Google 로그인을 권장해요. 다른 기기에서도 같은 데이터로 접속할 수 있어요.
+                PC에서 가입한 계정이 있으면 Google로 로그인하세요. 새로 시작하려면 닉네임을 입력해주세요.
               </p>
             </div>
             <button
@@ -267,7 +267,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               className="w-full bg-white text-on-surface rounded-full py-md px-lg font-label-md text-label-md border border-outline-variant/40 flex items-center justify-center gap-sm disabled:opacity-40 active:scale-95 transition-transform"
             >
               <span className="font-bold text-primary">G</span>
-              {loading ? 'Google 로그인 중...' : 'Google로 시작하기'}
+              {loading ? 'Google 로그인 중...' : 'Google로 로그인'}
             </button>
             <div className="flex items-center gap-md">
               <div className="h-px bg-outline-variant/40 flex-1" />

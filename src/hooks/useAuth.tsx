@@ -8,10 +8,11 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   signInWithCredential,
+  signOut,
   User,
 } from 'firebase/auth'
 import { auth, isAndroid } from '../lib/firebase'
-import { signInOrLinkGoogleViaGsi } from '../lib/googleSignIn'
+import { linkGoogleViaGsi, signInWithGoogleViaGsi } from '../lib/googleSignIn'
 import {
   createOrGetUserDoc,
   getMyCoupleId,
@@ -289,26 +290,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Link the current session with Google via GIS token credentials.
+  // Google 자격이 이미 다른 계정에 묶여 있으면 해당 계정으로 로그인한다 (설정 > Google 연결용)
+  const signInWithExistingGoogleCredential = async (error: unknown) => {
+    const credential = GoogleAuthProvider.credentialFromError(error as AuthError)
+    if (!credential) return null
+    const result = await signInWithCredential(auth, credential)
+    markRedirecting(false)
+    await syncProfile(result.user)
+    return result.user
+  }
+
+  // 설정에서 익명 계정에 Google을 연결한다 (가입 승격)
   const linkGoogle = async () => {
     if (!auth.currentUser) throw new Error('로그인 정보가 없습니다.')
 
     try {
-      const linked = await signInOrLinkGoogleViaGsi(auth.currentUser)
+      const linked = await linkGoogleViaGsi(auth.currentUser)
       await syncProfile(linked)
       markRedirecting(false)
     } catch (error) {
       const code = (error as AuthError)?.code ?? ''
       if (code === 'auth/provider-already-linked') return
+      if (code === 'auth/credential-already-in-use') {
+        const existing = await signInWithExistingGoogleCredential(error)
+        if (existing) return
+        // GIS link 오류에는 credential이 없을 수 있음 — 익명 세션 제거 후 로그인
+        await signOut(auth)
+        const user = await signInWithGoogleViaGsi()
+        await syncProfile(user)
+        markRedirecting(false)
+        return
+      }
       markRedirecting(false)
       throw error
     }
   }
 
-  // Sign in with Google via GIS token credentials so OAuth redirect URIs are never used.
+  // 온보딩 Google 버튼 — 기존 계정 로그인 (익명 연결/가입 시도 금지)
   const signInWithGoogle = async () => {
     try {
-      const user = await signInOrLinkGoogleViaGsi(auth.currentUser)
+      if (auth.currentUser) {
+        await signOut(auth)
+      }
+
+      const user = await signInWithGoogleViaGsi()
       await syncProfile(user)
       markRedirecting(false)
       return user
