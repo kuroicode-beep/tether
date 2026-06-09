@@ -750,7 +750,11 @@ Stabilize PWA notifications, safe areas, and high contrast chat UI.
 
 # 08. 완료 보고서 작성 기준
 
-각 Step 완료 시 Notion 또는 로컬 완료 보고서에 아래 항목을 기록한다.
+각 Step 완료 시 **반드시** 프로젝트 `docs/`에 Markdown 완료보고서를 작성한다. (Notion 사용 안 함)
+
+- 파일명: `docs/cursor-completion-YYYY-MM-DD-[작업명].md`
+- 템플릿: `docs/cursor-completion-report-template.md`
+- 완료보고서 없이 Step 완료 처리 금지
 
 ```text
 제목: 완료 보고서 — Tether 안정화 Step N ([작업명], Cursor, YYYY.MM.DD)

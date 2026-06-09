@@ -1,0 +1,32 @@
+---
+description: Tether — Cursor 작업 문서는 docs/에 저장, 완료보고서 필수
+alwaysApply: true
+---
+
+# Tether — Cursor 문서·완료보고서 규칙
+
+## 필수
+
+- 모든 작업 완료 시 `docs/cursor-completion-YYYY-MM-DD-[작업명].md` 작성.
+- 완료보고서 없이 완료 처리 금지.
+- Notion에 Cursor 완료보고서 작성 금지.
+
+## 작업 시작 전
+
+1. `docs/implementation-work-instructions-*.md` — 작업지시문
+2. `docs/engineering-review-*.md` — 구조 리뷰
+3. `docs/cursor-completion-*.md` — 이전 완료보고서
+4. `docs/codex-verification-*.md` — Codex 검증보고서
+
+## Tether 검증 명령
+
+- `npm run build` — 필수
+- Firestore rules 변경 시: `npm run test:rules` (있을 때)
+- 배포 시: `firebase deploy` 결과 기록
+
+## 파일명 예시
+
+- `docs/cursor-completion-2026-05-29-session-source-of-truth.md`
+- `docs/codex-verification-2026-05-29-step-1-session.md`
+
+템플릿: `docs/cursor-completion-report-template.md`
