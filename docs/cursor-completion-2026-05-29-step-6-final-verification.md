@@ -7,7 +7,7 @@
 ## 01. 작업 요약
 
 - 목표: Steps 1–5 통합 자동 검증, Firestore/Storage rules·hosting 배포, live E2E, 실기기 QA 체크리스트 정리
-- 결과: 자동 검증·배포 완료 / 실기기 QA는 소장님 대기
+- 결과: 자동 검증·배포 완료 (Codex 재검증 통과) / 실기기 QA는 소장님 대기
 - 배포 여부: **배포 완료** (rules + hosting)
 
 ## 02. 작업 로그
@@ -100,7 +100,7 @@ E2E 검증 범위:
 ## 08. 남은 작업
 
 - [ ] 실기기 QA 체크리스트 (담당: 소장님)
-- [ ] Codex Step 6 최종 재검증 (담당: Codex)
+- [x] Codex Step 6 최종 재검증 — `docs/codex-verification-2026-06-09-step-6-final-verification.md` (통과)
 - [ ] 필요 시 functions 재배포 (이번 Step 6에서 functions 미변경)
 
 ## 09. 핸드오프 메모
@@ -112,6 +112,7 @@ E2E 검증 범위:
 ## 10. Git
 
 - Step 5 커밋: `ae91852`
-- Step 6 docs 커밋: (본 보고서 커밋 예정)
-- push 여부: Step 5 push 완료
+- Step 6 docs 커밋: `fb8806f`
+- Codex 재검증 docs 커밋: (본 커밋 예정)
+- push 여부: 예
 - 배포: rules + hosting 완료
