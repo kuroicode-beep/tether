@@ -44,6 +44,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const isInitialLoadRef = useRef(true)
+  const initialScrollDoneRef = useRef(false)
   const lastMessageIdRef = useRef<string | null>(null)
   const inputFocusedRef = useRef(false)
   const markingReadRef = useRef<Set<string>>(new Set())
@@ -65,16 +66,22 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     const lastId = messages[messages.length - 1]?.id
     if (!lastId) return
 
-    const runScroll = (behavior: ScrollBehavior) => {
+    const runScroll = (behavior: ScrollBehavior, afterScroll?: () => void) => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => scrollToBottom(behavior))
+        requestAnimationFrame(() => {
+          scrollToBottom(behavior)
+          afterScroll?.()
+        })
       })
     }
 
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false
       lastMessageIdRef.current = lastId
-      runScroll('auto')
+      initialScrollDoneRef.current = false
+      runScroll('auto', () => {
+        initialScrollDoneRef.current = true
+      })
       return
     }
 
@@ -87,9 +94,11 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
   // 상단 도달 시 이전 메시지 로드 (IntersectionObserver)
   useEffect(() => {
-    if (!topRef.current) return
+    const root = listRef.current
+    if (!topRef.current || !root) return
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (!initialScrollDoneRef.current) return
         if (entry.isIntersecting && hasMore && !loading) {
           const list = listRef.current
           const prevHeight = list?.scrollHeight ?? 0
@@ -101,7 +110,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
           })
         }
       },
-      { threshold: 0.1 },
+      { root, threshold: 0.1 },
     )
     observer.observe(topRef.current)
     return () => observer.disconnect()
@@ -139,7 +148,10 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   )
 
   return (
-    <div className="screen min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
+    <div
+      className="screen flex flex-col overflow-hidden"
+      style={{ background: 'var(--color-bg)', height: '100dvh' }}
+    >
       <header className="chat-header">
         <button type="button" onClick={onBack} className="back-btn" aria-label="뒤로">
           <span className="material-symbols-outlined">arrow_back</span>
@@ -158,7 +170,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
       <main
         ref={listRef}
-        className="flex-1 overflow-y-auto px-4 flex flex-col"
+        className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '80px' }}
       >
         <div ref={topRef} className="h-1 shrink-0">
