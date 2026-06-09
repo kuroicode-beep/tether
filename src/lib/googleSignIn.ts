@@ -8,6 +8,7 @@ import {
   User,
 } from 'firebase/auth'
 import { app, auth } from './firebase'
+import { debugLog } from './debugLog'
 
 declare global {
   interface Window {
@@ -130,9 +131,20 @@ async function requestGoogleCredential(): Promise<AuthCredential> {
 // GIS credential로 Google 로그인
 export async function signInWithGoogleViaGsi(): Promise<User> {
   void app
-  const credential = await requestGoogleCredential()
-  const result = await signInWithCredential(auth, credential)
-  return result.user
+  try {
+    const credential = await requestGoogleCredential()
+    const result = await signInWithCredential(auth, credential)
+    // #region agent log
+    debugLog('googleSignIn.ts:signIn', 'GIS sign-in ok', { uidLen: result.user.uid.length, anon: result.user.isAnonymous }, 'H1')
+    // #endregion
+    return result.user
+  } catch (error) {
+    const code = (error as { code?: string })?.code ?? 'unknown'
+    // #region agent log
+    debugLog('googleSignIn.ts:signIn', 'GIS sign-in fail', { code }, 'H1')
+    // #endregion
+    throw error
+  }
 }
 
 // GIS credential로 익명 계정에 Google 연결

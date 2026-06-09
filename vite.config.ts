@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png', 'firebase-messaging-sw.js'],
+      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png', 'firebase-messaging-sw.js', 'sounds/chime.wav'],
       manifest: {
         name: 'Tether',
         short_name: 'Tether',
@@ -70,7 +70,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wav}'],
         // FCM background handler를 PWA SW(/sw.js)에 통합 — 별도 scope 충돌 방지 (#22 Codex)
         importScripts: ['firebase-messaging-sw.js'],
       }

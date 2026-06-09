@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { isSameDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useChat, ChatMessage } from '../hooks/useChat'
 import { ContentActionSheet } from '../components/ContentActionSheet'
 import { useUnreadBadges } from '../context/UnreadBadgesContext'
@@ -33,7 +34,8 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
 }
 
 export function ChatScreen({ onBack }: ChatScreenProps) {
-  const { uid, coupleId, partnerNickname } = useApp()
+  const { uid, coupleId } = useCoupleSession()
+  const { partnerNickname } = useApp()
   const { messages, hasMore, loading, loadMore, sendText, sendImage, markAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
@@ -44,6 +46,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const isInitialLoad = useRef(true)
+  const inputFocusedRef = useRef(false)
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
@@ -53,15 +56,24 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     markTabRead('chat')
   }, [coupleId, uid, messages.length, markTabRead])
 
-  // 신규 메시지 도착 시 자동 스크롤 (초기 로드 포함)
+  // 신규 메시지 도착 시 자동 스크롤 (입력 중에는 즉시 스크롤해 키보드 유지)
   useEffect(() => {
     if (messages.length === 0) return
+    const list = listRef.current
+    if (!list) return
+
     if (isInitialLoad.current) {
-      bottomRef.current?.scrollIntoView()
+      list.scrollTop = list.scrollHeight
       isInitialLoad.current = false
-    } else {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      return
     }
+
+    if (inputFocusedRef.current) {
+      list.scrollTop = list.scrollHeight
+      return
+    }
+
+    list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
   }, [messages.length])
 
   // 상단 도달 시 이전 메시지 로드 (IntersectionObserver)
@@ -213,7 +225,11 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
         <div ref={bottomRef} className="h-1" />
       </main>
 
-      <ChatInput onSendText={sendText} onSendImage={sendImage} />
+      <ChatInput
+        onSendText={sendText}
+        onSendImage={sendImage}
+        onFocusChange={(focused) => { inputFocusedRef.current = focused }}
+      />
 
       {viewerUrl && (
         <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />

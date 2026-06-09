@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   collection, addDoc, onSnapshot, doc,
   updateDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
+import { isOptimisticId, mergeByCreatedAtDesc, reconcilePending } from '../lib/syncHelpers'
 
 export interface DiaryReply {
   authorUid: string
@@ -48,9 +49,11 @@ function toEntry(data: Record<string, unknown>, id: string): DiaryEntry {
 
 export function useDiary(coupleId: string | null, myUid: string | null) {
   const [entries, setEntries] = useState<DiaryEntry[]>([])
+  const pendingRef = useRef(new Map<string, DiaryEntry>())
 
   useEffect(() => {
     if (!coupleId) {
+      pendingRef.current.clear()
       setEntries([])
       return
     }
@@ -59,9 +62,21 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
       collection(db, 'couples', coupleId, 'diary'),
       orderBy('createdAt', 'desc'),
     )
-    const unsub = onSnapshot(q, (snap) => {
-      setEntries(snap.docs.map((d) => toEntry(d.data() as Record<string, unknown>, d.id)))
-    })
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const server = snap.docs.map((d) => toEntry(d.data() as Record<string, unknown>, d.id))
+        reconcilePending(pendingRef.current, server, (p, s) =>
+          p.authorUid === s.authorUid
+          && p.title === s.title
+          && p.createdAt != null
+          && s.createdAt != null
+          && Math.abs(p.createdAt - s.createdAt) < 120_000,
+        )
+        setEntries(mergeByCreatedAtDesc(server, [...pendingRef.current.values()]))
+      },
+      (err) => console.warn('[useDiary] listener error', err),
+    )
     return () => unsub()
   }, [coupleId])
 
@@ -73,7 +88,10 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
         const path = `couples/${coupleId}/diary/${Date.now()}_${data.imageFile.name}`
         await uploadBytes(ref(storage, path), data.imageFile)
         imageUrl = await getDownloadURL(ref(storage, path))
-      } catch { imageUrl = null }
+      } catch (err) {
+        console.warn('[useDiary] image upload failed', err)
+        imageUrl = null
+      }
     }
 
     const optimistic: DiaryEntry = {
@@ -86,7 +104,8 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
       isRead: false,
       reply: null,
     }
-    setEntries((prev) => [optimistic, ...prev])
+    pendingRef.current.set(optimistic.id, optimistic)
+    setEntries((prev) => mergeByCreatedAtDesc(prev.filter((e) => e.id !== optimistic.id), [optimistic]))
 
     try {
       await addDoc(collection(db, 'couples', coupleId, 'diary'), {
@@ -98,15 +117,21 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
         isRead: false,
         reply: null,
       })
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[useDiary] writeDiary failed', err)
+      pendingRef.current.delete(optimistic.id)
+      setEntries((prev) => prev.filter((e) => e.id !== optimistic.id))
+    }
   }
 
   const markDiaryRead = async (diaryId: string) => {
-    if (!coupleId || diaryId.startsWith('opt_')) return
+    if (!coupleId || isOptimisticId(diaryId)) return
     setEntries((prev) => prev.map((e) => e.id === diaryId ? { ...e, isRead: true } : e))
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), { isRead: true })
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[useDiary] markDiaryRead failed', err)
+    }
   }
 
   const writeReply = async (
@@ -120,7 +145,10 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
         const path = `couples/${coupleId}/diary/${diaryId}/reply_${Date.now()}`
         await uploadBytes(ref(storage, path), data.imageFile)
         imageUrl = await getDownloadURL(ref(storage, path))
-      } catch { imageUrl = null }
+      } catch (err) {
+        console.warn('[useDiary] reply image upload failed', err)
+        imageUrl = null
+      }
     }
 
     const reply: DiaryReply = {
@@ -131,33 +159,39 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
     }
     setEntries((prev) => prev.map((e) => e.id === diaryId ? { ...e, reply } : e))
 
-    if (diaryId.startsWith('opt_')) return
+    if (isOptimisticId(diaryId)) return
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
         reply: { authorUid: myUid, content: data.content, imageUrl, createdAt: serverTimestamp() },
       })
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[useDiary] writeReply failed', err)
+    }
   }
 
   const updateDiary = async (
     diaryId: string,
     data: { title: string; content: string },
   ) => {
-    if (!coupleId || diaryId.startsWith('opt_')) return
+    if (!coupleId || isOptimisticId(diaryId)) return
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
         title: data.title,
         content: data.content,
         updatedAt: serverTimestamp(),
       })
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[useDiary] updateDiary failed', err)
+    }
   }
 
   const deleteDiary = async (diaryId: string) => {
-    if (!coupleId || diaryId.startsWith('opt_')) return
+    if (!coupleId || isOptimisticId(diaryId)) return
     try {
       await deleteDoc(doc(db, 'couples', coupleId, 'diary', diaryId))
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[useDiary] deleteDiary failed', err)
+    }
   }
 
   return { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary }

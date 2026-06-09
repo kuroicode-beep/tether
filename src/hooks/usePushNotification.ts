@@ -3,6 +3,7 @@
 import { getToken, onMessage, MessagePayload } from 'firebase/messaging'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db, VAPID_KEY, getMessagingIfSupported } from '../lib/firebase'
+import { debugLog } from '../lib/debugLog'
 
 const LS_GRANTED = 'tether_fcm_granted'
 const LS_SETTINGS = 'tether_notification_settings'
@@ -45,6 +46,9 @@ async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistrati
 async function syncFcmToken(uid: string | null): Promise<string | null> {
   try {
     if (!VAPID_KEY) {
+      // #region agent log
+      debugLog('usePushNotification.ts:syncFcmToken', 'no vapid', {}, 'H3')
+      // #endregion
       console.error('[Push] VAPID 키 없음 — VITE_FIREBASE_VAPID_KEY 확인')
       return null
     }
@@ -78,9 +82,16 @@ async function syncFcmToken(uid: string | null): Promise<string | null> {
       console.log('[Push] Token saved to Firestore')
     }
 
+    // #region agent log
+    debugLog('usePushNotification.ts:syncFcmToken', 'ok', { hasToken: true, saved: Boolean(uid) }, 'H3')
+    // #endregion
     localStorage.setItem(LS_GRANTED, 'true')
     return token
   } catch (error) {
+    const code = (error as { code?: string })?.code ?? 'unknown'
+    // #region agent log
+    debugLog('usePushNotification.ts:syncFcmToken', 'fail', { code }, 'H3')
+    // #endregion
     console.error('[Push] 오류:', error)
     return null
   }

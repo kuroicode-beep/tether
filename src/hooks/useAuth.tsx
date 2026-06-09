@@ -11,7 +11,8 @@ import {
   signOut,
   User,
 } from 'firebase/auth'
-import { auth, isAndroid } from '../lib/firebase'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { auth, db, isAndroid } from '../lib/firebase'
 import { linkGoogleViaGsi, signInWithGoogleViaGsi } from '../lib/googleSignIn'
 import {
   createOrGetUserDoc,
@@ -19,6 +20,7 @@ import {
   restoreConnectionFromProfile,
   RestoredConnection,
 } from '../lib/coupleAuth'
+import { debugLog } from '../lib/debugLog'
 
 type AuthContextValue = {
   user: User | null
@@ -153,17 +155,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!restored) {
       // coupleId는 있지만 couples 문서나 partner 정보를 못 읽은 경우 — 일단 user만 유지하고
       // OnboardingScreen으로 보내 사용자가 다시 흐름을 탈 수 있게 한다.
+      // #region agent log
+      debugLog('useAuth.tsx:syncProfile', 'restore failed', { hasCoupleId: Boolean(nextCoupleId) }, 'H1')
+      // #endregion
       setUser(nextUser)
       setCoupleIdState(null)
       setConnection(null)
       return null
     }
 
+    // #region agent log
+    debugLog('useAuth.tsx:syncProfile', 'profile ok', { hasCouple: true }, 'H1')
+    // #endregion
     setUser(nextUser)
     setCoupleIdState(restored.coupleId)
     setConnection(restored)
     return restored.coupleId
   }
+
+  // 탭/PWA 복귀 시 Firestore 프로필을 다시 읽어 멀티 디바이스 동기화를 맞춘다
+  useEffect(() => {
+    if (!user) return
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      void syncProfile(user)
+    }
+
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [user])
+
+  // users/{uid}.coupleId 실시간 반영 — PC/폰 전환 시 Auth·AppContext 동기화
+  useEffect(() => {
+    if (!user) return
+
+    const unsub = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
+      const nextCoupleId = (snap.data()?.coupleId as string | null | undefined) ?? null
+      setCoupleIdState((prev) => {
+        if (prev === nextCoupleId) return prev
+        return nextCoupleId
+      })
+
+      if (!nextCoupleId) {
+        setConnection(null)
+        return
+      }
+
+      try {
+        const restored = await restoreConnectionFromProfile(user.uid)
+        setConnection(restored)
+      } catch (error) {
+        console.warn('[useAuth] live coupleId restore failed', error)
+      }
+    })
+
+    return () => unsub()
+  }, [user?.uid])
 
   useEffect(() => {
     cancelledRef.current = false
@@ -334,10 +382,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const user = await signInWithGoogleViaGsi()
-      await syncProfile(user)
+      const cid = await syncProfile(user)
+      // #region agent log
+      debugLog('useAuth.tsx:signInWithGoogle', 'done', { hasCouple: Boolean(cid) }, 'H1')
+      // #endregion
       markRedirecting(false)
       return user
     } catch (error) {
+      const code = (error as AuthError)?.code ?? 'unknown'
+      // #region agent log
+      debugLog('useAuth.tsx:signInWithGoogle', 'fail', { code }, 'H1')
+      // #endregion
       markRedirecting(false)
       setAuthError(toAuthErrorMessage(error))
       throw error

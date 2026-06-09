@@ -4,6 +4,7 @@ import { ContentActionSheet } from '../components/ContentActionSheet'
 import { useContents, ContentCategory, ContentItem, ContentStatus } from '../hooks/useContents'
 import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 interface ContentsScreenProps { onNavigate: (screen: Screen) => void }
@@ -134,7 +135,8 @@ function DoneSheet({ item, onSave, onClose }: DoneSheetProps) {
 // ── 메인 ────────────────────────────────────────────────────────────────────
 
 export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
-  const { uid, coupleId, myNickname, partnerNickname } = useApp()
+  const { uid, coupleId } = useCoupleSession()
+  const { myNickname, partnerNickname } = useApp()
   const { items, addContent, updateStatus, updateContent, deleteContent } = useContents(coupleId, uid)
   const { markTabRead } = useUnreadBadges()
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('전체')

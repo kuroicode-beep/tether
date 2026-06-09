@@ -12,6 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { debugLog } from '../lib/debugLog'
 
 export type NavTab = 'chat' | 'diary' | 'more'
 export type UnreadBadges = Record<NavTab, number>
@@ -127,7 +128,14 @@ export function UnreadBadgesProvider({
         await updateDoc(doc(db, 'users', uid), {
           [`lastRead.${tab}`]: serverTimestamp(),
         })
+        // #region agent log
+        debugLog('UnreadBadgesContext.tsx:markTabRead', 'ok', { tab }, 'H2')
+        // #endregion
       } catch (error) {
+        const code = (error as { code?: string })?.code ?? 'unknown'
+        // #region agent log
+        debugLog('UnreadBadgesContext.tsx:markTabRead', 'fail', { tab, code }, 'H2')
+        // #endregion
         console.warn('[UnreadBadges] markTabRead failed', error)
       }
     },

@@ -89,6 +89,12 @@ body {
   isolation: isolate;
 }
 
+.app-screen-slot {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+}
+
 /* 모든 화면 최상위 — 컨테이너 너비 100% 채우기 (#21) */
 .screen {
   width: 100%;
@@ -420,6 +426,20 @@ body {
   justify-content: flex-end;
 }
 
+.message-image-btn {
+  max-width: 68%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.message-image-fallback {
+  opacity: 0.85;
+  font-size: 14px;
+}
+
 .message-partner .message-time {
   justify-content: flex-start;
 }
@@ -438,6 +458,69 @@ body {
 
 .message-group .message-row:last-child {
   margin-bottom: 0;
+}
+
+/* 서브 화면 — 이전 화면 헤더가 비치지 않게 전체 덮기 */
+.sub-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.sub-screen-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+[data-theme="high-contrast"] .screen-header {
+  background: #111;
+  border-bottom-color: #222;
+}
+
+.screen-header-back {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.screen-header-title {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-primary);
+  line-height: 1.3;
+}
+
+.screen-header-spacer {
+  width: 44px;
+  flex-shrink: 0;
 }
 
 /* 채팅 헤더 */

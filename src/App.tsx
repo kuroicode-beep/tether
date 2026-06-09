@@ -20,9 +20,12 @@ import {
   playNotificationSound,
   shouldAlertForType,
   showSystemNotification,
+  SW_PLAY_SOUND_MESSAGE,
 } from './lib/notificationAlert'
+import { debugLog } from './lib/debugLog'
 import { useTheme } from './hooks/useTheme'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { useCoupleSession } from './hooks/useCoupleSession'
 import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 
 type Screen =
@@ -77,15 +80,35 @@ function AppContent() {
     }
   }, [unlocked])
 
+  // 백그라운드 SW가 보낸 차임 재생 요청 (앱이 살아 있을 때)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+
+    const onSwMessage = (event: MessageEvent) => {
+      if (event.data?.type !== SW_PLAY_SOUND_MESSAGE) return
+      const type = (event.data?.alertType as string) ?? undefined
+      if (!shouldAlertForType(type, push.loadSettings())) return
+      playNotificationSound()
+    }
+
+    navigator.serviceWorker.addEventListener('message', onSwMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onSwMessage)
+  }, [push])
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
     push.onForegroundMessage((payload) => {
-      const title = payload.notification?.title ?? 'Tether'
-      const body = payload.notification?.body ?? ''
-      const type = (payload.data?.type as string) ?? undefined
+      const data = payload.data ?? {}
+      const title = payload.notification?.title ?? data.title ?? 'Tether'
+      const body = payload.notification?.body ?? data.body ?? ''
+      const type = (data.type as string) ?? undefined
       const settings = push.loadSettings()
 
-      if (shouldAlertForType(type, settings)) {
+      const willAlert = shouldAlertForType(type, settings)
+      // #region agent log
+      debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert }, 'H4')
+      // #endregion
+      if (willAlert) {
         playNotificationSound()
         showSystemNotification(title, body, type ?? 'tether-fg')
       }
@@ -108,6 +131,18 @@ function AppContent() {
       disconnect()
     }
   }, [user, isLoading, appUid, appCoupleId, disconnect])
+
+  // Auth coupleId와 AppContext 캐시가 어긋나면 stale 데이터 구독을 막는다
+  useEffect(() => {
+    if (isLoading) return
+    if (coupleId === null && appCoupleId) {
+      disconnect()
+      return
+    }
+    if (coupleId && appCoupleId && coupleId !== appCoupleId) {
+      disconnect()
+    }
+  }, [isLoading, coupleId, appCoupleId, disconnect])
 
   // useAuth가 복원한 connection을 AppContext에 반영하고, 잠금이 풀린 상태면 홈으로 보낸다
   useEffect(() => {
@@ -161,29 +196,31 @@ function AppContent() {
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
 
-      {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
-      {screen === 'chat'        && <ChatScreen onBack={toHome} />}
-      {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
-      {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
-      {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
-      {screen === 'history'     && <HistoryScreen onBack={toHome} />}
-      {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
-      {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
-      {screen === 'settings'    && (
-        <SettingsScreen
-          onBack={toHome}
-          onChangePin={handleChangePin}
-          onDisconnect={handleDisconnect}
-          onOpenAnniversary={() => setScreen('anniversary')}
-        />
-      )}
-      {screen === 'home' && <HomeScreen onNavigate={navigate} />}
+      <div key={screen} className="app-screen-slot">
+        {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
+        {screen === 'chat'        && <ChatScreen onBack={toHome} />}
+        {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
+        {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
+        {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
+        {screen === 'history'     && <HistoryScreen onBack={toHome} />}
+        {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
+        {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
+        {screen === 'settings'    && (
+          <SettingsScreen
+            onBack={toHome}
+            onChangePin={handleChangePin}
+            onDisconnect={handleDisconnect}
+            onOpenAnniversary={() => setScreen('anniversary')}
+          />
+        )}
+        {screen === 'home' && <HomeScreen onNavigate={navigate} />}
+      </div>
     </>
   )
 }
 
 function AppWithBadges() {
-  const { uid, coupleId } = useApp()
+  const { uid, coupleId } = useCoupleSession()
   return (
     <UnreadBadgesProvider coupleId={coupleId} uid={uid}>
       <AppContent />

@@ -6,6 +6,8 @@ import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
 import { usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
 import { useAuth } from '../hooks/useAuth'
+import { SubScreen } from '../components/SubScreen'
+import { ScreenHeader } from '../components/ScreenHeader'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -166,30 +168,18 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   }
 
   return (
-    <div
-      className="screen min-h-screen pb-xxl"
-      style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
-    >
-      {/* Header */}
-      <header
-        className="w-full top-0 sticky z-40 flex justify-between items-center px-margin-mobile py-sm"
-        style={{ background: 'var(--color-surface)' }}
-      >
-        <div className="flex items-center gap-md">
-          <button
-            onClick={onBack}
-            className="material-symbols-outlined text-primary hover:bg-surface-container rounded-full p-xs transition-colors duration-200"
-          >
-            arrow_back
-          </button>
-          <h1 className="font-headline-md text-headline-md font-semibold text-primary">Settings</h1>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center">
-          <span className="material-symbols-outlined text-primary">person</span>
-        </div>
-      </header>
+    <SubScreen>
+      <ScreenHeader
+        title="설정"
+        onBack={onBack}
+        right={(
+          <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary">person</span>
+          </div>
+        )}
+      />
 
-      <main className="w-full px-margin-mobile mt-lg">
+      <main className="sub-screen-body w-full px-margin-mobile py-lg pb-xxl">
 
         {/* 커플 정보 */}
         <section className="mb-xl">
@@ -547,6 +537,6 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           onCancel={() => setShowDisconnectDialog(false)}
         />
       )}
-    </div>
+    </SubScreen>
   )
 }

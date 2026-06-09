@@ -4,6 +4,7 @@ interface ChatInputProps {
   onSendText: (text: string) => void
   onSendImage: (file: File) => void
   disabled?: boolean
+  onFocusChange?: (focused: boolean) => void
 }
 
 interface ImagePreview {
@@ -11,7 +12,7 @@ interface ImagePreview {
   url: string
 }
 
-export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps) {
+export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<ImagePreview | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -25,11 +26,23 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`
   }
 
+  // 전송 후에도 입력창 포커스를 유지해 모바일 키보드가 내려가지 않게 한다
+  const keepInputFocus = () => {
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    })
+  }
+
   const handleSend = () => {
     if (!text.trim() || disabled) return
     onSendText(text.trim())
     setText('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    keepInputFocus()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -51,6 +64,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
     onSendImage(preview.file)
     URL.revokeObjectURL(preview.url)
     setPreview(null)
+    keepInputFocus()
   }
 
   const handleCancelImage = () => {
@@ -95,6 +109,7 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
       <footer className="chat-input-bar app-fixed-x">
         <button
           type="button"
+          onPointerDown={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
           className="img-btn"
@@ -117,15 +132,19 @@ export function ChatInput({ onSendText, onSendImage, disabled }: ChatInputProps)
             setText(e.target.value)
             adjustHeight()
           }}
+          onFocus={() => onFocusChange?.(true)}
+          onBlur={() => onFocusChange?.(false)}
           onKeyDown={handleKeyDown}
           placeholder="메시지 입력..."
           rows={1}
           disabled={disabled}
+          enterKeyHint="send"
           style={{ maxHeight: '120px' }}
         />
 
         <button
           type="button"
+          onPointerDown={(e) => e.preventDefault()}
           onClick={handleSend}
           disabled={!text.trim() || disabled}
           className="send-btn"

@@ -135,14 +135,15 @@ export const onStatusUpdate = functions.firestore
 
     await messaging.send({
       token,
-      notification: {
+      data: {
+        type: 'status',
         title: 'Tether 🌿',
         body: `${senderName}이(가) 상태를 업데이트했어요`,
+        uid,
+        url: '/?screen=home',
       },
-      data: { type: 'status', uid, url: '/?screen=home' },
       webpush: {
         headers: { Urgency: 'high' },
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
         fcmOptions: { link: '/?screen=home' },
       },
       android: { priority: 'high' as const },
@@ -169,11 +170,15 @@ export const onNewMessage = functions.firestore
 
     await messaging.send({
       token,
-      notification: { title: senderName, body },
-      data: { type: 'message', coupleId, url: '/?screen=chat' },
+      data: {
+        type: 'message',
+        title: senderName,
+        body,
+        coupleId,
+        url: '/?screen=chat',
+      },
       webpush: {
         headers: { Urgency: 'high' },
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
         fcmOptions: { link: '/?screen=chat' },
       },
       android: { priority: 'high' as const },
@@ -199,14 +204,15 @@ export const onNewDiary = functions.firestore
 
     await messaging.send({
       token,
-      notification: {
+      data: {
+        type: 'diary',
         title: 'Tether 💌',
         body: `${senderName}의 일기가 도착했어요`,
+        coupleId,
+        url: '/?screen=diary',
       },
-      data: { type: 'diary', coupleId, url: '/?screen=diary' },
       webpush: {
         headers: { Urgency: 'high' },
-        notification: { icon: '/icon-192.png', badge: '/icon-192.png', silent: false },
         fcmOptions: { link: '/?screen=diary' },
       },
       android: { priority: 'high' as const },

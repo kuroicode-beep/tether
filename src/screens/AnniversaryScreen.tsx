@@ -7,6 +7,7 @@ import {
   useAnniversaries,
 } from '../hooks/useAnniversaries'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 
 interface AnniversaryScreenProps {
   onBack: () => void
@@ -161,7 +162,8 @@ function EditSheet({ mode, initial, myName, partnerName, onSave, onDelete, onClo
 }
 
 export function AnniversaryScreen({ onBack }: AnniversaryScreenProps) {
-  const { coupleId, myNickname, partnerNickname } = useApp()
+  const { coupleId } = useCoupleSession()
+  const { myNickname, partnerNickname } = useApp()
   const {
     anniversaries,
     firstMet,

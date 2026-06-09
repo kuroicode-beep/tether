@@ -6,6 +6,7 @@ import { ImageViewer } from '../components/ImageViewer'
 import { useDiary, DiaryEntry } from '../hooks/useDiary'
 import { useUnreadBadges } from '../context/UnreadBadgesContext'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 type View = 'list' | 'read' | 'write' | 'reply'
@@ -216,7 +217,8 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, onBack, onReply, 
 // ── 메인 DiaryScreen ─────────────────────────────────────────────────────────
 
 export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
-  const { uid, coupleId, myNickname, partnerNickname } = useApp()
+  const { uid, coupleId } = useCoupleSession()
+  const { myNickname, partnerNickname } = useApp()
   const { entries, writeDiary, markDiaryRead, writeReply, updateDiary, deleteDiary } = useDiary(coupleId, uid)
   const { markTabRead } = useUnreadBadges()
   const [view, setView] = useState<View>('list')

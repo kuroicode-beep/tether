@@ -13,21 +13,30 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 백그라운드 FCM 메시지를 시스템 알림으로 표시한다
+// 백그라운드 FCM 메시지를 시스템 알림으로 표시한다 (data-only 페이로드)
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
-  const { title, body } = payload.notification ?? {};
   const data = payload.data ?? {};
+  const title = data.title ?? payload.notification?.title ?? 'Tether 💕';
+  const body = data.body ?? payload.notification?.body ?? '';
+  const type = data.type ?? 'tether-msg';
 
-  return self.registration.showNotification(title ?? 'Tether 💕', {
-    body: body ?? '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: data.type ?? 'tether-msg',
-    renotify: true,
-    silent: false,
-    vibrate: [200, 100, 200],
-    data: { url: data.url ?? '/', ...data },
+  return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const hasClient = clients.length > 0;
+    clients.forEach((client) => {
+      client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
+    });
+
+    return self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: type,
+      renotify: true,
+      silent: hasClient,
+      vibrate: [80, 50, 80],
+      data: { url: data.url ?? '/', ...data },
+    });
   });
 });
 

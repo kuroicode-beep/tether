@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ChatMessage } from '../hooks/useChat'
 
 interface MessageBubbleProps {
@@ -24,6 +25,7 @@ export function MessageBubble({
   onImageTap,
 }: MessageBubbleProps) {
   const { type, text, imageUrl, createdAt, readBy, senderUid } = message
+  const [imgError, setImgError] = useState(false)
   const isRead = isMe && readBy.filter((u) => u !== senderUid).length > 0
 
   return (
@@ -34,20 +36,28 @@ export function MessageBubble({
 
       {type === 'text' ? (
         <div className="bubble">{text}</div>
-      ) : imageUrl ? (
-        <button
-          type="button"
-          onClick={() => onImageTap?.(imageUrl)}
-          className="rounded-[18px] overflow-hidden active:scale-95 transition-transform"
-          style={{ maxWidth: '68%' }}
-        >
-          <img
-            src={imageUrl}
-            alt="이미지 메시지"
-            className="max-w-[220px] max-h-[300px] object-cover block"
-            loading="lazy"
-          />
-        </button>
+      ) : type === 'image' ? (
+        imageUrl && !imgError ? (
+          <button
+            type="button"
+            onClick={() => onImageTap?.(imageUrl)}
+            className="message-image-btn rounded-[18px] overflow-hidden active:scale-95 transition-transform"
+          >
+            <img
+              key={imageUrl}
+              src={imageUrl}
+              alt="이미지 메시지"
+              className="message-image max-w-[220px] max-h-[300px] object-cover block"
+              loading="lazy"
+              decoding="async"
+              onError={() => setImgError(true)}
+            />
+          </button>
+        ) : (
+          <div className="bubble message-image-fallback">
+            {imgError ? '사진을 불러올 수 없어요' : '사진 전송 중...'}
+          </div>
+        )
       ) : null}
 
       {showTime && (

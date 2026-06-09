@@ -2,9 +2,11 @@ import { useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { useHistory, HistoryItem } from '../hooks/useHistory'
-import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 import { ImageViewer } from '../components/ImageViewer'
 import { ContentActionSheet } from '../components/ContentActionSheet'
+import { SubScreen } from '../components/SubScreen'
+import { ScreenHeader } from '../components/ScreenHeader'
 
 interface HistoryScreenProps {
   onBack: () => void
@@ -114,8 +116,12 @@ function HistoryFormSheet({ initial, onSave, onClose }: HistoryFormSheetProps) {
 }
 
 export function HistoryScreen({ onBack }: HistoryScreenProps) {
-  const { uid, coupleId } = useApp()
-  const { items, addHistory, updateHistory, deleteHistory } = useHistory(coupleId, uid)
+  const { uid, coupleId, partnerUid, isLoading: sessionLoading } = useCoupleSession()
+  const { items, loading, error, addHistory, updateHistory, deleteHistory, clearError } = useHistory(
+    coupleId,
+    uid,
+    partnerUid,
+  )
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState<HistoryItem | null>(null)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
@@ -123,16 +129,27 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
   const isOwnItem = (item: HistoryItem) => Boolean(uid && item.authorUid === uid)
 
   return (
-    <div className="screen bg-[#EEE9DC] min-h-screen">
-      <header className="w-full top-0 sticky z-40 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
-        <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
-          <span className="material-symbols-outlined text-primary">arrow_back</span>
-        </button>
-        <h1 className="font-headline-md text-headline-md font-semibold text-primary flex-1">우리의 기록 📖</h1>
-      </header>
+    <SubScreen>
+      <ScreenHeader title="우리의 기록 📖" onBack={onBack} />
 
-      <main className="w-full px-margin-mobile py-lg pb-32">
-        {items.length === 0 ? (
+      {error && (
+        <div className="mx-margin-mobile mt-sm px-md py-sm rounded-xl bg-error-container text-on-error-container flex items-center justify-between gap-sm">
+          <p className="font-body-sm text-body-sm flex-1">{error}</p>
+          <button type="button" onClick={clearError} className="shrink-0 opacity-70" aria-label="닫기">
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+      )}
+
+      <main className="sub-screen-body w-full px-margin-mobile py-lg pb-32">
+        {(sessionLoading || loading) && items.length === 0 && !error ? (
+          <div className="flex flex-col items-center justify-center py-xxl gap-md min-h-[60vh]">
+            <span className="material-symbols-outlined text-outline-variant animate-spin text-2xl">
+              progress_activity
+            </span>
+            <p className="font-body-md text-body-md text-on-surface-variant">기록을 불러오는 중...</p>
+          </div>
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-xxl text-center gap-md min-h-[60vh]">
             <span className="material-symbols-outlined text-[56px] text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>
               history
@@ -213,6 +230,6 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
         />
       )}
       {viewerUrl && <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />}
-    </div>
+    </SubScreen>
   )
 }

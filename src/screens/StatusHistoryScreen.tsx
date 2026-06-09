@@ -3,6 +3,7 @@
 import { format, isSameDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useStatusHistory } from '../hooks/useStatusHistory'
 import { CONDITION_EMOJI, type Condition } from '../hooks/useStatus'
 
@@ -21,7 +22,8 @@ function formatDateLabel(ts: number | null): string {
 }
 
 export function StatusHistoryScreen({ onBack }: StatusHistoryScreenProps) {
-  const { coupleId, uid, myNickname, partnerNickname } = useApp()
+  const { coupleId, uid } = useCoupleSession()
+  const { myNickname, partnerNickname } = useApp()
   const history = useStatusHistory(coupleId)
 
   const myName = myNickname || '나'

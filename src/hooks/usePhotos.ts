@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  collection, addDoc, onSnapshot, doc,
+  collection, addDoc, onSnapshot, doc, getDoc,
   updateDoc, deleteDoc,
-  query, orderBy, serverTimestamp, Timestamp,
+  Timestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
+import {
+  isOptimisticId,
+  mergeByCreatedAtDesc,
+  reconcilePending,
+  revokeBlobUrl,
+} from '../lib/syncHelpers'
 
 export interface Photo {
   id: string
@@ -26,29 +32,103 @@ function toPhoto(data: Record<string, unknown>, id: string): Photo {
   }
 }
 
-export function usePhotos(coupleId: string | null, myUid: string | null) {
+function sortPhotos(items: Photo[]): Photo[] {
+  return [...items].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+}
+
+export function usePhotos(coupleId: string | null, myUid: string | null, partnerUid?: string | null) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const pendingRef = useRef(new Map<string, Photo>())
+
+  const applyServerDocs = useCallback((server: Photo[]) => {
+    reconcilePending(pendingRef.current, server, (p, s) =>
+      p.uploadedBy === s.uploadedBy
+      && (p.caption ?? '') === (s.caption ?? '')
+      && p.createdAt != null
+      && s.createdAt != null
+      && Math.abs(p.createdAt - s.createdAt) < 120_000,
+    )
+    setPhotos(mergeByCreatedAtDesc(server, [...pendingRef.current.values()]))
+  }, [])
 
   useEffect(() => {
-    if (!coupleId) {
+    if (!coupleId || !myUid) {
+      pendingRef.current.clear()
       setPhotos([])
+      setLoading(false)
+      setError(null)
       return
     }
 
-    const q = query(
-      collection(db, 'couples', coupleId, 'photos'),
-      orderBy('createdAt', 'desc'),
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      setPhotos(snap.docs.map((d) => toPhoto(d.data() as Record<string, unknown>, d.id)))
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    // 커플 멤버십 확인 — 권한 없으면 빈 목록 대신 오류 표시
+    const verifyMembership = async () => {
+      try {
+        const coupleSnap = await getDoc(doc(db, 'couples', coupleId))
+        if (cancelled) return false
+        const members = coupleSnap.data()?.members
+        if (!coupleSnap.exists() || !Array.isArray(members) || !members.includes(myUid)) {
+          setError('커플 연결 정보를 확인할 수 없어요. 앱을 다시 시작해주세요.')
+          setPhotos([])
+          setLoading(false)
+          return false
+        }
+
+        if (partnerUid) {
+          const partnerSnap = await getDoc(doc(db, 'users', partnerUid))
+          if (cancelled) return false
+          const partnerCoupleId = partnerSnap.data()?.coupleId
+          if (partnerCoupleId && partnerCoupleId !== coupleId) {
+            setError('상대방과 연결 정보가 일치하지 않아요. 설정에서 다시 연결해주세요.')
+          }
+        }
+        return true
+      } catch (err) {
+        console.warn('[usePhotos] membership check failed', err)
+        return true
+      }
+    }
+
+    let unsub = () => {}
+
+    void verifyMembership().then((ok) => {
+      if (cancelled || !ok) return
+
+      // orderBy 없이 전체 수집 — createdAt 없는 문서도 포함 (상대 업로드 누락 방지)
+      unsub = onSnapshot(
+        collection(db, 'couples', coupleId, 'photos'),
+        (snap) => {
+          const server = sortPhotos(
+            snap.docs.map((d) => toPhoto(d.data() as Record<string, unknown>, d.id)),
+          )
+          applyServerDocs(server)
+          setLoading(false)
+          setError(null)
+        },
+        (err) => {
+          console.warn('[usePhotos] listener error', err)
+          setLoading(false)
+          setError('사진을 불러오지 못했어요. 네트워크를 확인해주세요.')
+        },
+      )
     })
-    return () => unsub()
-  }, [coupleId])
+
+    return () => {
+      cancelled = true
+      unsub()
+    }
+  }, [coupleId, myUid, partnerUid, applyServerDocs])
 
   const uploadPhoto = async (file: File, caption?: string) => {
     if (!coupleId || !myUid) return
     setUploading(true)
+    setError(null)
 
     const localUrl = URL.createObjectURL(file)
     const optimistic: Photo = {
@@ -58,36 +138,58 @@ export function usePhotos(coupleId: string | null, myUid: string | null) {
       caption: caption ?? null,
       createdAt: Date.now(),
     }
-    setPhotos((prev) => [optimistic, ...prev])
+    pendingRef.current.set(optimistic.id, optimistic)
+    setPhotos((prev) => mergeByCreatedAtDesc(prev.filter((p) => p.id !== optimistic.id), [optimistic]))
 
     try {
-      const path = `couples/${coupleId}/photos/${Date.now()}_${file.name}`
-      await uploadBytes(ref(storage, path), file)
-      const imageUrl = await getDownloadURL(ref(storage, path))
+      const storagePath = `couples/${coupleId}/photos/${Date.now()}_${file.name}`
+      await uploadBytes(ref(storage, storagePath), file)
+      const imageUrl = await getDownloadURL(ref(storage, storagePath))
       await addDoc(collection(db, 'couples', coupleId, 'photos'), {
         uploadedBy: myUid,
         imageUrl,
         caption: caption ?? null,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
       })
-    } catch { /* ignore */ }
-
-    setUploading(false)
+    } catch (err) {
+      pendingRef.current.delete(optimistic.id)
+      revokeBlobUrl(localUrl)
+      setPhotos((prev) => prev.filter((p) => p.id !== optimistic.id))
+      console.warn('[usePhotos] upload failed', err)
+      setError('사진 업로드에 실패했어요. 다시 시도해주세요.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const updatePhoto = async (photoId: string, caption: string | null) => {
-    if (!coupleId || photoId.startsWith('opt_')) return
+    if (!coupleId || isOptimisticId(photoId)) return
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'photos', photoId), { caption })
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[usePhotos] update failed', err)
+      setError('사진 수정에 실패했어요')
+    }
   }
 
   const deletePhoto = async (photoId: string) => {
-    if (!coupleId || photoId.startsWith('opt_')) return
+    if (!coupleId || isOptimisticId(photoId)) return
     try {
       await deleteDoc(doc(db, 'couples', coupleId, 'photos', photoId))
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[usePhotos] delete failed', err)
+      setError('사진 삭제에 실패했어요')
+    }
   }
 
-  return { photos, uploading, uploadPhoto, updatePhoto, deletePhoto }
+  return {
+    photos,
+    loading,
+    uploading,
+    error,
+    uploadPhoto,
+    updatePhoto,
+    deletePhoto,
+    clearError: () => setError(null),
+  }
 }

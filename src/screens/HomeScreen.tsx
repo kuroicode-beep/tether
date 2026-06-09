@@ -9,6 +9,7 @@ import { useRecentFeed } from '../hooks/useRecentFeed'
 import { useAnniversaries } from '../hooks/useAnniversaries'
 import { PushPermissionBanner } from '../components/PushPermissionBanner'
 import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
@@ -33,7 +34,8 @@ function timeAgo(ts: number | null): string {
 }
 
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
-  const { uid, coupleId, myNickname, partnerNickname, partnerUid } = useApp()
+  const { uid, coupleId } = useCoupleSession()
+  const { myNickname, partnerNickname, partnerUid } = useApp()
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
   const feedItems = useRecentFeed(coupleId, uid, partnerUid)
   const { firstMet, upcoming, getDday } = useAnniversaries(coupleId)
