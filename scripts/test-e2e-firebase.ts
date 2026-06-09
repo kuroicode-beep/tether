@@ -23,6 +23,13 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from 'firebase/storage'
 
 function loadEnv() {
   const env = readFileSync('.env', 'utf8')
@@ -72,6 +79,18 @@ async function expectDenied(label: string, fn: () => Promise<unknown>) {
     const code = (error as { code?: string }).code
     if (code !== 'permission-denied') {
       throw new Error(`Security regression failed: ${label} expected permission-denied, got ${code ?? error}`)
+    }
+  }
+}
+
+async function expectStorageDenied(label: string, fn: () => Promise<unknown>) {
+  try {
+    await fn()
+    throw new Error(`Security regression failed: ${label} should be denied`)
+  } catch (error) {
+    const code = (error as { code?: string }).code
+    if (code !== 'storage/unauthorized' && code !== 'permission-denied') {
+      throw new Error(`Security regression failed: ${label} expected storage denial, got ${code ?? error}`)
     }
   }
 }
@@ -129,6 +148,8 @@ async function main() {
   const messageIds: string[] = []
   const statusHistoryIds: string[] = []
   const contentIds: string[] = []
+  const photoIds: string[] = []
+  const storagePaths: string[] = []
 
   try {
     userA = (await signInAnonymously(authA)).user
@@ -356,6 +377,45 @@ async function main() {
 
     await deleteDoc(doc(dbA, 'couples', coupleId, 'contents', contentRef.id))
 
+    const photoPath = `couples/${coupleId}/photos/${userA.uid}/e2e-${Date.now()}.txt`
+    const photoStorageRef = ref(getStorage(appA), photoPath)
+    await uploadBytes(photoStorageRef, new Blob(['e2e-photo']), {
+      contentType: 'text/plain',
+    })
+    storagePaths.push(photoPath)
+    const photoUrl = await getDownloadURL(photoStorageRef)
+    const photoRef = await addDoc(collection(dbA, 'couples', coupleId, 'photos'), {
+      clientId: `e2e-photo-${Date.now()}`,
+      uploadedBy: userA.uid,
+      imageUrl: photoUrl,
+      caption: 'e2e-photo',
+      createdAt: serverTimestamp(),
+    })
+    photoIds.push(photoRef.id)
+
+    await expectDenied('partner photo caption overwrite', () =>
+      updateDoc(doc(dbB, 'couples', coupleId, 'photos', photoRef.id), {
+        caption: 'hacked',
+      }),
+    )
+
+    await expectStorageDenied('non-member photo storage upload to member folder', () =>
+      uploadBytes(
+        ref(getStorage(appC!), `couples/${coupleId}/photos/${userA.uid}/e2e-denied-${Date.now()}.txt`),
+        new Blob(['denied']),
+        { contentType: 'text/plain' },
+      ),
+    )
+
+    await expectDenied('non-member photo document create', () =>
+      addDoc(collection(dbC, 'couples', coupleId, 'photos'), {
+        uploadedBy: userC!.uid,
+        imageUrl: 'https://example.com/denied.jpg',
+        caption: 'denied',
+        createdAt: serverTimestamp(),
+      }),
+    )
+
     // ── Codex #16/#17 보안 회귀 ───────────────────────────────────────────
     await expectDenied('forced user coupleId cross-update', () =>
       updateDoc(doc(dbC, 'users', userA.uid), { coupleId }),
@@ -393,6 +453,12 @@ async function main() {
       try {
         for (const id of messageIds) {
           await deleteDoc(doc(dbA, 'couples', coupleId, 'messages', id))
+        }
+        for (const id of photoIds) {
+          await deleteDoc(doc(dbA, 'couples', coupleId, 'photos', id))
+        }
+        for (const path of storagePaths) {
+          await deleteObject(ref(getStorage(appA), path))
         }
         await updateDoc(doc(dbA, 'couples', coupleId), { anniversaries: [] })
         await deleteDoc(doc(dbA, 'couples', coupleId))

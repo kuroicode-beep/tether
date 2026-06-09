@@ -4,7 +4,7 @@ import {
   updateDoc, deleteDoc,
   Timestamp,
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
 import { createClientId, createOptimisticId } from '../lib/clientId'
 import {
@@ -146,15 +146,21 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     setPhotos((prev) => mergeByCreatedAtDesc(prev.filter((p) => p.id !== optimistic.id), [optimistic]))
 
     try {
-      const storagePath = `couples/${coupleId}/photos/${Date.now()}_${file.name}`
-      await uploadBytes(ref(storage, storagePath), file)
-      const imageUrl = await getDownloadURL(ref(storage, storagePath))
+      const safeName = file.name.replace(/[^\w.\-]/g, '_') || 'photo.jpg'
+      const storageRef = ref(storage, `couples/${coupleId}/photos/${myUid}/${clientId}_${safeName}`)
+      await uploadBytes(storageRef, file, {
+        contentType: file.type || 'image/jpeg',
+      })
+      const imageUrl = await getDownloadURL(storageRef)
       await addDoc(collection(db, 'couples', coupleId, 'photos'), {
         clientId,
         uploadedBy: myUid,
         imageUrl,
         caption: caption ?? null,
         createdAt: Timestamp.now(),
+      }).catch(async (err) => {
+        await deleteObject(storageRef).catch(() => undefined)
+        throw err
       })
     } catch (err) {
       pendingRef.current.delete(optimistic.id)
