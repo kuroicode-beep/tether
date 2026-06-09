@@ -358,6 +358,22 @@ async function main() {
       }),
     )
 
+    const chatImagePath = `couples/${coupleId}/images/${userA.uid}/e2e-${Date.now()}.txt`
+    const chatImageStorageRef = ref(getStorage(appA), chatImagePath)
+    await uploadBytes(chatImageStorageRef, new Blob(['e2e-chat-image']), {
+      contentType: 'text/plain',
+    })
+    storagePaths.push(chatImagePath)
+    await getDownloadURL(chatImageStorageRef)
+
+    await expectStorageDenied('non-member chat image storage upload to member folder', () =>
+      uploadBytes(
+        ref(getStorage(appC!), `couples/${coupleId}/images/${userA.uid}/e2e-denied-${Date.now()}.txt`),
+        new Blob(['denied']),
+        { contentType: 'text/plain' },
+      ),
+    )
+
     const contentRef = await addDoc(collection(dbA, 'couples', coupleId, 'contents'), {
       addedBy: userA.uid,
       category: 'movie',

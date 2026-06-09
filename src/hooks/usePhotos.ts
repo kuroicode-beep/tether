@@ -173,6 +173,38 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     }
   }
 
+  const addPhotoFromUrl = async (imageUrl: string, caption?: string) => {
+    if (!coupleId || !myUid || !imageUrl.trim()) return
+    setError(null)
+
+    const clientId = createClientId('photo')
+    const optimistic: Photo = {
+      id: createOptimisticId(clientId),
+      clientId,
+      uploadedBy: myUid,
+      imageUrl,
+      caption: caption ?? null,
+      createdAt: Date.now(),
+    }
+    pendingRef.current.set(optimistic.id, optimistic)
+    setPhotos((prev) => mergeByCreatedAtDesc(prev.filter((p) => p.id !== optimistic.id), [optimistic]))
+
+    try {
+      await addDoc(collection(db, 'couples', coupleId, 'photos'), {
+        clientId,
+        uploadedBy: myUid,
+        imageUrl,
+        caption: caption ?? null,
+        createdAt: Timestamp.now(),
+      })
+    } catch (err) {
+      pendingRef.current.delete(optimistic.id)
+      setPhotos((prev) => prev.filter((p) => p.id !== optimistic.id))
+      console.warn('[usePhotos] add from url failed', err)
+      setError('사진첩에 저장하지 못했어요. 다시 시도해 주세요.')
+    }
+  }
+
   const updatePhoto = async (photoId: string, caption: string | null) => {
     if (!coupleId || isOptimisticId(photoId)) return
     let previousCaption: string | null = null
@@ -207,6 +239,7 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     uploading,
     error,
     uploadPhoto,
+    addPhotoFromUrl,
     updatePhoto,
     deletePhoto,
     clearError: () => setError(null),

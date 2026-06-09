@@ -3,9 +3,18 @@ import { useEffect } from 'react'
 interface ImageViewerProps {
   url: string
   onClose: () => void
+  actionLabel?: string
+  actionButtonLabel?: string
+  onAction?: () => void
 }
 
-export function ImageViewer({ url, onClose }: ImageViewerProps) {
+export function ImageViewer({
+  url,
+  onClose,
+  actionLabel,
+  actionButtonLabel = '보내기',
+  onAction,
+}: ImageViewerProps) {
   // ESC 키로 닫기
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -49,6 +58,26 @@ export function ImageViewer({ url, onClose }: ImageViewerProps) {
           style={{ maxWidth: '100vw', maxHeight: '100vh' }}
         />
       </div>
+
+      {onAction && (
+        <div
+          className="app-fixed-x fixed bottom-0 z-10 rounded-t-2xl bg-black/80 px-margin-mobile py-lg text-white backdrop-blur-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between gap-md">
+            <span className="font-label-md text-label-md">
+              {actionLabel ?? '사진첩으로 보내기'}
+            </span>
+            <button
+              type="button"
+              onClick={onAction}
+              className="min-h-[50px] rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary active:scale-95 transition-transform"
+            >
+              {actionButtonLabel}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

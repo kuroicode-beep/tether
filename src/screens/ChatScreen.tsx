@@ -3,6 +3,8 @@ import { isSameDay } from 'date-fns'
 import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useChat, ChatMessage } from '../hooks/useChat'
+import { usePhotos } from '../hooks/usePhotos'
+import { CONDITION_EMOJI, useStatus } from '../hooks/useStatus'
 import { ContentActionSheet } from '../components/ContentActionSheet'
 import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
@@ -34,11 +36,13 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
 
 export function ChatScreen({ onBack }: ChatScreenProps) {
   const { uid, coupleId } = useCoupleSession()
-  const { partnerNickname } = useApp()
+  const { partnerNickname, partnerUid } = useApp()
   const { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
   )
+  const { myStatus, partnerStatus } = useStatus(coupleId, uid, partnerUid)
+  const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -51,6 +55,12 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
+
+  const handleSendToAlbum = useCallback(async () => {
+    if (!viewerUrl) return
+    await addPhotoFromUrl(viewerUrl, '채팅에서 저장한 사진')
+    setViewerUrl(null)
+  }, [addPhotoFromUrl, viewerUrl])
 
   // 메시지 목록 맨 아래로 스크롤한다
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
@@ -212,6 +222,9 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                 const isMe = msg.senderUid === uid
                 const showSenderName = msgIndex === 0 && !isMe
                 const showTime = msgIndex === group.length - 1
+                const statusEmoji = isMe
+                  ? CONDITION_EMOJI[myStatus.condition]
+                  : CONDITION_EMOJI[partnerStatus.condition]
 
                 const bubble = (
                   <MessageBubble
@@ -220,6 +233,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                     showTime={showTime}
                     showSenderName={showSenderName}
                     senderName={partnerName}
+                    statusEmoji={statusEmoji}
                     onImageTap={setViewerUrl}
                   />
                 )
@@ -263,7 +277,13 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
       />
 
       {viewerUrl && (
-        <ImageViewer url={viewerUrl} onClose={() => setViewerUrl(null)} />
+        <ImageViewer
+          url={viewerUrl}
+          onClose={() => setViewerUrl(null)}
+          actionLabel="사진첩으로 보내기"
+          actionButtonLabel="보내기"
+          onAction={handleSendToAlbum}
+        />
       )}
     </div>
   )

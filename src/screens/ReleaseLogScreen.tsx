@@ -50,6 +50,13 @@ const RELEASE_LOGS: ReleaseLogEntry[] = [
     title: '홈 사용성 및 상태 표시 핫픽스.',
     detail: '뒤로가기 동작, 닉네임 유지, 5단계 표정, 상태 태그, 최근 활동 표시를 보강했습니다.',
   },
+  {
+    id: '2026-06-10-hotfix-chat-image-album-status',
+    date: '2026.06.10',
+    type: 'hotfix',
+    title: '채팅 이미지 표시 및 사진첩 보내기 핫픽스.',
+    detail: '상대가 보낸 사진 표시, 채팅 사진의 사진첩 등록, 메시지 상태 표정 표시를 추가했습니다.',
+  },
 ]
 
 export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {

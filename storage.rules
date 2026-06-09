@@ -9,9 +9,16 @@ service firebase.storage {
              && firestore.get(/databases/(default)/documents/couples/$(coupleId)).data.members.hasAny([request.auth.uid]);
     }
 
-    // Chat images: couples/{coupleId}/images/{filename}
+    // Chat images: couples/{coupleId}/images/{uploaderUid}/{filename}
+    match /couples/{coupleId}/images/{uploaderUid}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uploaderUid;
+    }
+
+    // Legacy chat images: couples/{coupleId}/images/{filename}
     match /couples/{coupleId}/images/{filename} {
-      allow read, write: if isCoupleMember(coupleId);
+      allow read: if request.auth != null;
+      allow write: if isCoupleMember(coupleId);
     }
 
     // Photo album media: couples/{coupleId}/photos/{filename}
