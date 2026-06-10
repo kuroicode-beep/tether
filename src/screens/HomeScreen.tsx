@@ -30,6 +30,12 @@ const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
   { icon: 'history', label: '히스토리', screen: 'history' },
 ]
 
+type StatusDraft = {
+  condition: Condition
+  mood: string[]
+  message: string
+}
+
 // Formats a relative timestamp for status cards.
 function timeAgo(ts: number | null): string {
   if (!ts) return '방금 전'
@@ -47,30 +53,56 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const feedItems = useRecentFeed(coupleId, uid, partnerUid)
   const { firstMet, upcoming, getDday } = useAnniversaries(coupleId)
 
+  const [draftStatus, setDraftStatus] = useState<StatusDraft>({
+    condition: myStatus.condition,
+    mood: myStatus.mood,
+    message: myStatus.message,
+  })
   const [editMsg, setEditMsg] = useState(myStatus.message)
   const [isEditingMsg, setIsEditingMsg] = useState(false)
+  const draftMessage = isEditingMsg ? editMsg.trim() : draftStatus.message
+  const isStatusDirty =
+    draftStatus.condition !== myStatus.condition ||
+    draftMessage !== myStatus.message ||
+    draftStatus.mood.length !== myStatus.mood.length ||
+    draftStatus.mood.some((tag) => !myStatus.mood.includes(tag))
 
-  // Saves the edited one-line status message.
+  // Closes the one-line status editor and keeps the text as a local draft.
   const handleMsgBlur = () => {
     setIsEditingMsg(false)
-    updateMyStatus({ ...myStatus, message: editMsg })
+    setDraftStatus((prev) => ({ ...prev, message: editMsg.trim() }))
   }
 
-  // Updates the current status face.
+  // Updates the draft status face without writing history.
   const toggleCondition = (condition: Condition) => {
-    updateMyStatus({ ...myStatus, condition })
+    setDraftStatus((prev) => ({ ...prev, condition }))
   }
 
-  // Toggles one mood tag in the current status.
+  // Toggles one draft mood tag without writing history.
   const toggleMood = (tag: string) => {
-    const has = myStatus.mood.includes(tag)
-    const next = has ? myStatus.mood.filter((item) => item !== tag) : [...myStatus.mood, tag]
-    updateMyStatus({ ...myStatus, mood: next })
+    setDraftStatus((prev) => {
+      const has = prev.mood.includes(tag)
+      const next = has ? prev.mood.filter((item) => item !== tag) : [...prev.mood, tag]
+      return { ...prev, mood: next }
+    })
+  }
+
+  // Persists the draft status and appends exactly one history entry.
+  const confirmStatus = () => {
+    if (!isStatusDirty) return
+    handleMsgBlur()
+    updateMyStatus({ ...draftStatus, message: draftMessage })
   }
 
   useEffect(() => {
-    if (!isEditingMsg) setEditMsg(myStatus.message)
-  }, [myStatus.message, isEditingMsg])
+    const next = {
+      condition: myStatus.condition,
+      mood: myStatus.mood,
+      message: myStatus.message,
+    }
+    setDraftStatus(next)
+    if (!isEditingMsg) setEditMsg(next.message)
+  }, [myStatus.condition, myStatus.message, myStatus.mood])
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
@@ -119,7 +151,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                   onClick={() => toggleCondition(condition)}
                   className="rounded-full p-xs text-xl transition-all duration-200"
                   style={
-                    myStatus.condition === condition
+                    draftStatus.condition === condition
                       ? {
                           background: 'var(--color-primary)',
                           transform: 'scale(1.2)',
@@ -142,7 +174,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
             <div className="flex flex-wrap justify-center gap-xs">
               {MOOD_TAGS.map((tag) => (
                 <button key={tag} onClick={() => toggleMood(tag)}>
-                  <MoodChip label={tag} active={myStatus.mood.includes(tag)} />
+                  <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
                 </button>
               ))}
             </div>
@@ -162,9 +194,17 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 onClick={() => setIsEditingMsg(true)}
                 className="home-status-message flex h-11 w-full items-center justify-center text-center font-label-md text-[15px] leading-snug text-on-surface transition-colors hover:text-primary"
               >
-                {myStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
+                {draftStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
               </button>
             )}
+            <button
+              type="button"
+              onClick={confirmStatus}
+              disabled={!isStatusDirty}
+              className="min-h-[50px] w-full rounded-full bg-primary px-md py-sm font-label-md text-label-md text-on-primary transition-transform active:scale-95 disabled:opacity-45"
+            >
+              상태 확정
+            </button>
             <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
           </div>
 
