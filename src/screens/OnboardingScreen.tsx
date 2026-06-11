@@ -20,8 +20,6 @@ interface OnboardingScreenProps {
   onConnected: () => void
 }
 
-const PREPARED_KEY = 'tether_prepared_uid'
-
 export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const { connect } = useApp()
   const {
@@ -96,10 +94,6 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const prepareGoogleUser = async (googleUser = user) => {
     if (!googleUser || googleUser.isAnonymous) return
     if (autoPreparedRef.current === googleUser.uid) return
-    try {
-      const stored = sessionStorage.getItem(PREPARED_KEY)
-      if (stored === googleUser.uid) return
-    } catch { /* ignore */ }
     autoPreparedRef.current = googleUser.uid
 
     setLoading(true)
@@ -108,10 +102,8 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       const nextNickname = googleUser.displayName?.trim() || nickname.trim() || '나'
       setRecoveryEmail(googleUser.email ?? '')
       await prepareUser(googleUser.uid, nextNickname, googleUser.displayName)
-      try { sessionStorage.setItem(PREPARED_KEY, googleUser.uid) } catch { /* ignore */ }
     } catch {
       autoPreparedRef.current = null
-      try { sessionStorage.removeItem(PREPARED_KEY) } catch { /* ignore */ }
       setError('Google 로그인 정보를 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
@@ -205,6 +197,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     setLoading(true)
     setError('')
     try {
+      autoPreparedRef.current = null
       const code = await createInvite(uid)
       setMyCode(code)
       setStep('choice')

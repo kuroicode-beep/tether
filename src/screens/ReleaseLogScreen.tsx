@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-google-recovery-cache',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: 'Google 재로그인·새 연결 흐름 멈춤 수정.',
+    detail: '연결 해제 후 남아 있던 로그인 준비 캐시가 복구/새 연결 흐름을 막지 않도록 제거했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-disconnect-couple',
     date: '2026.06.12',
     type: 'hotfix',
