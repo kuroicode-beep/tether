@@ -65,6 +65,6 @@
 
 ## 09. Git
 
-- 커밋 해시: 미커밋
-- push 여부: 아니오
-- 배포 여부: 아니오
+- 커밋 해시: `99ceb9a`
+- push 여부: 예 (`origin/main`)
+- 배포 여부: 예 (`functions`, `hosting`)
