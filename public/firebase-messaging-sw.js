@@ -32,7 +32,6 @@ messaging.onBackgroundMessage((payload) => {
   const targetUrl = data.url ?? '/';
 
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-    const hasClient = clients.length > 0;
     const screen = data.screen ?? screenFromUrl(targetUrl);
     clients.forEach((client) => {
       client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
@@ -44,7 +43,7 @@ messaging.onBackgroundMessage((payload) => {
       badge: '/icon-192.png',
       tag: type,
       renotify: true,
-      silent: hasClient,
+      silent: false,
       vibrate: [80, 50, 80],
       data: { url: targetUrl, screen, ...data },
     });
