@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png', 'firebase-messaging-sw.js', 'sounds/chime.wav'],
+      includeAssets: ['favicon.ico', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'firebase-messaging-sw.js', 'sounds/chime.wav'],
       manifest: {
         name: 'Tether',
         short_name: 'Tether',
@@ -66,7 +66,8 @@ export default defineConfig(({ mode }) => ({
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' }
         ]
       },
       workbox: {

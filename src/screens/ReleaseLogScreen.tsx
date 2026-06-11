@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-update-leaf-app-icons',
+    date: '2026.06.12',
+    type: 'update',
+    title: 'iOS/Android 앱 아이콘에 Tether 잎사귀 로고 적용.',
+    detail: '홈 화면과 PWA manifest, favicon에 사용할 192/512/180px 아이콘과 SVG 아이콘을 잎사귀 로고 포함 버전으로 교체했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-google-recovery-cache',
     date: '2026.06.12',
     type: 'hotfix',
