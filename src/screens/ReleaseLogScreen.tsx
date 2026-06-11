@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-app-icon-branding-v2',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: 'PWA 아이콘 브랜딩 재적용 및 maskable 아이콘 분리.',
+    detail: '제공된 크림 배경 잎사귀 로고를 그대로 PNG/SVG로 재생성하고, Android maskable 크롭 문제를 막기 위해 any/maskable 아이콘을 분리했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-app-icon-branding',
     date: '2026.06.12',
     type: 'hotfix',
