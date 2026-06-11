@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-high-contrast-status-cleanup',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '고대비 상태 카드 편집 화면 색상 정리.',
+    detail: '상태 카드 편집 모드의 회색 패널, 과한 흰 테두리, 칩 대비를 정리해 선택 항목만 노란색으로 명확하게 보이도록 보강했습니다.',
+  },
+  {
     id: '2026-06-12-update-font-settings-release-log',
     date: '2026.06.12',
     type: 'update',
