@@ -65,6 +65,6 @@
 
 ## 09. Git
 
-- 커밋 해시: (미요청)
-- push 여부: (미요청)
-- 배포 여부: (미요청)
+- 커밋 해시: `9d8de77`
+- push 여부: 예 (`origin/main`)
+- 배포 여부: 예 (`hosting` — https://tether-d1dab.web.app)
