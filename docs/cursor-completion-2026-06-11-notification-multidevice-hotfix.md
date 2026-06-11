@@ -66,6 +66,6 @@
 
 ## 09. Git
 
-- 커밋 해시: 미커밋
-- push 여부: 아니오
-- 배포 여부: 아니오 (Functions/Rules/Hosting 배포 필요)
+- 커밋 해시: `ebf3eb2`
+- push 여부: 예 (`origin/main`)
+- 배포 여부: 예 (`functions`, `firestore:rules`, `hosting`)
