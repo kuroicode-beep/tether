@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-high-contrast-white-status-cards',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '고대비 상태 카드를 흰색 둥근 박스 중심으로 재정리.',
+    detail: '상태 메시지와 태그를 흰색 둥근 박스+검정 글자로 단순화하고, 편집 선택 항목만 노란색으로 강조되게 정리했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-high-contrast-status-cleanup',
     date: '2026.06.12',
     type: 'hotfix',

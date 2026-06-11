@@ -352,7 +352,7 @@ body {
 
 [data-theme="high-contrast"] .home-status-card {
   background-color: #0D0D0D !important;
-  border: 2px solid #444400 !important;
+  border: 2px solid #333300 !important;
   box-shadow: none !important;
   color: var(--color-text) !important;
 }
@@ -390,8 +390,8 @@ body {
 [data-theme="high-contrast"] .status-card-inner,
 [data-theme="high-contrast"] .status-tag-panel,
 [data-theme="high-contrast"] .status-edit-tag-panel {
-  background: #111111 !important;
-  border: 1px solid #333300 !important;
+  background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
 }
 
@@ -404,10 +404,10 @@ body {
 }
 
 [data-theme="high-contrast"] .status-edit-grid button {
-  background: #111111 !important;
-  border-color: #333300 !important;
-  color: #FFE600 !important;
-  opacity: 0.72 !important;
+  background: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+  color: #000000 !important;
+  opacity: 0.9 !important;
   box-shadow: none !important;
 }
 
@@ -419,10 +419,10 @@ body {
 }
 
 [data-theme="high-contrast"] .home-status-card .mood-chip {
-  color: #FFE600 !important;
-  background: #111111 !important;
-  border-color: #333300 !important;
-  opacity: 0.82 !important;
+  color: #000000 !important;
+  background: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+  opacity: 0.92 !important;
   font-weight: 700 !important;
 }
 
@@ -433,19 +433,19 @@ body {
 }
 
 [data-theme="high-contrast"] .home-status-message {
-  color: #FFE600 !important;
-  background: #111111 !important;
-  border: 1.5px solid #444400 !important;
+  color: #000000 !important;
+  background: #FFFFFF !important;
+  border: 2px solid #FFFFFF !important;
   border-radius: 12px !important;
   min-height: 50px !important;
-  padding: 6px 10px !important;
+  padding: 8px 12px !important;
   font-size: 16px !important;
   font-weight: 700 !important;
 }
 
 [data-theme="high-contrast"] .home-status-message .text-on-surface-variant\/60,
 [data-theme="high-contrast"] .home-status-message span {
-  color: #FFE600 !important;
+  color: #000000 !important;
   opacity: 1 !important;
 }
 
