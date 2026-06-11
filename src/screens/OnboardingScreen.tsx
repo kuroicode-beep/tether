@@ -20,6 +20,17 @@ interface OnboardingScreenProps {
   onConnected: () => void
 }
 
+// 네트워크/Firestore 응답 지연으로 복구 화면이 무한 대기하지 않게 제한한다
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms)
+    promise
+      .then(resolve)
+      .catch(reject)
+      .finally(() => window.clearTimeout(timer))
+  })
+}
+
 export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const { connect } = useApp()
   const {
@@ -37,6 +48,8 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [myCode, setMyCode] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [recoveryChecking, setRecoveryChecking] = useState(false)
+  const [creatingConnection, setCreatingConnection] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [showPushSheet, setShowPushSheet] = useState(false)
@@ -83,6 +96,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
 
     if (displayName !== undefined) {
       setRecoveryEmail(user?.email ?? '')
+      setLoading(false)
       setStep('recover')
       return
     }
@@ -180,31 +194,38 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
 
   const handleRecoveryRetry = async () => {
     if (!uid) return
-    setLoading(true)
+    setRecoveryChecking(true)
     setError('')
     try {
-      const connected = await enterConnectedApp(uid)
+      const connected = await withTimeout(enterConnectedApp(uid), 8000, 'restore_timeout')
       if (!connected) {
         setError('이 Google 계정에는 아직 연결된 커플 정보가 없어요. 기존 기기에서 Google 계정 연결 상태를 먼저 확인해주세요.')
       }
+    } catch {
+      setError('연결 확인 시간이 길어지고 있어요. 잠시 후 다시 시도하거나 새 연결을 진행해주세요.')
     } finally {
-      setLoading(false)
+      setRecoveryChecking(false)
     }
   }
 
   const handleStartNewConnection = async () => {
     if (!uid) return
-    setLoading(true)
+    setCreatingConnection(true)
     setError('')
     try {
       autoPreparedRef.current = null
-      const code = await createInvite(uid)
+      const code = await withTimeout(createInvite(uid), 8000, 'invite_timeout')
       setMyCode(code)
       setStep('choice')
-    } catch {
-      setError('새 초대 코드를 만들지 못했어요. 잠시 후 다시 시도해주세요.')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      if (message === 'invite_timeout') {
+        setError('새 연결 준비 시간이 길어지고 있어요. 네트워크를 확인한 뒤 다시 눌러주세요.')
+      } else {
+        setError('새 초대 코드를 만들지 못했어요. 잠시 후 다시 시도해주세요.')
+      }
     } finally {
-      setLoading(false)
+      setCreatingConnection(false)
     }
   }
 
@@ -390,15 +411,15 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
 
             <button
               onClick={handleRecoveryRetry}
-              disabled={loading}
+              disabled={recoveryChecking || creatingConnection}
               className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
             >
-              {loading ? '확인 중...' : '기존 연결 다시 확인'}
+              {recoveryChecking ? '확인 중...' : '기존 연결 다시 확인'}
             </button>
 
             <button
               onClick={handleGoogleStart}
-              disabled={loading}
+              disabled={loading || recoveryChecking || creatingConnection}
               className="w-full bg-surface-container-low border border-outline-variant/30 rounded-full py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
             >
               다른 Google 계정으로 로그인
@@ -411,10 +432,10 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               </p>
               <button
                 onClick={handleStartNewConnection}
-                disabled={loading}
-                className="mt-md w-full rounded-full bg-secondary-container py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
+                disabled={recoveryChecking || creatingConnection}
+                className="mt-md w-full rounded-full bg-primary py-md font-label-md text-label-md text-on-primary active:scale-95 transition-transform disabled:opacity-40"
               >
-                새 연결 진행하기
+                {creatingConnection ? '새 연결 준비 중...' : '새 연결 진행하기'}
               </button>
             </div>
 

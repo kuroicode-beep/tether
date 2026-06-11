@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-recovery-button-loading',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '복구 화면 새 연결 버튼 멈춤 및 글자 대비 수정.',
+    detail: '기존 연결 확인과 새 연결 생성을 별도 로딩 상태로 분리하고, 타임아웃과 명확한 오류 문구를 추가했습니다.',
+  },
+  {
     id: '2026-06-12-update-leaf-app-icons',
     date: '2026.06.12',
     type: 'update',
