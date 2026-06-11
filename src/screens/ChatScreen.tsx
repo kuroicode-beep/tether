@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useChat, ChatMessage } from '../hooks/useChat'
 import { usePhotos } from '../hooks/usePhotos'
-import { CONDITION_EMOJI, useStatus } from '../hooks/useStatus'
 import { ContentActionSheet } from '../components/ContentActionSheet'
 import { MessageBubble } from '../components/MessageBubble'
 import { DateDivider } from '../components/DateDivider'
@@ -42,7 +41,6 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     coupleId,
     uid,
   )
-  const { myStatus, partnerStatus } = useStatus(coupleId, uid, partnerUid)
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -103,28 +101,19 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     runScroll(behavior)
   }, [messages, scrollToBottom])
 
-  // 상단 도달 시 이전 메시지 로드 (IntersectionObserver)
-  useEffect(() => {
-    const root = listRef.current
-    if (!topRef.current || !root) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!initialScrollDoneRef.current) return
-        if (entry.isIntersecting && hasMore && !loading) {
-          const list = listRef.current
-          const prevHeight = list?.scrollHeight ?? 0
-          loadMore().then(() => {
-            if (list) {
-              const added = list.scrollHeight - prevHeight
-              list.scrollTop = added
-            }
-          })
-        }
-      },
-      { root, threshold: 0.1 },
-    )
-    observer.observe(topRef.current)
-    return () => observer.disconnect()
+  // 사용자가 직접 맨 위에 닿았을 때만 이전 메시지를 불러온다 (iOS 자동 튐 방지)
+  const handleListScroll = useCallback(() => {
+    const list = listRef.current
+    if (!list || !initialScrollDoneRef.current || inputFocusedRef.current) return
+    if (!hasMore || loading || list.scrollTop > 24) return
+
+    const prevHeight = list.scrollHeight
+    void loadMore().then(() => {
+      const nextList = listRef.current
+      if (!nextList) return
+      const added = nextList.scrollHeight - prevHeight
+      nextList.scrollTop = Math.max(added, 0)
+    })
   }, [hasMore, loading, loadMore])
 
   // 상대방 메시지 읽음 처리 (중복 write 방지)
@@ -183,6 +172,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
         ref={listRef}
         className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '80px' }}
+        onScroll={handleListScroll}
       >
         <div ref={topRef} className="h-1 shrink-0">
           {loading && (
@@ -223,10 +213,6 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                 const isMe = msg.senderUid === uid
                 const showSenderName = msgIndex === 0 && !isMe
                 const showTime = msgIndex === group.length - 1
-                const statusEmoji = isMe
-                  ? CONDITION_EMOJI[myStatus.condition]
-                  : CONDITION_EMOJI[partnerStatus.condition]
-
                 const bubble = (
                   <MessageBubble
                     message={msg}
@@ -234,7 +220,6 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                     showTime={showTime}
                     showSenderName={showSenderName}
                     senderName={partnerName}
-                    statusEmoji={statusEmoji}
                     onImageTap={setViewerUrl}
                   />
                 )

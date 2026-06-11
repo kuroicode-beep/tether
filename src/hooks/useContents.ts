@@ -140,17 +140,37 @@ export function useContents(coupleId: string | null, myUid: string | null) {
 
   const updateContent = async (
     contentId: string,
-    data: { title: string; memo?: string | null },
+    data: {
+      category: ContentCategory
+      title: string
+      memo?: string | null
+      status: ContentStatus
+      rating?: number | null
+      review?: string | null
+    },
   ) => {
+    let previous: ContentItem | undefined
+    setItems((prev) => {
+      previous = prev.find((i) => i.id === contentId)
+      return prev.map((item) => item.id === contentId ? { ...item, ...data } : item)
+    })
     if (!coupleId || isOptimisticId(contentId)) return
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'contents', contentId), {
+        category: data.category,
         title: data.title,
         memo: data.memo ?? null,
+        status: data.status,
+        rating: data.status === 'done' ? data.rating ?? null : null,
+        review: data.status === 'done' ? data.review ?? null : null,
         updatedAt: serverTimestamp(),
       })
     } catch (err) {
       console.warn('[useContents] updateContent failed', err)
+      if (previous) {
+        const rollback = previous
+        setItems((prev) => prev.map((item) => item.id === contentId ? rollback : item))
+      }
     }
   }
 

@@ -3,17 +3,18 @@ import { mkdirSync, writeFileSync } from 'fs'
 import { dirname, resolve } from 'path'
 
 const sampleRate = 44100
-const duration = 1.35
+const duration = 2.4
 const samples = Math.floor(sampleRate * duration)
 const buffer = new Float32Array(samples)
 
-// 종소리 배음 합성으로 한 번 울리는 소리를 만든다
+// 큰 종소리 배음 합성으로 한 번 울리는 소리를 만든다
 function addBellStrike(startSec, fundamental, volume) {
   const partials = [
-    { ratio: 1, amp: 1, decay: 1.4 },
-    { ratio: 2.01, amp: 0.45, decay: 0.95 },
-    { ratio: 2.62, amp: 0.22, decay: 0.7 },
-    { ratio: 3.48, amp: 0.1, decay: 0.45 },
+    { ratio: 0.5, amp: 0.42, decay: 1.9 },
+    { ratio: 1, amp: 1.0, decay: 1.7 },
+    { ratio: 2.01, amp: 0.58, decay: 1.15 },
+    { ratio: 2.62, amp: 0.32, decay: 0.9 },
+    { ratio: 3.48, amp: 0.16, decay: 0.6 },
   ]
   const start = Math.floor(startSec * sampleRate)
 
@@ -24,16 +25,24 @@ function addBellStrike(startSec, fundamental, volume) {
       const env = Math.exp(-t / partial.decay)
       sample += partial.amp * Math.sin(2 * Math.PI * fundamental * partial.ratio * t) * env
     }
-    buffer[i] += sample * volume * 0.32
+    buffer[i] += sample * volume * 0.48
   }
 }
 
-addBellStrike(0, 784, 1)
-addBellStrike(0.42, 988, 0.85)
+addBellStrike(0, 659, 1.0)
+addBellStrike(0.38, 880, 0.95)
+addBellStrike(0.78, 1175, 0.72)
+
+let peak = 0
+for (let i = 0; i < samples; i++) {
+  peak = Math.max(peak, Math.abs(buffer[i]))
+}
+const normalize = peak > 0 ? Math.min(1 / peak, 1.15) : 1
 
 const pcm = Buffer.alloc(samples * 2)
 for (let i = 0; i < samples; i++) {
-  const clamped = Math.max(-1, Math.min(1, buffer[i]))
+  const boosted = Math.tanh(buffer[i] * normalize * 1.35)
+  const clamped = Math.max(-1, Math.min(1, boosted))
   pcm.writeInt16LE(Math.round(clamped * 32767), i * 2)
 }
 

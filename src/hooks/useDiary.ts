@@ -202,13 +202,25 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
 
   const updateDiary = async (
     diaryId: string,
-    data: { title: string; content: string },
+    data: { title: string; content: string; imageFile?: File; imageUrl?: string | null },
   ) => {
     if (!coupleId || isOptimisticId(diaryId)) return
+    let imageUrl = data.imageUrl
+    if (data.imageFile) {
+      try {
+        const path = `couples/${coupleId}/diary/${diaryId}/edit_${Date.now()}_${data.imageFile.name}`
+        await uploadBytes(ref(storage, path), data.imageFile)
+        imageUrl = await getDownloadURL(ref(storage, path))
+      } catch (err) {
+        console.warn('[useDiary] update image upload failed', err)
+      }
+    }
+
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
         title: data.title,
         content: data.content,
+        ...(imageUrl !== undefined ? { imageUrl } : {}),
         updatedAt: serverTimestamp(),
       })
     } catch (err) {

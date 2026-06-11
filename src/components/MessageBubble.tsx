@@ -1,5 +1,5 @@
 // src/components/MessageBubble.tsx
-// Renders one chat bubble with optional current status emoji.
+// Renders one chat bubble with sender name, media fallback, and read state.
 import { useEffect, useState } from 'react'
 import { ChatMessage } from '../hooks/useChat'
 
@@ -9,7 +9,6 @@ interface MessageBubbleProps {
   showTime: boolean
   showSenderName?: boolean
   senderName?: string
-  statusEmoji?: string
   onImageTap?: (url: string) => void
 }
 
@@ -25,7 +24,6 @@ export function MessageBubble({
   showTime,
   showSenderName = false,
   senderName,
-  statusEmoji,
   onImageTap,
 }: MessageBubbleProps) {
   const { type, text, imageUrl, createdAt, readBy, senderUid } = message
@@ -40,15 +38,6 @@ export function MessageBubble({
     <div className={isMe ? 'message-mine' : 'message-partner'}>
       {!isMe && showSenderName && senderName && (
         <span className="sender-name">{senderName}</span>
-      )}
-
-      {statusEmoji && (
-        <span
-          className={`mb-[2px] block text-[13px] leading-none ${isMe ? 'text-right' : 'text-left'}`}
-          aria-label="현재 상태"
-        >
-          {statusEmoji}
-        </span>
       )}
 
       {type === 'text' ? (

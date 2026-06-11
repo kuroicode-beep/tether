@@ -9,7 +9,7 @@ import { useCoupleSession } from '../hooks/useCoupleSession'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
-type View = 'list' | 'read' | 'write' | 'reply'
+type View = 'list' | 'read' | 'write' | 'reply' | 'edit'
 
 interface DiaryScreenProps {
   onNavigate: (screen: Screen) => void
@@ -24,15 +24,18 @@ function formatTs(ts: number | null): string {
 
 interface WriteFormProps {
   isReply?: boolean
-  onSubmit: (data: { title: string; content: string; imageFile?: File }) => void
+  initial?: { title?: string; content?: string; imageUrl?: string | null }
+  heading?: string
+  submitLabel?: string
+  onSubmit: (data: { title: string; content: string; imageFile?: File; imageUrl?: string | null }) => void
   onCancel: () => void
 }
 
-function WriteForm({ isReply, onSubmit, onCancel }: WriteFormProps) {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+function WriteForm({ isReply, initial, heading, submitLabel = '저장', onSubmit, onCancel }: WriteFormProps) {
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [content, setContent] = useState(initial?.content ?? '')
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(initial?.imageUrl ?? null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +47,12 @@ function WriteForm({ isReply, onSubmit, onCancel }: WriteFormProps) {
 
   const handleSubmit = () => {
     if (!content.trim()) return
-    onSubmit({ title: title.trim(), content: content.trim(), imageFile: imageFile ?? undefined })
+    onSubmit({
+      title: title.trim(),
+      content: content.trim(),
+      imageFile: imageFile ?? undefined,
+      imageUrl: imageFile ? undefined : preview,
+    })
   }
 
   return (
@@ -54,14 +62,14 @@ function WriteForm({ isReply, onSubmit, onCancel }: WriteFormProps) {
           <span className="material-symbols-outlined text-primary">close</span>
         </button>
         <h1 className="font-label-md text-label-md font-semibold text-on-surface">
-          {isReply ? '답장 쓰기' : '일기 쓰기'}
+          {heading ?? (isReply ? '답장 쓰기' : '일기 쓰기')}
         </h1>
         <button
           onClick={handleSubmit}
           disabled={!content.trim()}
           className="px-lg py-xs bg-primary text-on-primary rounded-full font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
         >
-          저장
+          {submitLabel}
         </button>
       </header>
 
@@ -249,12 +257,38 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
     setSelected(null)
   }
 
+  const handleEditSubmit = async (data: { title: string; content: string; imageFile?: File; imageUrl?: string | null }) => {
+    if (!selected) return
+    const nextTitle = data.title.trim()
+    const nextContent = data.content.trim()
+    if (!nextTitle || !nextContent) return
+    await updateDiary(selected.id, {
+      title: nextTitle,
+      content: nextContent,
+      imageFile: data.imageFile,
+      imageUrl: data.imageUrl,
+    })
+    setSelected({ ...selected, title: nextTitle, content: nextContent, imageUrl: data.imageUrl ?? selected.imageUrl })
+    setView('read')
+  }
+
   // 뷰 분기
   if (view === 'write') {
     return <WriteForm onSubmit={handleWriteSubmit} onCancel={() => setView('list')} />
   }
   if (view === 'reply') {
     return <WriteForm isReply onSubmit={handleReplySubmit} onCancel={() => setView('read')} />
+  }
+  if (view === 'edit' && selected) {
+    return (
+      <WriteForm
+        heading="일기 수정"
+        submitLabel="수정"
+        initial={{ title: selected.title, content: selected.content, imageUrl: selected.imageUrl }}
+        onSubmit={handleEditSubmit}
+        onCancel={() => setView('read')}
+      />
+    )
   }
   if (view === 'read' && selected) {
     return (
@@ -269,13 +303,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
           onBack={() => { setView('list'); setSelected(null) }}
           onReply={() => setView('reply')}
           onImageTap={setViewerUrl}
-          onEdit={() => {
-            const title = window.prompt('제목 수정', selected.title) ?? selected.title
-            const content = window.prompt('내용 수정', selected.content) ?? selected.content
-            if (!title.trim() || !content.trim()) return
-            updateDiary(selected.id, { title: title.trim(), content: content.trim() })
-            setSelected({ ...selected, title: title.trim(), content: content.trim() })
-          }}
+          onEdit={() => setView('edit')}
           onDelete={() => {
             if (!window.confirm('일기를 삭제할까요?')) return
             deleteDiary(selected.id)

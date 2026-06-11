@@ -18,8 +18,12 @@ interface HomeScreenProps {
 }
 
 const APP_VERSION = 'v0.1.0'
-const CONDITIONS: Condition[] = ['very_good', 'good', 'normal', 'bad', 'very_bad']
-const MOOD_TAGS = ['설렘', '평온', '힘듦', '보고싶어', '행복', '기쁨', '고마움', '슬픔', '우울', '화남']
+const CONDITIONS: Condition[] = ['very_good', 'good', 'normal', 'sleepy', 'surprised', 'angry', 'bad', 'very_bad']
+const MOOD_TAGS = [
+  '설렘', '평온', '힘듦', '보고싶어', '행복', '기쁨', '고마움', '슬픔', '우울', '화남',
+  '집중중', '노는중', '삐짐', '질투중', '멍함', '눈치보는중', '욕구불만', '예민함',
+  '생리중', '외로움', '기다림', '충만함',
+]
 
 const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
   { icon: 'chat', label: '채팅', screen: 'chat' },
@@ -137,32 +141,59 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       <main className="w-full space-y-lg px-margin-mobile pt-lg">
         <PushPermissionBanner />
 
-        <section className="relative grid grid-cols-2 gap-gutter">
-          <div className="home-status-card flex flex-col items-center space-y-sm rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md text-center shadow-sm">
-            <div className="flex items-center gap-xs">
-              <span className="font-label-md text-label-md text-on-surface">{myName}</span>
-              <div className="h-2 w-2 rounded-full bg-primary" />
+        <section className="relative flex flex-col gap-md">
+          <div className="home-status-card flex flex-col gap-md rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md shadow-sm">
+            <div className="flex items-center justify-between gap-xs">
+              <div className="flex items-center gap-xs">
+                <span className="font-label-md text-label-md text-on-surface">{myName}</span>
+                <div className="h-2 w-2 rounded-full bg-primary" />
+              </div>
+              <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
             </div>
 
-            <div className="flex w-full justify-around py-xs">
+            <div className="flex items-center gap-md rounded-2xl bg-surface/70 p-md">
+              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-primary text-[42px] leading-none shadow-sm">
+                {CONDITION_EMOJI[draftStatus.condition]}
+              </div>
+              {isEditingMsg ? (
+                <input
+                  autoFocus
+                  value={editMsg}
+                  onChange={(event) => setEditMsg(event.target.value.slice(0, 30))}
+                  onBlur={handleMsgBlur}
+                  onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
+                  maxLength={30}
+                  className="home-status-message min-h-[50px] flex-1 border-b border-primary/40 bg-transparent text-left font-label-md text-[16px] text-on-surface outline-none"
+                />
+              ) : (
+                <button
+                  onClick={() => setIsEditingMsg(true)}
+                  className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface transition-colors hover:text-primary"
+                >
+                  {draftStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-4 gap-xs">
               {CONDITIONS.map((condition) => (
                 <button
                   key={condition}
                   onClick={() => toggleCondition(condition)}
-                  className="rounded-full p-xs text-xl transition-all duration-200"
+                  className="flex min-h-[50px] items-center justify-center rounded-xl text-2xl transition-all duration-200"
                   style={
                     draftStatus.condition === condition
                       ? {
                           background: 'var(--color-primary)',
-                          transform: 'scale(1.2)',
+                          transform: 'scale(1.04)',
                           border: '2px solid var(--color-primary)',
                           opacity: 1,
                         }
                       : {
-                          background: 'transparent',
+                          background: 'var(--color-surface)',
                           transform: 'scale(1)',
                           border: '2px solid transparent',
-                          opacity: 0.45,
+                          opacity: 0.65,
                         }
                   }
                 >
@@ -171,32 +202,14 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
               ))}
             </div>
 
-            <div className="flex flex-wrap justify-center gap-xs">
+            <div className="flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl bg-surface/50 p-sm">
               {MOOD_TAGS.map((tag) => (
-                <button key={tag} onClick={() => toggleMood(tag)}>
+                <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
                   <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
                 </button>
               ))}
             </div>
 
-            {isEditingMsg ? (
-              <input
-                autoFocus
-                value={editMsg}
-                onChange={(event) => setEditMsg(event.target.value.slice(0, 30))}
-                onBlur={handleMsgBlur}
-                onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
-                maxLength={30}
-                className="home-status-message h-11 w-full border-b border-primary/40 bg-transparent text-center font-label-md text-[15px] text-on-surface outline-none"
-              />
-            ) : (
-              <button
-                onClick={() => setIsEditingMsg(true)}
-                className="home-status-message flex h-11 w-full items-center justify-center text-center font-label-md text-[15px] leading-snug text-on-surface transition-colors hover:text-primary"
-              >
-                {draftStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
-              </button>
-            )}
             <button
               type="button"
               onClick={confirmStatus}
@@ -205,26 +218,29 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
             >
               상태 확정
             </button>
-            <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
           </div>
 
-          <div className="home-status-card flex flex-col items-center space-y-sm rounded-xl border border-transparent bg-[#F5F2EB] p-md text-center shadow-sm">
-            <div className="flex items-center gap-xs">
-              <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
-              <div className="h-2 w-2 rounded-full bg-outline-variant" />
+          <div className="home-status-card flex flex-col gap-md rounded-xl border border-transparent bg-[#F5F2EB] p-md shadow-sm">
+            <div className="flex items-center justify-between gap-xs">
+              <div className="flex items-center gap-xs">
+                <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
+                <div className="h-2 w-2 rounded-full bg-outline-variant" />
+              </div>
+              <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>
             </div>
-            <div className="flex w-full justify-around py-xs">
-              <div className="p-xs text-xl">{CONDITION_EMOJI[partnerStatus.condition]}</div>
+            <div className="flex items-center gap-md rounded-2xl bg-surface/70 p-md">
+              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-secondary-container text-[42px] leading-none shadow-sm">
+                {CONDITION_EMOJI[partnerStatus.condition]}
+              </div>
+              <p className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface">
+                {partnerStatus.message || '아직 메시지가 없어요'}
+              </p>
             </div>
-            <div className="flex flex-wrap justify-center gap-xs">
+            <div className="flex flex-wrap justify-start gap-xs rounded-2xl bg-surface/50 p-sm">
               {(partnerStatus.mood.length > 0 ? partnerStatus.mood : ['—']).map((tag) => (
                 <MoodChip key={tag} label={tag} active={tag !== '—'} />
               ))}
             </div>
-            <p className="home-status-message flex h-11 items-center text-center font-label-md text-[15px] leading-snug text-on-surface">
-              {partnerStatus.message || '아직 메시지가 없어요'}
-            </p>
-            <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>
           </div>
         </section>
 
@@ -294,6 +310,10 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
             </button>
           </div>
         </section>
+
+        <p className="pb-md text-center font-label-sm text-[11px] text-on-surface-variant/70">
+          powered by 디또
+        </p>
       </main>
 
       <BottomNav active="home" onNavigate={onNavigate} />

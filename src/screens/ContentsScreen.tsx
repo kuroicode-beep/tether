@@ -133,6 +133,125 @@ function DoneSheet({ item, onSave, onClose }: DoneSheetProps) {
   )
 }
 
+// ── 전체 수정 바텀시트 ──────────────────────────────────────────────────────
+
+interface EditSheetProps {
+  item: ContentItem
+  onSave: (data: {
+    category: ContentCategory
+    title: string
+    memo: string | null
+    status: ContentStatus
+    rating: number | null
+    review: string | null
+  }) => void
+  onClose: () => void
+}
+
+function EditSheet({ item, onSave, onClose }: EditSheetProps) {
+  const [category, setCategory] = useState<ContentCategory>(item.category)
+  const [title, setTitle] = useState(item.title)
+  const [memo, setMemo] = useState(item.memo ?? '')
+  const [status, setStatus] = useState<ContentStatus>(item.status)
+  const [rating, setRating] = useState(item.rating ?? 0)
+  const [review, setReview] = useState(item.review ?? '')
+
+  const handleSave = () => {
+    if (!title.trim()) return
+    onSave({
+      category,
+      title: title.trim(),
+      memo: memo.trim() || null,
+      status,
+      rating: status === 'done' ? rating || null : null,
+      review: status === 'done' ? review.trim() || null : null,
+    })
+    onClose()
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="app-fixed-x fixed bottom-0 z-50 max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-surface px-margin-mobile pb-xxl pt-lg shadow-2xl">
+        <div className="mx-auto mb-lg h-1 w-10 rounded-full bg-outline-variant" />
+        <h2 className="mb-lg font-label-md text-label-md font-semibold text-on-surface">콘텐츠 수정</h2>
+
+        <div className="mb-lg grid grid-cols-5 gap-sm">
+          {(['book', 'movie', 'drama', 'youtube', 'etc'] as ContentCategory[]).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`flex min-h-[58px] flex-col items-center gap-xs rounded-xl p-sm transition-colors ${
+                category === cat ? 'bg-primary-container' : 'bg-surface-container'
+              }`}
+            >
+              <span className="text-2xl">{CATEGORY_EMOJI[cat]}</span>
+              <span className="text-[10px] font-medium text-on-surface-variant">
+                {CATEGORY_LABEL[cat].split(' ')[1]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="제목"
+          className="mb-sm w-full rounded-xl bg-surface-container px-lg py-md font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/40"
+        />
+        <textarea
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          placeholder="메모"
+          rows={3}
+          className="mb-lg w-full resize-none rounded-xl bg-surface-container px-lg py-md font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/40"
+        />
+
+        <div className="mb-lg grid grid-cols-3 gap-sm">
+          {(['want', 'watching', 'done'] as ContentStatus[]).map((next) => (
+            <button
+              key={next}
+              onClick={() => setStatus(next)}
+              className={`min-h-[50px] rounded-xl px-sm py-sm font-label-sm text-label-sm transition-colors ${
+                status === next ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface'
+              }`}
+            >
+              {STATUS_INFO[next].text}
+            </button>
+          ))}
+        </div>
+
+        {status === 'done' && (
+          <>
+            <div className="mb-lg flex justify-center gap-md">
+              {[1, 2, 3, 4, 5].map((score) => (
+                <button key={score} onClick={() => setRating(score)} className="text-3xl transition-transform active:scale-110">
+                  {score <= rating ? '⭐' : '☆'}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="감상"
+              rows={3}
+              className="mb-lg w-full resize-none rounded-xl bg-surface-container px-lg py-md font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/40"
+            />
+          </>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={!title.trim()}
+          className="w-full rounded-full bg-primary py-md font-label-md text-label-md text-on-primary transition-transform active:scale-95 disabled:opacity-40"
+        >
+          수정 완료
+        </button>
+      </div>
+    </>
+  )
+}
+
 // ── 메인 ────────────────────────────────────────────────────────────────────
 
 export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
@@ -143,6 +262,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('전체')
   const [showAdd, setShowAdd] = useState(false)
   const [doneTarget, setDoneTarget] = useState<ContentItem | null>(null)
+  const [editTarget, setEditTarget] = useState<ContentItem | null>(null)
   const [statusMenu, setStatusMenu] = useState<string | null>(null) // 상태 변경 메뉴 열린 id
 
   useEffect(() => {
@@ -228,12 +348,7 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
                 <div key={item.id} style={{ breakInside: 'avoid', marginBottom: '12px' }}>
                   <ContentActionSheet
                     enabled={item.addedBy === uid}
-                    onEdit={() => {
-                      const title = window.prompt('제목 수정', item.title)
-                      if (!title?.trim()) return
-                      const memo = window.prompt('메모 수정', item.memo ?? '') ?? item.memo
-                      updateContent(item.id, { title: title.trim(), memo: memo?.trim() || null })
-                    }}
+                    onEdit={() => setEditTarget(item)}
                     onDelete={() => deleteContent(item.id)}
                   >
                   <div className="bg-[#F5F2EB] rounded-xl shadow-sm p-md space-y-sm relative">
@@ -317,6 +432,14 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
           item={doneTarget}
           onSave={(rating, review) => updateStatus(doneTarget.id, 'done', { rating, review })}
           onClose={() => setDoneTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditSheet
+          item={editTarget}
+          onSave={(data) => updateContent(editTarget.id, data)}
+          onClose={() => setEditTarget(null)}
         />
       )}
 

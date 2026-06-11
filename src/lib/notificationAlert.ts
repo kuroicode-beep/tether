@@ -21,10 +21,11 @@ function getChimeAudio(): HTMLAudioElement {
 // 종소리(차임) 한 번 울림 — Web Audio 폴백
 function playBellStrike(ctx: AudioContext, startAt: number, fundamental: number, volume = 1) {
   const partials = [
-    { ratio: 1, amp: 1, decay: 1.4 },
-    { ratio: 2.01, amp: 0.45, decay: 0.95 },
-    { ratio: 2.62, amp: 0.22, decay: 0.7 },
-    { ratio: 3.48, amp: 0.1, decay: 0.45 },
+    { ratio: 0.5, amp: 0.42, decay: 1.9 },
+    { ratio: 1, amp: 1, decay: 1.7 },
+    { ratio: 2.01, amp: 0.58, decay: 1.15 },
+    { ratio: 2.62, amp: 0.32, decay: 0.9 },
+    { ratio: 3.48, amp: 0.16, decay: 0.6 },
   ]
 
   for (const partial of partials) {
@@ -32,14 +33,14 @@ function playBellStrike(ctx: AudioContext, startAt: number, fundamental: number,
     const gain = ctx.createGain()
     osc.type = 'sine'
     osc.frequency.value = fundamental * partial.ratio
-    const peak = 0.11 * partial.amp * volume
+    const peak = 0.18 * partial.amp * volume
     gain.gain.setValueAtTime(0.0001, startAt)
     gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), startAt + 0.012)
     gain.gain.exponentialRampToValueAtTime(0.0001, startAt + partial.decay)
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.start(startAt)
-    osc.stop(startAt + partial.decay + 0.05)
+    osc.stop(startAt + partial.decay + 0.08)
   }
 }
 
@@ -53,8 +54,9 @@ function playSyntheticChime() {
     if (audioCtx.state === 'suspended') void audioCtx.resume()
 
     const t = audioCtx.currentTime
-    playBellStrike(audioCtx, t, 784, 1)
-    playBellStrike(audioCtx, t + 0.42, 988, 0.85)
+    playBellStrike(audioCtx, t, 659, 1)
+    playBellStrike(audioCtx, t + 0.38, 880, 0.95)
+    playBellStrike(audioCtx, t + 0.78, 1175, 0.72)
   } catch {
     /* ignore */
   }
@@ -68,7 +70,7 @@ export function playNotificationSound() {
     void audio.play().catch(() => playSyntheticChime())
 
     if ('vibrate' in navigator) {
-      navigator.vibrate([80, 50, 80])
+      navigator.vibrate([180, 80, 180, 80, 240])
     }
   } catch {
     playSyntheticChime()
