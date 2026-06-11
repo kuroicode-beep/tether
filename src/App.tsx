@@ -77,7 +77,7 @@ function AppContent() {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [session.uid, session.isLoading, push])
+  }, [session.uid, session.coupleId, session.status, session.isLoading, push])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')

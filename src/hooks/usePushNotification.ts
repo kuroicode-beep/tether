@@ -136,6 +136,14 @@ export async function requestAndSavePushToken(uid: string): Promise<boolean> {
   return Boolean(token)
 }
 
+// 이미 권한이 허용된 기기의 FCM 토큰을 현재 user 문서에 다시 저장한다
+export async function syncPushTokenForUid(uid: string | null): Promise<boolean> {
+  if (!uid) return false
+  if (!('Notification' in window) || Notification.permission !== 'granted') return false
+  const token = await syncFcmToken(uid)
+  return Boolean(token)
+}
+
 export function usePushNotification(uid: string | null) {
   const syncToken = async (): Promise<string | null> => {
     if (!uid) {

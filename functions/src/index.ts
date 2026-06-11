@@ -146,7 +146,10 @@ async function getPartnerToken(
       if (typeof token === 'string' && token) tokens.add(token)
     })
   }
-  if (tokens.size === 0) return null
+  if (tokens.size === 0) {
+    console.log('[Push] no partner tokens', { coupleId, senderUid, partnerUid })
+    return null
+  }
 
   // 알림 설정 확인
   return { tokens: [...tokens], partnerUid }
@@ -209,6 +212,14 @@ async function sendWebPush(
       fcmOptions: { link: payload.link },
     },
     android: { priority: 'high' as const },
+  })
+
+  console.log('[Push] multicast result', {
+    partnerUid,
+    type: payload.type,
+    tokenCount: tokens.length,
+    successCount: response.successCount,
+    failureCount: response.failureCount,
   })
 
   const invalidTokens = response.responses

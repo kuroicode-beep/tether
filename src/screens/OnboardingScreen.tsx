@@ -11,7 +11,7 @@ import {
   waitForCoupleConnection,
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
-import { canRequestPushPermission, usePushNotification } from '../hooks/usePushNotification'
+import { canRequestPushPermission, syncPushTokenForUid, usePushNotification } from '../hooks/usePushNotification'
 import { useSession } from '../context/SessionContext'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join' | 'recover'
@@ -73,6 +73,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       const ok = await notifyCoupleLinked()
       if (!ok) return false
       connect(restored)
+      void syncPushTokenForUid(connectedUid)
       onConnected()
       return true
     } catch {
@@ -265,6 +266,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
         partnerNickname: partner.nickname,
         partnerUid,
       })
+      void syncPushTokenForUid(uid)
 
       if (!push.isGranted() && canRequestPushPermission()) {
         setShowPushSheet(true)

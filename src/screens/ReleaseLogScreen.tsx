@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-reconnect-push-resync',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '재연결 후 알림 토큰 재동기화 보강.',
+    detail: '같은 계정으로 커플을 다시 연결해도 새 coupleId 기준으로 FCM 토큰을 다시 저장하고, Functions 로그에서 토큰 수와 발송 성공/실패를 확인할 수 있게 했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-recovery-button-loading',
     date: '2026.06.12',
     type: 'hotfix',
