@@ -9,7 +9,7 @@ import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ProfileAvatar } from '../components/ProfileAvatar'
-import { updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
+import { disconnectCouple, updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -28,9 +28,11 @@ const PREVIEW_SIZES: Record<FontScale, string> = {
 interface ConfirmDialogProps {
   onConfirm: () => void
   onCancel: () => void
+  loading?: boolean
+  error?: string
 }
 
-function DisconnectConfirmDialog({ onConfirm, onCancel }: ConfirmDialogProps) {
+function DisconnectConfirmDialog({ onConfirm, onCancel, loading, error }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-margin-mobile">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
@@ -48,20 +50,23 @@ function DisconnectConfirmDialog({ onConfirm, onCancel }: ConfirmDialogProps) {
               채팅·일기·사진 데이터는 유지되지만<br />
               상대방과의 실시간 연결이 끊깁니다.
             </p>
+            {error && <p className="mt-sm font-label-sm text-label-sm text-error">{error}</p>}
           </div>
         </div>
         <div className="flex gap-sm">
           <button
             onClick={onCancel}
+            disabled={loading}
             className="flex-1 py-md rounded-full border border-outline-variant font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors"
           >
             취소
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-md rounded-full bg-error text-on-error font-label-md text-label-md active:scale-95 transition-transform"
+            disabled={loading}
+            className="flex-1 py-md rounded-full bg-error text-on-error font-label-md text-label-md active:scale-95 transition-transform disabled:opacity-50"
           >
-            연결 해제
+            {loading ? '해제 중...' : '연결 해제'}
           </button>
         </div>
       </div>
@@ -87,6 +92,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
   const [googleLinking, setGoogleLinking] = useState(false)
   const [googleError, setGoogleError] = useState('')
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [disconnectError, setDisconnectError] = useState('')
 
   // 커플 정보 편집
   const [editingMyNick, setEditingMyNick] = useState(false)
@@ -120,10 +127,21 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     onChangePin?.()
   }
 
-  const handleDisconnectConfirm = () => {
-    setShowDisconnectDialog(false)
-    disconnect()
-    onDisconnect?.()
+  const handleDisconnectConfirm = async () => {
+    if (disconnecting) return
+    setDisconnecting(true)
+    setDisconnectError('')
+    try {
+      await disconnectCouple()
+      setShowDisconnectDialog(false)
+      disconnect()
+      onDisconnect?.()
+    } catch (err) {
+      console.warn('[SettingsScreen] disconnect couple failed', err)
+      setDisconnectError('연결 해제에 실패했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setDisconnecting(false)
+    }
   }
 
   const handleNotifToggle = async (key: keyof NotificationSettings) => {
@@ -622,6 +640,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
         <DisconnectConfirmDialog
           onConfirm={handleDisconnectConfirm}
           onCancel={() => setShowDisconnectDialog(false)}
+          loading={disconnecting}
+          error={disconnectError}
         />
       )}
     </SubScreen>

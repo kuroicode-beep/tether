@@ -297,6 +297,15 @@ export const claimInviteAndConnect = async (
   }
 }
 
+// 커플 연결 해제 — Cloud Function(Admin SDK)으로 양쪽 users.coupleId를 null 처리한다
+export const disconnectCouple = async (): Promise<void> => {
+  const disconnectCoupleFn = httpsCallable<void, { ok: boolean }>(
+    functions,
+    'disconnectCouple',
+  )
+  await disconnectCoupleFn()
+}
+
 /** @deprecated claimInviteAndConnect 사용 — 클라이언트 cross-write 차단됨 */
 export const connectCouple = async (_myUid: string, _partnerUid: string): Promise<string> => {
   throw new Error('connectCouple is deprecated — use claimInviteAndConnect')

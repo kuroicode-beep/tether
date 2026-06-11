@@ -75,6 +75,53 @@ export const claimInvite = functions.https.onCall(async (data, context) => {
   })
 })
 
+// ─── 커플 연결 해제 (Admin SDK — 양쪽 users.coupleId 해제) ────────────────
+
+export const disconnectCouple = functions.https.onCall(async (_data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required')
+  }
+
+  const uid = context.auth.uid
+  const userRef = db.doc(`users/${uid}`)
+
+  return db.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef)
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('failed-precondition', 'user_missing')
+    }
+
+    const coupleId = userSnap.data()?.coupleId as string | undefined
+    if (!coupleId) {
+      return { ok: true, alreadyDisconnected: true }
+    }
+
+    const coupleRef = db.doc(`couples/${coupleId}`)
+    const coupleSnap = await tx.get(coupleRef)
+    const members = Array.isArray(coupleSnap.data()?.members)
+      ? coupleSnap.data()!.members as string[]
+      : [uid]
+
+    if (!members.includes(uid)) {
+      throw new functions.https.HttpsError('permission-denied', 'not_member')
+    }
+
+    for (const memberUid of members) {
+      tx.update(db.doc(`users/${memberUid}`), { coupleId: null })
+    }
+
+    if (coupleSnap.exists) {
+      tx.set(coupleRef, {
+        disconnectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        disconnectedBy: uid,
+        isDisconnected: true,
+      }, { merge: true })
+    }
+
+    return { ok: true, coupleId, members }
+  })
+})
+
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────
 
 async function getPartnerToken(

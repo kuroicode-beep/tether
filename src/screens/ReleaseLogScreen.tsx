@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-disconnect-couple',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '커플 연결 해제가 실제 계정 상태에 반영되도록 수정.',
+    detail: '설정의 연결 해제가 로컬 캐시만 비우지 않고 Cloud Function을 통해 양쪽 users.coupleId를 해제하도록 보강했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-google-recovery-onboarding',
     date: '2026.06.12',
     type: 'hotfix',
