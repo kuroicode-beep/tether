@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
-  createUserProfile,
+  createInvite,
+  createOrGetUserDoc,
   claimInviteAndConnect,
   findUserByCode,
   restoreConnectionFromProfile,
@@ -13,7 +14,7 @@ import { PushPermissionSheet } from '../components/PushPermissionSheet'
 import { canRequestPushPermission, usePushNotification } from '../hooks/usePushNotification'
 import { useSession } from '../context/SessionContext'
 
-type Step = 'nickname' | 'choice' | 'create' | 'join'
+type Step = 'nickname' | 'choice' | 'create' | 'join' | 'recover'
 
 interface OnboardingScreenProps {
   onConnected: () => void
@@ -41,6 +42,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [showPushSheet, setShowPushSheet] = useState(false)
+  const [recoveryEmail, setRecoveryEmail] = useState('')
   const push = usePushNotification(uid || null)
   const autoPreparedRef = useRef<string | null>(null)
 
@@ -73,13 +75,21 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     nextNickname: string,
     displayName?: string | null,
   ) => {
-    const code = await createUserProfile(nextUid, nextNickname, displayName)
+    const profile = await createOrGetUserDoc(nextUid, displayName, nextNickname)
     setUid(nextUid)
-    setNickname(nextNickname)
-    setMyCode(code)
+    setNickname(profile.nickname || nextNickname)
+    setMyCode(profile.inviteCode)
 
     const connected = await enterConnectedApp(nextUid)
-    if (!connected) setStep('choice')
+    if (connected) return
+
+    if (displayName !== undefined) {
+      setRecoveryEmail(user?.email ?? '')
+      setStep('recover')
+      return
+    }
+
+    setStep('choice')
   }
 
   // Google 로그인 후 자동 호출 — 비로그인 익명 사용자는 무시한다
@@ -96,6 +106,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     setError('')
     try {
       const nextNickname = googleUser.displayName?.trim() || nickname.trim() || '나'
+      setRecoveryEmail(googleUser.email ?? '')
       await prepareUser(googleUser.uid, nextNickname, googleUser.displayName)
       try { sessionStorage.setItem(PREPARED_KEY, googleUser.uid) } catch { /* ignore */ }
     } catch {
@@ -170,6 +181,35 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       } else {
         setError('Google 로그인을 완료하지 못했어요.')
       }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRecoveryRetry = async () => {
+    if (!uid) return
+    setLoading(true)
+    setError('')
+    try {
+      const connected = await enterConnectedApp(uid)
+      if (!connected) {
+        setError('이 Google 계정에는 아직 연결된 커플 정보가 없어요. 기존 기기에서 Google 계정 연결 상태를 먼저 확인해주세요.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleStartNewConnection = async () => {
+    if (!uid) return
+    setLoading(true)
+    setError('')
+    try {
+      const code = await createInvite(uid)
+      setMyCode(code)
+      setStep('choice')
+    } catch {
+      setError('새 초대 코드를 만들지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -332,6 +372,60 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
                 <p className="font-label-sm text-label-sm text-on-surface-variant">상대방의 코드를 입력해요</p>
               </div>
             </button>
+          </div>
+        )}
+
+        {step === 'recover' && (
+          <div className="space-y-lg">
+            <div className="text-center">
+              <h2 className="font-headline-md text-headline-md text-on-surface">기존 연결을 확인하고 있어요</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-xs leading-relaxed">
+                Google 로그인은 완료됐지만 이 계정에서 연결된 커플 정보를 찾지 못했어요.
+                기존 기기에서 Google 계정 연결이 되어 있었는지 먼저 확인해주세요.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-[#F5F2EB] p-md text-left shadow-sm">
+              <p className="font-label-sm text-label-sm text-on-surface-variant">현재 Google 계정</p>
+              <p className="mt-xs break-all font-label-md text-label-md text-on-surface">
+                {recoveryEmail || user?.email || '이메일 정보를 불러오지 못했어요'}
+              </p>
+              <p className="mt-sm break-all font-label-sm text-label-sm text-on-surface-variant">
+                UID: {uid}
+              </p>
+            </div>
+
+            <button
+              onClick={handleRecoveryRetry}
+              disabled={loading}
+              className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
+            >
+              {loading ? '확인 중...' : '기존 연결 다시 확인'}
+            </button>
+
+            <button
+              onClick={handleGoogleStart}
+              disabled={loading}
+              className="w-full bg-surface-container-low border border-outline-variant/30 rounded-full py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
+            >
+              다른 Google 계정으로 로그인
+            </button>
+
+            <div className="rounded-xl border border-outline-variant/30 p-md">
+              <p className="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">
+                새 커플 연결로 진행하면 기존 익명 기기 데이터와 자동 병합되지 않을 수 있어요.
+                기존 기기에서 Google 연결이 안 되어 있었다면 새 연결이 필요합니다.
+              </p>
+              <button
+                onClick={handleStartNewConnection}
+                disabled={loading}
+                className="mt-md w-full rounded-full bg-secondary-container py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
+              >
+                새 연결 진행하기
+              </button>
+            </div>
+
+            {error && <p className="text-center font-label-sm text-label-sm text-error">{error}</p>}
           </div>
         )}
 

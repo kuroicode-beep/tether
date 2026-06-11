@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-google-recovery-onboarding',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: 'iOS 재설치 후 Google 로그인 복구 안내 흐름 추가.',
+    detail: 'Google 로그인 후 커플 정보가 없을 때 바로 코드 입력으로 보내지 않고, 기존 연결 재확인/다른 Google 계정 로그인/새 연결 진행을 분리한 복구 안내 화면을 표시합니다.',
+  },
+  {
     id: '2026-06-12-hotfix-high-contrast-status-message-black',
     date: '2026.06.12',
     type: 'hotfix',
