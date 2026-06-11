@@ -59,6 +59,7 @@ service cloud.firestore {
           'nickname',
           'inviteCode',
           'fcmToken',
+          'fcmTokens',
           'fcmUpdatedAt',
           'notificationSettings',
           'lastRead',

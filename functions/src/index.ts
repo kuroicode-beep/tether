@@ -80,18 +80,100 @@ export const claimInvite = functions.https.onCall(async (data, context) => {
 async function getPartnerToken(
   coupleId: string,
   senderUid: string,
-): Promise<{ token: string; partnerUid: string } | null> {
+): Promise<{ tokens: string[]; partnerUid: string } | null> {
   const coupleSnap = await db.doc(`couples/${coupleId}`).get()
   const members: string[] = coupleSnap.data()?.members ?? []
   const partnerUid = members.find((m) => m !== senderUid)
   if (!partnerUid) return null
 
   const partnerSnap = await db.doc(`users/${partnerUid}`).get()
-  const token: string | undefined = partnerSnap.data()?.fcmToken
-  if (!token) return null
+  const data = partnerSnap.data() ?? {}
+  const tokenMap = data.fcmTokens as Record<string, string> | undefined
+  const tokens = new Set<string>()
+
+  if (typeof data.fcmToken === 'string' && data.fcmToken) {
+    tokens.add(data.fcmToken)
+  }
+  if (tokenMap && typeof tokenMap === 'object') {
+    Object.values(tokenMap).forEach((token) => {
+      if (typeof token === 'string' && token) tokens.add(token)
+    })
+  }
+  if (tokens.size === 0) return null
 
   // 알림 설정 확인
-  return { token, partnerUid }
+  return { tokens: [...tokens], partnerUid }
+}
+
+// 무효 토큰은 다음 발송 실패를 줄이기 위해 best-effort로 정리한다
+async function cleanupInvalidTokens(uid: string, tokens: string[]) {
+  if (tokens.length === 0) return
+  try {
+    const snap = await db.doc(`users/${uid}`).get()
+    const data = snap.data() ?? {}
+    const tokenMap = data.fcmTokens as Record<string, string> | undefined
+    const updates: Record<string, unknown> = {}
+
+    if (tokens.includes(data.fcmToken as string)) {
+      updates.fcmToken = admin.firestore.FieldValue.delete()
+    }
+
+    if (tokenMap && typeof tokenMap === 'object') {
+      for (const [deviceId, token] of Object.entries(tokenMap)) {
+        if (tokens.includes(token)) {
+          updates[`fcmTokens.${deviceId}`] = admin.firestore.FieldValue.delete()
+        }
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.doc(`users/${uid}`).update(updates)
+    }
+  } catch {
+    // cleanup 실패는 알림 발송 자체를 막지 않는다
+  }
+}
+
+// Web/PWA 알림을 파트너의 모든 등록 기기에 발송한다
+async function sendWebPush(
+  partnerUid: string,
+  tokens: string[],
+  payload: {
+    type: 'message' | 'status' | 'diary'
+    title: string
+    body: string
+    data: Record<string, string>
+    link: string
+  },
+) {
+  if (tokens.length === 0) return
+
+  const response = await messaging.sendEachForMulticast({
+    tokens,
+    data: {
+      type: payload.type,
+      title: payload.title,
+      body: payload.body,
+      ...payload.data,
+      url: payload.link,
+    },
+    webpush: {
+      headers: { Urgency: 'high' },
+      fcmOptions: { link: payload.link },
+    },
+    android: { priority: 'high' as const },
+  })
+
+  const invalidTokens = response.responses
+    .map((result, index) => ({ result, token: tokens[index] }))
+    .filter(({ result }) => {
+      const code = result.error?.code
+      return code === 'messaging/registration-token-not-registered'
+        || code === 'messaging/invalid-registration-token'
+    })
+    .map(({ token }) => token)
+
+  await cleanupInvalidTokens(partnerUid, invalidTokens)
 }
 
 async function isNotificationEnabled(
@@ -128,25 +210,19 @@ export const onStatusUpdate = functions.firestore
     const result = await getPartnerToken(coupleId, uid)
     if (!result) return
 
-    const { token, partnerUid } = result
+    const { tokens, partnerUid } = result
     if (!(await isNotificationEnabled(partnerUid, 'status'))) return
 
     const senderName = await getSenderName(uid)
 
-    await messaging.send({
-      token,
+    await sendWebPush(partnerUid, tokens, {
+      type: 'status',
+      title: 'Tether 🌿',
+      body: `${senderName}이(가) 상태를 업데이트했어요`,
       data: {
-        type: 'status',
-        title: 'Tether 🌿',
-        body: `${senderName}이(가) 상태를 업데이트했어요`,
         uid,
-        url: '/?screen=home',
       },
-      webpush: {
-        headers: { Urgency: 'high' },
-        fcmOptions: { link: '/?screen=home' },
-      },
-      android: { priority: 'high' as const },
+      link: '/?screen=home',
     })
   })
 
@@ -162,26 +238,21 @@ export const onNewMessage = functions.firestore
     const result = await getPartnerToken(coupleId, msg.senderUid as string)
     if (!result) return
 
-    const { token, partnerUid } = result
+    const { tokens, partnerUid } = result
     if (!(await isNotificationEnabled(partnerUid, 'message'))) return
 
     const senderName = await getSenderName(msg.senderUid as string)
     const body: string = msg.type === 'image' ? '사진을 보냈어요 📸' : (msg.text as string) ?? ''
 
-    await messaging.send({
-      token,
+    await sendWebPush(partnerUid, tokens, {
+      type: 'message',
+      title: senderName,
+      body,
       data: {
-        type: 'message',
-        title: senderName,
-        body,
         coupleId,
-        url: '/?screen=chat',
+        screen: 'chat',
       },
-      webpush: {
-        headers: { Urgency: 'high' },
-        fcmOptions: { link: '/?screen=chat' },
-      },
-      android: { priority: 'high' as const },
+      link: '/?screen=chat',
     })
   })
 
@@ -197,24 +268,19 @@ export const onNewDiary = functions.firestore
     const result = await getPartnerToken(coupleId, diary.authorUid as string)
     if (!result) return
 
-    const { token, partnerUid } = result
+    const { tokens, partnerUid } = result
     if (!(await isNotificationEnabled(partnerUid, 'diary'))) return
 
     const senderName = await getSenderName(diary.authorUid as string)
 
-    await messaging.send({
-      token,
+    await sendWebPush(partnerUid, tokens, {
+      type: 'diary',
+      title: 'Tether 💌',
+      body: `${senderName}의 일기가 도착했어요`,
       data: {
-        type: 'diary',
-        title: 'Tether 💌',
-        body: `${senderName}의 일기가 도착했어요`,
         coupleId,
-        url: '/?screen=diary',
+        screen: 'diary',
       },
-      webpush: {
-        headers: { Urgency: 'high' },
-        fcmOptions: { link: '/?screen=diary' },
-      },
-      android: { priority: 'high' as const },
+      link: '/?screen=diary',
     })
   })

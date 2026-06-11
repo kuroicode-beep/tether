@@ -7,6 +7,7 @@ import { debugLog } from '../lib/debugLog'
 
 const LS_GRANTED = 'tether_fcm_granted'
 const LS_SETTINGS = 'tether_notification_settings'
+const LS_DEVICE_ID = 'tether_push_device_id'
 
 export interface NotificationSettings {
   message: boolean
@@ -18,6 +19,17 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   message: true,
   status: true,
   diary: true,
+}
+
+// 브라우저/PWA 설치 단위로 안정적인 토큰 저장 키를 만든다
+function getPushDeviceId(): string {
+  const stored = localStorage.getItem(LS_DEVICE_ID)
+  if (stored) return stored
+
+  const random = crypto.randomUUID().replace(/-/g, '')
+  const deviceId = `web_${random}`
+  localStorage.setItem(LS_DEVICE_ID, deviceId)
+  return deviceId
 }
 
 // VitePWA가 등록한 root SW(/sw.js)를 반환한다 — FCM handler는 workbox.importScripts로 로드됨
@@ -75,8 +87,10 @@ async function syncFcmToken(uid: string | null): Promise<string | null> {
     }
 
     if (uid) {
+      const deviceId = getPushDeviceId()
       await updateDoc(doc(db, 'users', uid), {
         fcmToken: token,
+        [`fcmTokens.${deviceId}`]: token,
         fcmUpdatedAt: new Date().toISOString(),
       })
       console.log('[Push] Token saved to Firestore')
