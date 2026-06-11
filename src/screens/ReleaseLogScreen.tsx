@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-app-icon-branding',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '앱 아이콘 물음표(????) 표시 수정 및 잎사귀 브랜딩 적용.',
+    detail: '한글 폰트 없이 생성되던 아이콘의 ???? ?? 깨짐을 제거하고, 크림 배경 잎사귀 Tether 로고로 192/512/180px 및 favicon을 다시 생성했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-reconnect-push-resync',
     date: '2026.06.12',
     type: 'hotfix',
