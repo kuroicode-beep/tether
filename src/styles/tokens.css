@@ -433,10 +433,10 @@ body {
 }
 
 [data-theme="high-contrast"] .home-status-message {
-  color: #000000 !important;
-  background: #FFFFFF !important;
+  color: #FFFFFF !important;
+  background: #000000 !important;
   border: 2px solid #FFFFFF !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   min-height: 50px !important;
   padding: 8px 12px !important;
   font-size: 16px !important;
@@ -445,7 +445,7 @@ body {
 
 [data-theme="high-contrast"] .home-status-message .text-on-surface-variant\/60,
 [data-theme="high-contrast"] .home-status-message span {
-  color: #000000 !important;
+  color: #FFFFFF !important;
   opacity: 1 !important;
 }
 

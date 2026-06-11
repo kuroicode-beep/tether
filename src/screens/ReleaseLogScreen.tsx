@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-high-contrast-status-message-black',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '고대비 상태 메시지 박스 색상 수정.',
+    detail: '상태 메시지를 검은 배경, 흰 글씨, 흰 보더, 둥근 모서리 박스로 다시 맞췄습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-high-contrast-white-status-cards',
     date: '2026.06.12',
     type: 'hotfix',
