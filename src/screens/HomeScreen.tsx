@@ -63,6 +63,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
     message: myStatus.message,
   })
   const [editMsg, setEditMsg] = useState(myStatus.message)
+  const [isEditingStatus, setIsEditingStatus] = useState(false)
   const [isEditingMsg, setIsEditingMsg] = useState(false)
   const draftMessage = isEditingMsg ? editMsg.trim() : draftStatus.message
   const isStatusDirty =
@@ -93,9 +94,22 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
 
   // Persists the draft status and appends exactly one history entry.
   const confirmStatus = () => {
-    if (!isStatusDirty) return
     handleMsgBlur()
-    updateMyStatus({ ...draftStatus, message: draftMessage })
+    if (isStatusDirty) {
+      updateMyStatus({ ...draftStatus, message: draftMessage })
+    }
+    setIsEditingStatus(false)
+  }
+
+  // Opens the editable status controls from the read-only card.
+  const beginStatusEdit = () => {
+    setDraftStatus({
+      condition: myStatus.condition,
+      mood: myStatus.mood,
+      message: myStatus.message,
+    })
+    setEditMsg(myStatus.message)
+    setIsEditingStatus(true)
   }
 
   useEffect(() => {
@@ -104,9 +118,9 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       mood: myStatus.mood,
       message: myStatus.message,
     }
-    setDraftStatus(next)
-    if (!isEditingMsg) setEditMsg(next.message)
-  }, [myStatus.condition, myStatus.message, myStatus.mood])
+    if (!isEditingStatus) setDraftStatus(next)
+    if (!isEditingMsg && !isEditingStatus) setEditMsg(next.message)
+  }, [isEditingMsg, isEditingStatus, myStatus.condition, myStatus.message, myStatus.mood])
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
@@ -142,85 +156,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         <PushPermissionBanner />
 
         <section className="relative flex flex-col gap-md">
-          <div className="home-status-card flex flex-col gap-md rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md shadow-sm">
-            <div className="flex items-center justify-between gap-xs">
-              <div className="flex items-center gap-xs">
-                <span className="font-label-md text-label-md text-on-surface">{myName}</span>
-                <div className="h-2 w-2 rounded-full bg-primary" />
-              </div>
-              <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
-            </div>
-
-            <div className="flex items-center gap-md rounded-2xl bg-surface/70 p-md">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-primary text-[42px] leading-none shadow-sm">
-                {CONDITION_EMOJI[draftStatus.condition]}
-              </div>
-              {isEditingMsg ? (
-                <input
-                  autoFocus
-                  value={editMsg}
-                  onChange={(event) => setEditMsg(event.target.value.slice(0, 30))}
-                  onBlur={handleMsgBlur}
-                  onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
-                  maxLength={30}
-                  className="home-status-message min-h-[50px] flex-1 border-b border-primary/40 bg-transparent text-left font-label-md text-[16px] text-on-surface outline-none"
-                />
-              ) : (
-                <button
-                  onClick={() => setIsEditingMsg(true)}
-                  className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface transition-colors hover:text-primary"
-                >
-                  {draftStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-4 gap-xs">
-              {CONDITIONS.map((condition) => (
-                <button
-                  key={condition}
-                  onClick={() => toggleCondition(condition)}
-                  className="flex min-h-[50px] items-center justify-center rounded-xl text-2xl transition-all duration-200"
-                  style={
-                    draftStatus.condition === condition
-                      ? {
-                          background: 'var(--color-primary)',
-                          transform: 'scale(1.04)',
-                          border: '2px solid var(--color-primary)',
-                          opacity: 1,
-                        }
-                      : {
-                          background: 'var(--color-surface)',
-                          transform: 'scale(1)',
-                          border: '2px solid transparent',
-                          opacity: 0.65,
-                        }
-                  }
-                >
-                  {CONDITION_EMOJI[condition]}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl bg-surface/50 p-sm">
-              {MOOD_TAGS.map((tag) => (
-                <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
-                  <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={confirmStatus}
-              disabled={!isStatusDirty}
-              className="min-h-[50px] w-full rounded-full bg-primary px-md py-sm font-label-md text-label-md text-on-primary transition-transform active:scale-95 disabled:opacity-45"
-            >
-              상태 확정
-            </button>
-          </div>
-
-          <div className="home-status-card flex flex-col gap-md rounded-xl border border-transparent bg-[#F5F2EB] p-md shadow-sm">
+          <article className="home-status-card flex flex-col gap-md rounded-xl border bg-[#F5F2EB] p-md shadow-sm">
             <div className="flex items-center justify-between gap-xs">
               <div className="flex items-center gap-xs">
                 <span className="font-label-md text-label-md text-on-surface">{partnerName}</span>
@@ -228,20 +164,115 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
               </div>
               <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(partnerStatus.updatedAt)}</span>
             </div>
-            <div className="flex items-center gap-md rounded-2xl bg-surface/70 p-md">
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-secondary-container text-[42px] leading-none shadow-sm">
+            <div className="status-card-inner flex items-center gap-md rounded-2xl p-md">
+              <div className="status-face flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl text-[42px] leading-none shadow-sm">
                 {CONDITION_EMOJI[partnerStatus.condition]}
               </div>
               <p className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface">
                 {partnerStatus.message || '아직 메시지가 없어요'}
               </p>
             </div>
-            <div className="flex flex-wrap justify-start gap-xs rounded-2xl bg-surface/50 p-sm">
+            <div className="status-tag-panel flex flex-wrap justify-start gap-xs rounded-2xl p-sm">
               {(partnerStatus.mood.length > 0 ? partnerStatus.mood : ['—']).map((tag) => (
                 <MoodChip key={tag} label={tag} active={tag !== '—'} />
               ))}
             </div>
-          </div>
+          </article>
+
+          <article className="home-status-card flex flex-col gap-md rounded-xl border-2 border-primary-container bg-[#F5F2EB] p-md shadow-sm">
+            <div className="flex items-center justify-between gap-xs">
+              <div className="flex items-center gap-xs">
+                <span className="font-label-md text-label-md text-on-surface">{myName}</span>
+                <div className="h-2 w-2 rounded-full bg-primary" />
+              </div>
+              <div className="flex items-center gap-xs">
+                <span className="font-label-sm text-[10px] text-outline-variant">{timeAgo(myStatus.updatedAt)}</span>
+                {!isEditingStatus && (
+                  <button
+                    type="button"
+                    onClick={beginStatusEdit}
+                    className="min-h-[40px] rounded-full border border-primary px-md font-label-sm text-label-sm text-primary"
+                  >
+                    편집
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!isEditingStatus ? (
+              <>
+                <div className="status-card-inner flex items-center gap-md rounded-2xl p-md">
+                  <div className="status-face status-face-mine flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl text-[42px] leading-none shadow-sm">
+                    {CONDITION_EMOJI[myStatus.condition]}
+                  </div>
+                  <p className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface">
+                    {myStatus.message || '한줄 메시지...'}
+                  </p>
+                </div>
+                <div className="status-tag-panel flex flex-wrap justify-start gap-xs rounded-2xl p-sm">
+                  {(myStatus.mood.length > 0 ? myStatus.mood : ['—']).map((tag) => (
+                    <MoodChip key={tag} label={tag} active={tag !== '—'} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="status-card-inner flex items-center gap-md rounded-2xl p-md">
+                  <div className="status-face status-face-mine flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl text-[42px] leading-none shadow-sm">
+                    {CONDITION_EMOJI[draftStatus.condition]}
+                  </div>
+                  {isEditingMsg ? (
+                    <input
+                      autoFocus
+                      value={editMsg}
+                      onChange={(event) => setEditMsg(event.target.value.slice(0, 30))}
+                      onBlur={handleMsgBlur}
+                      onKeyDown={(event) => event.key === 'Enter' && handleMsgBlur()}
+                      maxLength={30}
+                      className="home-status-message min-h-[50px] flex-1 border-b border-primary/40 bg-transparent text-left font-label-md text-[16px] text-on-surface outline-none"
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setIsEditingMsg(true)}
+                      className="home-status-message flex min-h-[50px] flex-1 items-center text-left font-label-md text-[16px] leading-snug text-on-surface transition-colors hover:text-primary"
+                    >
+                      {draftStatus.message || <span className="text-on-surface-variant/60">한줄 메시지...</span>}
+                    </button>
+                  )}
+                </div>
+
+                <div className="status-edit-grid grid grid-cols-4 gap-xs">
+                  {CONDITIONS.map((condition) => (
+                    <button
+                      key={condition}
+                      onClick={() => toggleCondition(condition)}
+                      className={`flex min-h-[50px] items-center justify-center rounded-xl text-2xl transition-all duration-200 ${
+                        draftStatus.condition === condition ? 'active' : ''
+                      }`}
+                    >
+                      {CONDITION_EMOJI[condition]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="status-edit-tag-panel flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl p-sm">
+                  {MOOD_TAGS.map((tag) => (
+                    <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
+                      <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={confirmStatus}
+                  className="min-h-[50px] w-full rounded-full bg-primary px-md py-sm font-label-md text-label-md text-on-primary transition-transform active:scale-95"
+                >
+                  상태 확정
+                </button>
+              </>
+            )}
+          </article>
         </section>
 
         <div className="py-sm">

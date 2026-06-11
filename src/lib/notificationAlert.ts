@@ -93,8 +93,10 @@ export function showSystemNotification(
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: tag ?? 'tether-alert',
-      silent: true,
+      silent: false,
       renotify: true,
+      requireInteraction: true,
+      vibrate: [220, 100, 220, 100, 320],
     } as NotificationOptions)
     n.onclick = () => {
       window.focus()

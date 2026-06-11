@@ -31,6 +31,55 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-update-font-settings-release-log',
+    date: '2026.06.12',
+    type: 'update',
+    title: '폰트 크기·폰트 선택 설정과 Log 기록 정책을 추가.',
+    detail: '설정에서 소/중/대 폰트 크기와 기본, 카페24동동체, 메이플스토리체, 나눔고딕 등 앱 폰트를 선택할 수 있게 했고, 앞으로 모든 수정사항을 Log 페이지에 남기도록 정리했습니다.',
+  },
+  {
+    id: '2026-06-12-hotfix-status-high-contrast-notification',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '상태 카드 고대비·편집모드와 Android 알림 체감 보강.',
+    detail: '상대방 상태를 위로 올리고, 내 상태는 편집 버튼을 눌렀을 때만 수정되도록 바꿨습니다. 고대비 상태 카드 색상을 정리하고 Android 알림 tag/vibration 옵션도 보강했습니다.',
+  },
+  {
+    id: '2026-06-12-update-mobile-chat-status-diary-contents',
+    date: '2026.06.12',
+    type: 'update',
+    title: '모바일 채팅, 상태, 교환일기, 콘텐츠 편집 UX 개선.',
+    detail: '큰 종소리 알림음, iOS 채팅 스크롤 튐 완화, 채팅 상태 이모티콘 제거, 교환일기/콘텐츠 전체 수정, 상태 태그 추가, powered by 디또 문구를 반영했습니다.',
+  },
+  {
+    id: '2026-06-11-hotfix-mobile-notification-silent',
+    date: '2026.06.11',
+    type: 'hotfix',
+    title: '모바일 백그라운드 알림 무음 체감 핫픽스.',
+    detail: 'Service Worker 백그라운드 알림을 non-silent로 고정해 Android PWA 알림이 조용한 알림처럼 내려가는 문제를 줄였습니다.',
+  },
+  {
+    id: '2026-06-11-hotfix-notification-multidevice',
+    date: '2026.06.11',
+    type: 'hotfix',
+    title: '기기별 Web Push 토큰 저장 및 멀티 디바이스 발송.',
+    detail: 'PC와 스마트폰 토큰이 서로 덮어쓰지 않도록 기기별 FCM 토큰을 저장하고, Functions에서 모든 등록 기기에 알림을 발송하게 했습니다.',
+  },
+  {
+    id: '2026-06-11-hotfix-chat-autoscroll',
+    date: '2026.06.11',
+    type: 'hotfix',
+    title: '채팅 진입·전송·수신 자동 스크롤 핫픽스.',
+    detail: '채팅 첫 진입, 메시지 전송, 상대 메시지 수신 시 마지막 대화가 보이도록 스크롤 기준을 마지막 메시지 ID 중심으로 보강했습니다.',
+  },
+  {
+    id: '2026-06-09-release-stabilization-steps',
+    date: '2026.06.09',
+    type: 'release',
+    title: 'Tether 안정화 Steps 2-6 자동 검증 및 배포 완료.',
+    detail: '읽음 배지, Firestore/Storage ownership, optimistic sync, PWA 알림/접근성, 최종 E2E 검증과 Firebase Hosting 배포를 완료했습니다.',
+  },
+  {
     id: '2026-06-10-update-profile-photo-thumbnails',
     date: '2026.06.10',
     type: 'update',

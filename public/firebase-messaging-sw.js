@@ -30,6 +30,7 @@ messaging.onBackgroundMessage((payload) => {
   const body = data.body ?? payload.notification?.body ?? '';
   const type = data.type ?? 'tether-msg';
   const targetUrl = data.url ?? '/';
+  const notificationTag = data.notificationId ?? `${type}-${Date.now()}`;
 
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
     const screen = data.screen ?? screenFromUrl(targetUrl);
@@ -41,10 +42,12 @@ messaging.onBackgroundMessage((payload) => {
       body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      tag: type,
+      tag: notificationTag,
       renotify: true,
       silent: false,
-      vibrate: [80, 50, 80],
+      vibrate: [220, 100, 220, 100, 320],
+      requireInteraction: true,
+      timestamp: Date.now(),
       data: { url: targetUrl, screen, ...data },
     });
   });

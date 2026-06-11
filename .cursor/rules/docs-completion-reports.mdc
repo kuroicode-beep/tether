@@ -10,6 +10,7 @@ alwaysApply: true
 - 모든 작업 완료 시 `docs/cursor-completion-YYYY-MM-DD-[작업명].md` 작성.
 - 완료보고서 없이 완료 처리 금지.
 - Notion에 Cursor 완료보고서 작성 금지.
+- 앱 기능/문구/UI/핫픽스 변경 시 `src/screens/ReleaseLogScreen.tsx`의 Log 페이지에 사용자용 업데이트 내역을 반드시 추가.
 
 ## 작업 시작 전
 
@@ -23,6 +24,7 @@ alwaysApply: true
 - `npm run build` — 필수
 - Firestore rules 변경 시: `npm run test:rules` (있을 때)
 - 배포 시: `firebase deploy` 결과 기록
+- 작업 완료 전 Log 페이지 변경 누락 여부 확인
 
 ## 파일명 예시
 

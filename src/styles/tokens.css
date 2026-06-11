@@ -1,9 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600;700&family=Nanum+Gothic:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'Cafe24Dongdong';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2104@1.0/Cafe24Dongdong.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Maplestory';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/MaplestoryOTFLight.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LINE Seed Sans KR';
+  src: url('https://cdn.jsdelivr.net/gh/wizfile/font/LINESeedKR-Rg.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NanumSquareRound';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/NanumSquareRoundR.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TmoneyRoundWind';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105@1.1/TmoneyRoundWindRegular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Recipekorea';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/Recipekorea.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KyoboHandwriting2019';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/KyoboHandwriting2019.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ── 디자인 토큰 (CSS 변수) ── */
 :root {
@@ -22,6 +78,7 @@
   /* 레이아웃 */
   --app-max-width: 720px;
   --font-scale: 1.0;
+  --app-font-family: 'Inter', 'Nanum Gothic', sans-serif;
   --bottom-nav-height: calc(56px + env(safe-area-inset-bottom, 0px));
   --fab-bottom-offset: calc(var(--bottom-nav-height) + 24px);
   --font-base:     calc(16px * var(--font-scale));
@@ -55,7 +112,8 @@ html {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--app-font-family);
+  font-size: var(--font-base);
   background: #000;
   color: var(--color-text);
   min-height: 100dvh;
@@ -296,6 +354,63 @@ body {
   background-color: var(--color-surface) !important;
   border-color: var(--color-border) !important;
   color: var(--color-text) !important;
+}
+
+.status-card-inner,
+.status-tag-panel,
+.status-edit-tag-panel {
+  background: color-mix(in srgb, var(--color-surface-2) 72%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+}
+
+.status-face {
+  background: var(--color-secondary-container, var(--color-primary-dim));
+  color: var(--color-text);
+}
+
+.status-face-mine {
+  background: var(--color-primary);
+  color: #FFFFFF;
+}
+
+.status-edit-grid button {
+  background: var(--color-surface);
+  border: 2px solid transparent;
+  opacity: 0.72;
+}
+
+.status-edit-grid button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+[data-theme="high-contrast"] .status-card-inner,
+[data-theme="high-contrast"] .status-tag-panel,
+[data-theme="high-contrast"] .status-edit-tag-panel {
+  background: #0D0D0D !important;
+  border-color: #FFE600 !important;
+}
+
+[data-theme="high-contrast"] .status-face,
+[data-theme="high-contrast"] .status-face-mine {
+  background: #FFE600 !important;
+  color: #000000 !important;
+  border: 2px solid #FFFFFF !important;
+}
+
+[data-theme="high-contrast"] .status-edit-grid button {
+  background: #111111 !important;
+  border-color: #FFFFFF !important;
+  color: #FFE600 !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .status-edit-grid button.active {
+  background: #FFE600 !important;
+  border-color: #FFE600 !important;
+  color: #000000 !important;
 }
 
 [data-theme="high-contrast"] .home-status-card .mood-chip {

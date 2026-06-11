@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
-import { useFontScale } from '../hooks/useFontScale'
+import { FONT_FAMILY_OPTIONS, FONT_SCALE_OPTIONS, type FontScale, useFontScale } from '../hooks/useFontScale'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
@@ -18,14 +18,10 @@ interface SettingsScreenProps {
   onOpenAnniversary?: () => void
 }
 
-type FontScale = 'S' | 'M' | 'L' | 'XL'
-const FONT_SCALES: FontScale[] = ['S', 'M', 'L', 'XL']
-
 const PREVIEW_SIZES: Record<FontScale, string> = {
-  S: '12px',
+  S: '14px',
   M: '16px',
   L: '20px',
-  XL: '24px',
 }
 
 // ── 연결 해제 확인 다이얼로그 ────────────────────────────────────────────────
@@ -75,7 +71,7 @@ function DisconnectConfirmDialog({ onConfirm, onCancel }: ConfirmDialogProps) {
 
 export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnniversary }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
-  const { scale, setScale } = useFontScale()
+  const { scale, setScale, fontFamily, setFontFamily } = useFontScale()
   const bio = useBiometric()
   const { clearPin } = usePinAuth()
   const {
@@ -445,18 +441,18 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
             <div className="p-md bg-surface-container-low/50">
               <div className="flex items-center gap-md mb-md">
                 <span className="material-symbols-outlined text-secondary">format_size</span>
-                <span className="font-body-md text-body-md">Text Size</span>
+                <span className="font-body-md text-body-md">폰트 크기</span>
               </div>
               <div className="bg-surface-container-highest p-1 rounded-lg flex justify-between">
-                {FONT_SCALES.map((s) => (
+                {FONT_SCALE_OPTIONS.map(({ id, label }) => (
                   <button
-                    key={s}
-                    onClick={() => setScale(s)}
+                    key={id}
+                    onClick={() => setScale(id)}
                     className={`flex-1 py-xs text-label-sm font-label-sm font-bold transition-colors ${
-                      scale === s ? 'bg-white shadow-sm rounded-md' : ''
+                      scale === id ? 'bg-white shadow-sm rounded-md' : ''
                     }`}
                   >
-                    {s}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -466,10 +462,35 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
               >
                 <p
                   className="text-primary font-medium"
-                  style={{ fontSize: PREVIEW_SIZES[scale] }}
+                  style={{ fontSize: PREVIEW_SIZES[scale], fontFamily: 'var(--app-font-family)' }}
                 >
                   안녕, 오늘 뭐해? 💕
                 </p>
+              </div>
+            </div>
+
+            {/* Font Family */}
+            <div className="p-md border-t border-outline-variant/20">
+              <div className="flex items-center gap-md mb-md">
+                <span className="material-symbols-outlined text-secondary">text_fields</span>
+                <span className="font-body-md text-body-md">폰트 선택</span>
+              </div>
+              <div className="grid grid-cols-1 gap-sm">
+                {FONT_FAMILY_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setFontFamily(option.id)}
+                    className={`min-h-[50px] rounded-xl border px-md py-sm text-left transition-colors ${
+                      fontFamily === option.id
+                        ? 'border-primary bg-primary-container/20 text-primary'
+                        : 'border-outline-variant/30 bg-surface-container-low text-on-surface'
+                    }`}
+                    style={{ fontFamily: option.css }}
+                  >
+                    <span className="font-body-md text-body-md">{option.label}</span>
+                    <span className="ml-sm text-label-sm font-label-sm opacity-70">안녕, 오늘 뭐해?</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
