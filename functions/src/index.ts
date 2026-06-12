@@ -167,7 +167,7 @@ async function getPartnerToken(
     tokens.add(data.fcmToken)
   }
   if (tokenMap && typeof tokenMap === 'object') {
-    Object.entries(tokenMap).forEach(([deviceId, token]) => {
+    Object.values(tokenMap).forEach((token) => {
       if (typeof token === 'string' && token) tokens.add(token)
     })
   }
@@ -315,15 +315,17 @@ export const onStatusUpdate = functions.firestore
   .onWrite(async (change, context) => {
     const { coupleId, uid } = context.params as { coupleId: string; uid: string }
     if (!change.after.exists) return
-    if (!change.before.exists) return
 
-    const before = change.before.data() ?? {}
-    const after = change.after.data() ?? {}
-    const unchanged =
-      before.condition === after.condition
-      && before.message === after.message
-      && JSON.stringify(before.mood ?? []) === JSON.stringify(after.mood ?? [])
-    if (unchanged) return
+    // 첫 상태 등록(create)도 사용자 액션이므로 알림 발송, 무변경 write만 skip
+    if (change.before.exists) {
+      const before = change.before.data() ?? {}
+      const after = change.after.data() ?? {}
+      const unchanged =
+        before.condition === after.condition
+        && before.message === after.message
+        && JSON.stringify(before.mood ?? []) === JSON.stringify(after.mood ?? [])
+      if (unchanged) return
+    }
 
     const result = await getPartnerToken(coupleId, uid)
     if (!result) return
