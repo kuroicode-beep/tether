@@ -1,13 +1,16 @@
 // src/hooks/usePushNotification.ts
 // FCM 토큰 요청, 포그라운드 메시지, 알림 설정 관리
-import { getToken, onMessage, MessagePayload } from 'firebase/messaging'
+import { useCallback, useMemo } from 'react'
+import { onMessage, MessagePayload } from 'firebase/messaging'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, VAPID_KEY, getMessagingIfSupported } from '../lib/firebase'
-import { debugLog } from '../lib/debugLog'
+import { db, getMessagingIfSupported } from '../lib/firebase'
+import {
+  reconcilePushPermissionFlag,
+  syncPushTokenForUid as syncPushTokenCore,
+  type PushSyncResult,
+} from '../lib/pushTokenSync'
 
-const LS_GRANTED = 'tether_fcm_granted'
 const LS_SETTINGS = 'tether_notification_settings'
-const LS_DEVICE_ID = 'tether_push_device_id'
 
 export interface NotificationSettings {
   message: boolean
@@ -21,168 +24,65 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   diary: true,
 }
 
-// 브라우저/PWA 설치 단위로 안정적인 토큰 저장 키를 만든다
-function getPushDeviceId(): string {
-  const stored = localStorage.getItem(LS_DEVICE_ID)
-  if (stored) return stored
-
-  const random = crypto.randomUUID().replace(/-/g, '')
-  const deviceId = `web_${random}`
-  localStorage.setItem(LS_DEVICE_ID, deviceId)
-  return deviceId
-}
-
-// VitePWA가 등록한 root SW(/sw.js)를 반환한다 — FCM handler는 workbox.importScripts로 로드됨
-async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  console.log('[Push] SW support:', 'serviceWorker' in navigator)
-  console.log('[Push] Notification support:', 'Notification' in window)
-  console.log('[Push] Permission:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A')
-
-  if (!('serviceWorker' in navigator)) {
-    console.warn('[Push] ServiceWorker 미지원')
-    return null
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.ready
-    console.log('[Push] SW registered:', registration.scope)
-    console.log('[Push] SW active script:', registration.active?.scriptURL ?? 'none')
-    return registration
-  } catch (error) {
-    console.error('[Push] SW registration failed:', error)
-    return null
-  }
-}
-
-// FCM 토큰을 발급하고 Firestore users 문서에 저장한다
-async function syncFcmToken(uid: string | null): Promise<string | null> {
-  try {
-    if (!VAPID_KEY) {
-      // #region agent log
-      debugLog('usePushNotification.ts:syncFcmToken', 'no vapid', {}, 'H3')
-      // #endregion
-      console.error('[Push] VAPID 키 없음 — VITE_FIREBASE_VAPID_KEY 확인')
-      return null
-    }
-
-    const messaging = await getMessagingIfSupported()
-    if (!messaging) {
-      console.warn('[Push] FCM 미지원 브라우저')
-      return null
-    }
-
-    const registration = await registerMessagingServiceWorker()
-    if (!registration) return null
-
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: registration,
-    })
-
-    console.log('[Push] FCM token:', token ? `${token.substring(0, 20)}...` : 'FAILED')
-
-    if (!token) {
-      console.error('[Push] 토큰 발급 실패 — VAPID 키 또는 SW 확인')
-      return null
-    }
-
-    if (uid) {
-      const deviceId = getPushDeviceId()
-      await updateDoc(doc(db, 'users', uid), {
-        fcmToken: token,
-        [`fcmTokens.${deviceId}`]: token,
-        fcmUpdatedAt: new Date().toISOString(),
-      })
-      console.log('[Push] Token saved to Firestore')
-    }
-
-    // #region agent log
-    debugLog('usePushNotification.ts:syncFcmToken', 'ok', { hasToken: true, saved: Boolean(uid) }, 'H3')
-    // #endregion
-    localStorage.setItem(LS_GRANTED, 'true')
-    return token
-  } catch (error) {
-    const code = (error as { code?: string })?.code ?? 'unknown'
-    // #region agent log
-    debugLog('usePushNotification.ts:syncFcmToken', 'fail', { code }, 'H3')
-    // #endregion
-    console.error('[Push] 오류:', error)
-    return null
-  }
-}
-
 // 권한 요청 후 FCM 토큰을 발급·저장한다 (WI #22 진단용 export)
 export async function requestAndSavePushToken(uid: string): Promise<boolean> {
-  if (!('Notification' in window)) {
-    console.warn('[Push] Notification API 미지원')
-    return false
-  }
-  if (!('serviceWorker' in navigator)) {
-    console.warn('[Push] ServiceWorker 미지원')
-    return false
-  }
-  if (!canRequestPushPermission()) {
-    console.warn('[Push] iOS Safari tab — permission blocked until standalone PWA')
-    return false
-  }
+  if (!('Notification' in window)) return false
+  if (!('serviceWorker' in navigator)) return false
+  if (!canRequestPushPermission()) return false
 
   const permission = await Notification.requestPermission()
-  if (permission !== 'granted') {
-    console.warn('[Push] 권한 거부:', permission)
-    return false
-  }
+  if (permission !== 'granted') return false
 
-  const token = await syncFcmToken(uid)
-  return Boolean(token)
+  const result = await syncPushTokenCore(uid)
+  return result.ok
 }
 
 // 이미 권한이 허용된 기기의 FCM 토큰을 현재 user 문서에 다시 저장한다
 export async function syncPushTokenForUid(uid: string | null): Promise<boolean> {
-  if (!uid) return false
-  if (!('Notification' in window) || Notification.permission !== 'granted') return false
-  const token = await syncFcmToken(uid)
-  return Boolean(token)
+  const result = await syncPushTokenCore(uid)
+  return result.ok
 }
 
+export { syncPushTokenCore, reconcilePushPermissionFlag }
+export type { PushSyncResult }
+
 export function usePushNotification(uid: string | null) {
-  const syncToken = async (): Promise<string | null> => {
+  const syncToken = useCallback(async (): Promise<PushSyncResult> => {
     if (!uid) {
       console.warn('[Push] uid 없음 — syncToken 건너뜀')
-      return null
+      return { ok: false, token: null, reason: 'no_uid' }
     }
-    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
-      console.warn('[Push] permission not granted:', Notification.permission)
-      return null
-    }
-    return syncFcmToken(uid)
-  }
+    return syncPushTokenCore(uid)
+  }, [uid])
 
-  const requestPermission = async (): Promise<'granted' | 'denied' | 'blocked'> => {
+  const requestPermission = useCallback(async (): Promise<'granted' | 'denied' | 'blocked'> => {
     if (!('Notification' in window)) return 'denied'
     if (!uid) return 'denied'
     if (!canRequestPushPermission()) return 'blocked'
 
     if (Notification.permission === 'granted') {
-      await syncFcmToken(uid)
+      await syncPushTokenCore(uid)
       return 'granted'
     }
 
     if (Notification.permission === 'denied') {
+      reconcilePushPermissionFlag()
       console.warn('[Push] notifications blocked in browser settings')
       return 'denied'
     }
 
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') {
+      reconcilePushPermissionFlag()
       console.warn('[Push] 권한 거부:', permission)
       return 'denied'
     }
 
-    await syncFcmToken(uid)
+    await syncPushTokenCore(uid)
     return 'granted'
-  }
+  }, [uid])
 
-  const onForegroundMessage = async (
+  const onForegroundMessage = useCallback(async (
     callback: (payload: MessagePayload) => void,
   ): Promise<() => void> => {
     try {
@@ -192,27 +92,34 @@ export function usePushNotification(uid: string | null) {
     } catch {
       return () => {}
     }
-  }
+  }, [])
 
-  const isGranted = () => localStorage.getItem(LS_GRANTED) === 'true'
+  const isGranted = useCallback(() => reconcilePushPermissionFlag(), [])
 
-  const loadSettings = (): NotificationSettings => {
+  const loadSettings = useCallback((): NotificationSettings => {
     try {
       return JSON.parse(localStorage.getItem(LS_SETTINGS) ?? '') as NotificationSettings
     } catch {
       return DEFAULT_SETTINGS
     }
-  }
+  }, [])
 
-  const saveSettings = async (settings: NotificationSettings): Promise<void> => {
+  const saveSettings = useCallback(async (settings: NotificationSettings): Promise<void> => {
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings))
     if (!uid) return
     try {
       await updateDoc(doc(db, 'users', uid), { notificationSettings: settings })
     } catch { /* ignore */ }
-  }
+  }, [uid])
 
-  return { requestPermission, syncToken, onForegroundMessage, isGranted, loadSettings, saveSettings }
+  return useMemo(() => ({
+    requestPermission,
+    syncToken,
+    onForegroundMessage,
+    isGranted,
+    loadSettings,
+    saveSettings,
+  }), [requestPermission, syncToken, onForegroundMessage, isGranted, loadSettings, saveSettings])
 }
 
 export function isIOSBrowser(): boolean {

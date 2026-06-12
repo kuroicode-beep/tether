@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-push-token-resync-v2',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '알림 미수신 재발 — FCM 토큰 재동기화·Functions 진단 보강.',
+    detail: 'SW 갱신/재연결/탭 복귀 시 FCM 토큰 자동 재등록, 설정의 알림 다시 등록 버튼, partner coupleId 검증 및 Functions 실패 로그를 추가했습니다.',
+  },
+  {
     id: '2026-06-12-release-v0-2-0',
     date: '2026.06.12',
     type: 'release',

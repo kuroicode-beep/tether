@@ -61,6 +61,12 @@ export const claimInvite = functions.https.onCall(async (data, context) => {
         members,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       })
+    } else {
+      tx.set(coupleRef, {
+        isDisconnected: admin.firestore.FieldValue.delete(),
+        disconnectedAt: admin.firestore.FieldValue.delete(),
+        disconnectedBy: admin.firestore.FieldValue.delete(),
+      }, { merge: true })
     }
 
     tx.update(inviteRef, {
@@ -129,12 +135,31 @@ async function getPartnerToken(
   senderUid: string,
 ): Promise<{ tokens: string[]; partnerUid: string } | null> {
   const coupleSnap = await db.doc(`couples/${coupleId}`).get()
-  const members: string[] = coupleSnap.data()?.members ?? []
+  const coupleData = coupleSnap.data() ?? {}
+  if (coupleData.isDisconnected === true) {
+    console.log('[Push] couple disconnected — skip', { coupleId, senderUid })
+    return null
+  }
+
+  const members: string[] = coupleData.members ?? []
   const partnerUid = members.find((m) => m !== senderUid)
-  if (!partnerUid) return null
+  if (!partnerUid) {
+    console.log('[Push] partner not found in couple members', { coupleId, senderUid, members })
+    return null
+  }
 
   const partnerSnap = await db.doc(`users/${partnerUid}`).get()
   const data = partnerSnap.data() ?? {}
+  if (data.coupleId !== coupleId) {
+    console.log('[Push] partner coupleId mismatch', {
+      coupleId,
+      senderUid,
+      partnerUid,
+      partnerCoupleId: data.coupleId ?? null,
+    })
+    return null
+  }
+
   const tokenMap = data.fcmTokens as Record<string, string> | undefined
   const tokens = new Set<string>()
 
@@ -142,16 +167,29 @@ async function getPartnerToken(
     tokens.add(data.fcmToken)
   }
   if (tokenMap && typeof tokenMap === 'object') {
-    Object.values(tokenMap).forEach((token) => {
+    Object.entries(tokenMap).forEach(([deviceId, token]) => {
       if (typeof token === 'string' && token) tokens.add(token)
     })
   }
   if (tokens.size === 0) {
-    console.log('[Push] no partner tokens', { coupleId, senderUid, partnerUid })
+    console.log('[Push] no partner tokens', {
+      coupleId,
+      senderUid,
+      partnerUid,
+      fcmUpdatedAt: data.fcmUpdatedAt ?? null,
+      deviceCount: tokenMap ? Object.keys(tokenMap).length : 0,
+    })
     return null
   }
 
-  // 알림 설정 확인
+  console.log('[Push] partner tokens resolved', {
+    coupleId,
+    senderUid,
+    partnerUid,
+    tokenCount: tokens.size,
+    fcmUpdatedAt: data.fcmUpdatedAt ?? null,
+  })
+
   return { tokens: [...tokens], partnerUid }
 }
 
@@ -231,6 +269,19 @@ async function sendWebPush(
     })
     .map(({ token }) => token)
 
+  if (response.failureCount > 0) {
+    response.responses.forEach((result, index) => {
+      if (result.success) return
+      console.warn('[Push] token send failed', {
+        partnerUid,
+        type: payload.type,
+        tokenPreview: `${tokens[index]?.slice(0, 12) ?? 'none'}…`,
+        code: result.error?.code ?? 'unknown',
+        message: result.error?.message ?? '',
+      })
+    })
+  }
+
   await cleanupInvalidTokens(partnerUid, invalidTokens)
 }
 
@@ -264,6 +315,15 @@ export const onStatusUpdate = functions.firestore
   .onWrite(async (change, context) => {
     const { coupleId, uid } = context.params as { coupleId: string; uid: string }
     if (!change.after.exists) return
+    if (!change.before.exists) return
+
+    const before = change.before.data() ?? {}
+    const after = change.after.data() ?? {}
+    const unchanged =
+      before.condition === after.condition
+      && before.message === after.message
+      && JSON.stringify(before.mood ?? []) === JSON.stringify(after.mood ?? [])
+    if (unchanged) return
 
     const result = await getPartnerToken(coupleId, uid)
     if (!result) return

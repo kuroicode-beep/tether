@@ -18,6 +18,7 @@ import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
+import { installPushTokenAutoSync } from './lib/pushTokenSync'
 import {
   playNotificationSound,
   screenFromNotificationUrl,
@@ -56,28 +57,25 @@ function AppContent() {
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const push = usePushNotification(session.uid)
-  const pushSyncedRef = useRef<string | null>(null)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
   screenRef.current = screen
 
   useEffect(() => {
-    if (!session.uid || session.isLoading) return
+    return installPushTokenAutoSync({
+      uid: session.uid,
+      coupleId: session.coupleId,
+      status: session.status,
+      isLoading: session.isLoading,
+      sync: push.syncToken,
+    })
+  }, [session.uid, session.coupleId, session.status, session.isLoading, push.syncToken])
+
+  useEffect(() => {
+    if (session.status !== 'connected' || !session.uid) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
-
-    const sync = () => {
-      pushSyncedRef.current = session.uid!
-      void push.syncToken()
-    }
-
-    sync()
-
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') sync()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [session.uid, session.coupleId, session.status, session.isLoading, push])
+    void push.syncToken()
+  }, [session.status, session.uid, unlocked, push.syncToken])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')

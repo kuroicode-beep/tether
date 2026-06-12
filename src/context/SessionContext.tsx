@@ -262,6 +262,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }))
       return
     }
+
+    if (sessionStatusRef.current === 'connected') {
+      try {
+        const restored = await restoreConnectionFromProfile(user.uid)
+        if (restored) {
+          setSession((prev) => ({
+            ...prev,
+            status: 'connected',
+            user,
+            uid: user.uid,
+            coupleId: restored.coupleId,
+            connection: restored,
+            error: null,
+          }))
+        }
+      } catch (err) {
+        console.warn('[Session] lightweight refresh failed', err)
+      }
+      return
+    }
+
     await restoreForCouple(user.uid, coupleId, user)
   }, [restoreForCouple])
 

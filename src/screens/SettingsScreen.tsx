@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
 import { FONT_FAMILY_OPTIONS, FONT_SCALE_OPTIONS, type FontScale, useFontScale } from '../hooks/useFontScale'
 import { APP_VERSION_LABEL } from '../lib/appVersion'
@@ -91,6 +91,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const [bioLoading, setBioLoading] = useState(false)
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
+  const [pushResyncing, setPushResyncing] = useState(false)
+  const [pushSyncMessage, setPushSyncMessage] = useState('')
   const [googleLinking, setGoogleLinking] = useState(false)
   const [googleError, setGoogleError] = useState('')
   const [disconnecting, setDisconnecting] = useState(false)
@@ -154,8 +156,32 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const handleRequestPush = async () => {
     if (!canRequestPushPermission()) return
     const result = await push.requestPermission()
-    if (result === 'granted') setPushGranted(true)
+    setPushGranted(push.isGranted())
+    if (result === 'granted') {
+      setPushSyncMessage('알림 등록이 완료됐어요.')
+    }
   }
+
+  const handleResyncPush = async () => {
+    if (!uid || pushResyncing) return
+    setPushResyncing(true)
+    setPushSyncMessage('')
+    try {
+      const result = await push.syncToken()
+      setPushGranted(push.isGranted())
+      if (result.ok) {
+        setPushSyncMessage('이 기기 알림 토큰을 다시 등록했어요.')
+      } else {
+        setPushSyncMessage(`알림 등록 실패: ${result.reason ?? 'unknown'}`)
+      }
+    } finally {
+      setPushResyncing(false)
+    }
+  }
+
+  useEffect(() => {
+    setPushGranted(push.isGranted())
+  }, [push])
 
   const handleGoogleLink = async () => {
     setGoogleLinking(true)
@@ -530,6 +556,29 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
             Notifications
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+            {pushGranted && (
+              <div className="p-md border-b border-outline-variant/20">
+                <div className="flex items-center justify-between gap-md">
+                  <div>
+                    <p className="font-label-md text-label-md text-on-surface">알림 등록됨</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant">
+                      알림이 안 오면 아래 버튼으로 이 기기를 다시 등록해주세요.
+                    </p>
+                    {pushSyncMessage && (
+                      <p className="mt-xs font-label-sm text-label-sm text-primary">{pushSyncMessage}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResyncPush}
+                    disabled={pushResyncing}
+                    className="min-h-[50px] shrink-0 rounded-full border border-outline-variant px-md py-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
+                  >
+                    {pushResyncing ? '등록 중…' : '다시 등록'}
+                  </button>
+                </div>
+              </div>
+            )}
             {/* 권한 미허용 배너 */}
             {!pushGranted && canRequestPushPermission() && (
               <button
