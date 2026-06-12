@@ -8,7 +8,7 @@ interface MoodChipProps {
 export function MoodChip({ label, active }: MoodChipProps) {
   return (
     <span
-      className="mood-chip inline-flex items-center justify-center rounded-full font-label-sm text-[10px] transition-all duration-200"
+      className="mood-chip hc-readable-box hc-readable-box--pill inline-flex items-center justify-center rounded-full font-label-sm text-[10px] transition-all duration-200"
       style={
         active
           ? {

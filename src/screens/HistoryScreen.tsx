@@ -176,7 +176,7 @@ export function HistoryScreen({ onBack }: HistoryScreenProps) {
                     onEdit={() => setEditing(item)}
                     onDelete={() => deleteHistory(item.id)}
                   >
-                    <div className="flex-1 bg-[#F5F2EB] rounded-xl p-md shadow-sm pb-md">
+                    <div className="history-item-card hc-readable-box flex-1 bg-[#F5F2EB] rounded-xl p-md shadow-sm pb-md">
                       <p className="font-label-sm text-label-sm text-primary mb-xs">
                         {format(new Date(item.date), 'yyyy년 M월 d일 (EEE)', { locale: ko })}
                       </p>

@@ -58,7 +58,7 @@ export function ToastNotification({ toast, onNavigate, onDismiss }: ToastNotific
     >
       <button
         onClick={handleTap}
-        className="w-full max-w-sm bg-surface/95 backdrop-blur-md rounded-2xl shadow-lg border border-outline-variant/20 px-lg py-md flex items-center gap-md text-left active:scale-95 transition-transform"
+        className="toast-panel hc-readable-box w-full max-w-sm bg-surface/95 backdrop-blur-md rounded-2xl shadow-lg border border-outline-variant/20 px-lg py-md flex items-center gap-md text-left active:scale-95 transition-transform"
       >
         {/* 아이콘 */}
         <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">

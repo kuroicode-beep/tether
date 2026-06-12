@@ -48,7 +48,7 @@ export function RecentFeed({ items, myName, myUid, partnerName, onNavigate }: Re
               <button
                 type="button"
                 onClick={() => onNavigate(item.screen)}
-                className="flex w-full items-center gap-sm rounded-xl px-sm py-sm text-left transition-colors hover:bg-surface-container"
+                className="recent-feed-item flex w-full items-center gap-sm rounded-xl px-sm py-sm text-left transition-colors hover:bg-surface-container"
               >
                 <span className="shrink-0 text-xl">{meta.icon}</span>
                 <span className="flex-1 font-body-md text-body-md leading-snug text-on-surface">

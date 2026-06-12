@@ -105,6 +105,13 @@
   --color-chip-bg:      #262600;
   --color-chip-text:    #FFE600;
   --shadow-card:        0 2px 8px rgba(0, 0, 0, 0.8);
+
+  /* 고대비 가독성 박스 — 검은 배경 + 흰 글씨 + 둥근 흰 보더 (기본 패턴) */
+  --hc-box-bg:           #000000;
+  --hc-box-text:         #FFFFFF;
+  --hc-box-border:       #FFFFFF;
+  --hc-box-radius:       16px;
+  --hc-box-border-width: 2px;
 }
 
 html {
@@ -334,15 +341,14 @@ body {
   background-color: var(--color-surface) !important;
 }
 
-[data-theme="high-contrast"] .bg-primary,
 [data-theme="high-contrast"] .bg-primary-container,
 [data-theme="high-contrast"] .bg-secondary-container {
-  background-color: var(--color-primary) !important;
+  background-color: var(--color-surface) !important;
 }
 
 [data-theme="high-contrast"] .text-on-primary,
 [data-theme="high-contrast"] .text-on-primary-container {
-  color: #0D0D0D !important;
+  color: var(--hc-box-text) !important;
 }
 
 [data-theme="high-contrast"] .home-header,
@@ -397,50 +403,62 @@ body {
 
 [data-theme="high-contrast"] .status-face,
 [data-theme="high-contrast"] .status-face-mine {
-  background: #FFE600 !important;
-  color: #000000 !important;
-  border: 2px solid #FFE600 !important;
+  background: var(--hc-box-bg) !important;
+  color: inherit !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
   box-shadow: none !important;
 }
 
 [data-theme="high-contrast"] .status-edit-grid button {
-  background: #FFFFFF !important;
-  border-color: #FFFFFF !important;
-  color: #000000 !important;
-  opacity: 0.9 !important;
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  border-radius: var(--hc-box-radius) !important;
+  opacity: 1 !important;
   box-shadow: none !important;
 }
 
 [data-theme="high-contrast"] .status-edit-grid button.active {
-  background: #FFE600 !important;
-  border-color: #FFE600 !important;
-  color: #000000 !important;
+  background: var(--hc-box-bg) !important;
+  border-color: var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
   opacity: 1 !important;
-}
-
-[data-theme="high-contrast"] .home-status-card .mood-chip {
-  color: #000000 !important;
-  background: #FFFFFF !important;
-  border-color: #FFFFFF !important;
-  opacity: 0.92 !important;
+  transform: scale(1.04);
   font-weight: 700 !important;
 }
 
-[data-theme="high-contrast"] .home-status-card .mood-chip[style*="scale(1.2)"] {
-  color: #000000 !important;
-  background: #FFE600 !important;
-  border-color: #FFE600 !important;
+[data-theme="high-contrast"] .home-status-card .mood-chip,
+[data-theme="high-contrast"] .mood-chip {
+  color: var(--hc-box-text) !important;
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--radius-pill) !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="high-contrast"] .home-status-card .mood-chip[style*="scale(1.2)"],
+[data-theme="high-contrast"] .mood-chip[style*="scale(1.2)"] {
+  color: var(--hc-box-text) !important;
+  background: var(--hc-box-bg) !important;
+  border-color: var(--hc-box-border) !important;
+  font-weight: 700 !important;
 }
 
 [data-theme="high-contrast"] .home-status-message {
-  color: #FFFFFF !important;
-  background: #000000 !important;
-  border: 2px solid #FFFFFF !important;
-  border-radius: 16px !important;
+  color: var(--hc-box-text) !important;
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
   min-height: 50px !important;
   padding: 8px 12px !important;
   font-size: 16px !important;
   font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] .home-status-message.border-b {
+  border-bottom: var(--hc-box-border-width) solid var(--hc-box-border) !important;
 }
 
 [data-theme="high-contrast"] .home-status-message .text-on-surface-variant\/60,
@@ -598,21 +616,18 @@ body {
   font-weight: 500;
 }
 
-[data-theme="high-contrast"] .message-partner .bubble {
-  background: #1A1A1A;
-  border-color: #333;
-  color: #F0F0F0;
-}
-
+[data-theme="high-contrast"] .message-partner .bubble,
 [data-theme="high-contrast"] .message-mine .bubble {
-  background: #FFE600;
-  border-color: #FFE600;
-  color: #000000 !important;
-  font-weight: 700;
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 600 !important;
 }
 
-[data-theme="high-contrast"] .message-mine .message-time {
-  color: #CCBB00;
+[data-theme="high-contrast"] .message-mine .message-time,
+[data-theme="high-contrast"] .message-partner .message-time {
+  color: var(--color-text-muted) !important;
 }
 
 .message-time {
@@ -860,9 +875,10 @@ body {
 
 [data-theme="high-contrast"] .chat-input-bar textarea,
 [data-theme="high-contrast"] .chat-input-editor {
-  background: #1A1A1A;
-  border-color: #333;
-  color: #F0F0F0;
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  border-radius: var(--hc-box-radius) !important;
 }
 
 .chat-input-bar textarea::placeholder,
@@ -945,10 +961,6 @@ body {
   min-height: 44px;
 }
 
-[data-theme="high-contrast"] .btn-outline {
-  background: #0D0D0D;
-}
-
 .btn-outline:active,
 .btn-outline:hover {
   background: var(--color-primary-dim);
@@ -959,8 +971,24 @@ body {
   color: var(--color-bg);
 }
 
+[data-theme="high-contrast"] .btn-outline {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="high-contrast"] .btn-outline:active,
+[data-theme="high-contrast"] .btn-outline:hover {
+  background: var(--hc-box-bg) !important;
+  filter: brightness(1.15);
+}
+
 [data-theme="high-contrast"] .btn-outline.active {
-  color: #0D0D0D;
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  font-weight: 700 !important;
 }
 
 /* Toggle switch */
@@ -969,4 +997,210 @@ body {
 }
 .toggle-checkbox:checked + .toggle-label .toggle-dot {
   transform: translateX(100%);
+}
+
+/* ── 고대비 가독성 박스 시스템 (검은 배경 + 흰 글씨 + 둥근 흰 보더) ── */
+
+.hc-readable-box {
+  box-sizing: border-box;
+}
+
+[data-theme="high-contrast"] .hc-readable-box {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .hc-readable-box--pill {
+  border-radius: var(--radius-pill) !important;
+}
+
+[data-theme="high-contrast"] .hc-readable-box--circle {
+  border-radius: 9999px !important;
+}
+
+/* 버튼 — primary / FAB / 편집 등 */
+[data-theme="high-contrast"] button.bg-primary,
+[data-theme="high-contrast"] button[class*="bg-primary"],
+[data-theme="high-contrast"] a.bg-primary,
+[data-theme="high-contrast"] .app-fixed-fab,
+[data-theme="high-contrast"] .chat-input-bar .send-btn,
+[data-theme="high-contrast"] .home-status-card button.rounded-full.border-primary {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] button.rounded-full.bg-primary,
+[data-theme="high-contrast"] button[class*="rounded-full"][class*="bg-primary"],
+[data-theme="high-contrast"] .app-fixed-fab,
+[data-theme="high-contrast"] .chat-input-bar .send-btn,
+[data-theme="high-contrast"] .bottom-nav-btn.bg-primary-container {
+  border-radius: 9999px !important;
+}
+
+[data-theme="high-contrast"] button.bg-surface-container-low,
+[data-theme="high-contrast"] button.border-outline-variant,
+[data-theme="high-contrast"] button[class*="border-outline-variant"] {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 600 !important;
+}
+
+/* 입력창 */
+[data-theme="high-contrast"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="high-contrast"] textarea,
+[data-theme="high-contrast"] select,
+[data-theme="high-contrast"] .chat-input-bar textarea,
+[data-theme="high-contrast"] .chat-input-editor,
+[data-theme="high-contrast"] [class*="bg-surface-container"]:is(input, textarea, select) {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] input::placeholder,
+[data-theme="high-contrast"] textarea::placeholder {
+  color: #CCCCCC !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .chat-input-bar textarea:focus,
+[data-theme="high-contrast"] .chat-input-editor:focus,
+[data-theme="high-contrast"] input:focus,
+[data-theme="high-contrast"] textarea:focus {
+  border-color: var(--hc-box-border) !important;
+  outline: none !important;
+}
+
+[data-theme="high-contrast"] .chat-input-bar .img-btn {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+}
+
+/* 콘텐츠 카드 — 히스토리 / 최근활동 / 상태기록 / 일기 등 */
+[data-theme="high-contrast"] [class*="bg-[#F5F2EB]"],
+[data-theme="high-contrast"] [class*="bg-[#F5F2EA]"],
+[data-theme="high-contrast"] .status-history-message,
+[data-theme="high-contrast"] .history-item-card,
+[data-theme="high-contrast"] .recent-feed-item:hover {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] [class*="bg-[#F5F2EB]"] .text-on-surface,
+[data-theme="high-contrast"] [class*="bg-[#F5F2EB]"] .text-on-surface-variant,
+[data-theme="high-contrast"] [class*="bg-[#F5F2EB]"] .text-primary,
+[data-theme="high-contrast"] .status-history-message .text-on-surface,
+[data-theme="high-contrast"] .status-history-message .text-on-surface-variant,
+[data-theme="high-contrast"] .history-item-card .text-on-surface,
+[data-theme="high-contrast"] .history-item-card .text-on-surface-variant,
+[data-theme="high-contrast"] .history-item-card .text-primary {
+  color: var(--hc-box-text) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .status-history-tag,
+[data-theme="high-contrast"] .status-history-empty-tag {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--radius-pill) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="high-contrast"] .status-history-avatar {
+  background: var(--hc-box-bg) !important;
+  color: inherit !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+}
+
+[data-theme="high-contrast"] .recent-feed-item {
+  border: var(--hc-box-border-width) solid transparent !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .recent-feed-item:hover {
+  border-color: var(--hc-box-border) !important;
+}
+
+/* PIN / 테마 토글 */
+[data-theme="high-contrast"] .pin-key {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="high-contrast"] .pin-key:active {
+  background: var(--hc-box-bg) !important;
+  border-color: var(--hc-box-border) !important;
+  filter: brightness(1.15);
+}
+
+[data-theme="high-contrast"] .theme-toggle-bar button.active {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  font-weight: 700 !important;
+}
+
+/* 바텀시트 / 토스트 */
+[data-theme="high-contrast"] .fixed.bottom-0.bg-surface,
+[data-theme="high-contrast"] .fixed.bottom-0.z-50.bg-surface {
+  background: var(--color-surface) !important;
+  border-top: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+}
+
+[data-theme="high-contrast"] .toast-panel,
+[data-theme="high-contrast"] [class*="ToastNotification"] {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+/* 로그인 / 온보딩 Google 버튼 */
+[data-theme="high-contrast"] button.bg-white {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+  font-weight: 600 !important;
+}
+
+/* 카테고리 / 필터 칩 */
+[data-theme="high-contrast"] button[class*="rounded-full"][class*="bg-surface-container"],
+[data-theme="high-contrast"] button[class*="rounded-full"][class*="bg-primary-container"],
+[data-theme="high-contrast"] span[class*="rounded-full"][class*="bg-secondary-container"],
+[data-theme="high-contrast"] span[class*="rounded-full"][class*="bg-primary-container"] {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="high-contrast"] button[class*="rounded-full"].bg-primary,
+[data-theme="high-contrast"] button[class*="rounded-full"][class*="bg-primary text-on-primary"] {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  font-weight: 700 !important;
+}
+
+/* 에러 박스는 유지하되 보더만 강화 */
+[data-theme="high-contrast"] .bg-error-container,
+[data-theme="high-contrast"] [class*="bg-error-container"] {
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
 }

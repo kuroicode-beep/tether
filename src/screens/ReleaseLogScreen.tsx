@@ -31,6 +31,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-high-contrast-readable-box',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '고대비 가독성 박스 스타일 전체 적용.',
+    detail: '검은 배경·흰 글씨·둥근 흰 보더를 고대비 기본 패턴으로 정하고, 채팅/히스토리 메시지·상태 태그·버튼·입력창·카드 등 전 화면에 일괄 적용했습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-app-icon-branding-v2',
     date: '2026.06.12',
     type: 'hotfix',

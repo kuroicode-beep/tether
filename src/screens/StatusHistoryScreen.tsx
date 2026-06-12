@@ -40,7 +40,7 @@ function StatusLogCard({
   return (
     <article className={`flex gap-sm ${isMe ? 'flex-row-reverse text-right' : 'text-left'}`}>
       <div
-        className={`mt-xs flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full text-2xl shadow-sm ${
+        className={`mt-xs flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full text-2xl shadow-sm status-history-avatar hc-readable-box hc-readable-box--circle ${
           isMe ? 'bg-primary text-on-primary' : 'bg-secondary-container text-on-surface'
         }`}
         aria-hidden="true"
@@ -55,7 +55,7 @@ function StatusLogCard({
         </div>
 
         <div
-          className={`max-w-full rounded-2xl px-md py-sm shadow-sm ${
+          className={`max-w-full rounded-2xl px-md py-sm shadow-sm status-history-message hc-readable-box ${
             isMe ? 'bg-primary-container' : 'bg-surface-container'
           }`}
         >
@@ -64,13 +64,13 @@ function StatusLogCard({
               mood.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-secondary-container/80 px-sm py-xs font-label-sm text-label-sm text-on-surface"
+                  className="status-history-tag hc-readable-box hc-readable-box--pill rounded-full bg-secondary-container/80 px-sm py-xs font-label-sm text-label-sm text-on-surface"
                 >
                   {tag}
                 </span>
               ))
             ) : (
-              <span className="rounded-full bg-outline-variant/20 px-sm py-xs font-label-sm text-label-sm text-on-surface-variant">
+              <span className="status-history-empty-tag hc-readable-box hc-readable-box--pill rounded-full bg-outline-variant/20 px-sm py-xs font-label-sm text-label-sm text-on-surface-variant">
                 태그 없음
               </span>
             )}
