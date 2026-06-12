@@ -133,9 +133,9 @@ users/{receiverUid}:
 
 ## 06. Git / 배포
 
-- 커밋 해시: (작업 후 기록)
-- Functions 배포: (작업 후 기록)
-- Hosting 배포: (작업 후 기록)
+- 커밋 해시: `d74e92f`
+- Functions 배포: 예 (`claimInvite`, `disconnectCouple`, `onNewMessage`, `onStatusUpdate`, `onNewDiary`)
+- Hosting 배포: 예 — https://tether-d1dab.web.app
 
 ---
 
