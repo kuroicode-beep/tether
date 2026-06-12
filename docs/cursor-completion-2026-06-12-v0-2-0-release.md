@@ -46,5 +46,5 @@
 
 ## 06. Git
 
-- 커밋 해시: (작업 후 기록)
-- 배포 여부: (작업 후 기록)
+- 커밋 해시: `3c0eafc`
+- 배포 여부: 예 (`hosting` — https://tether-d1dab.web.app)
