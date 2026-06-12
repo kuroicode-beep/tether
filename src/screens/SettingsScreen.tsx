@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
 import { FONT_FAMILY_OPTIONS, FONT_SCALE_OPTIONS, type FontScale, useFontScale } from '../hooks/useFontScale'
+import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
@@ -461,13 +462,13 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 <span className="material-symbols-outlined text-secondary">format_size</span>
                 <span className="font-body-md text-body-md">폰트 크기</span>
               </div>
-              <div className="bg-surface-container-highest p-1 rounded-lg flex justify-between">
+              <div className="settings-font-scale bg-surface-container-highest p-1 rounded-lg flex justify-between">
                 {FONT_SCALE_OPTIONS.map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setScale(id)}
-                    className={`flex-1 py-xs text-label-sm font-label-sm font-bold transition-colors ${
-                      scale === id ? 'bg-white shadow-sm rounded-md' : ''
+                    className={`settings-font-scale-option flex-1 py-xs text-label-sm font-label-sm font-bold transition-colors ${
+                      scale === id ? 'settings-font-scale-option--active bg-white shadow-sm rounded-md' : ''
                     }`}
                   >
                     {label}
@@ -494,21 +495,30 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 <span className="font-body-md text-body-md">폰트 선택</span>
               </div>
               <div className="grid grid-cols-1 gap-sm">
-                {FONT_FAMILY_OPTIONS.map((option) => (
+                {FONT_FAMILY_OPTIONS.map((option) => {
+                  const selected = fontFamily === option.id
+                  return (
                   <button
                     key={option.id}
                     onClick={() => setFontFamily(option.id)}
-                    className={`min-h-[50px] rounded-xl border px-md py-sm text-left transition-colors ${
-                      fontFamily === option.id
-                        ? 'border-primary bg-primary-container/20 text-primary'
+                    aria-pressed={selected}
+                    className={`settings-font-option min-h-[50px] rounded-xl border px-md py-sm text-left transition-colors flex items-center gap-sm ${
+                      selected
+                        ? 'settings-font-option--active border-primary bg-primary-container/20 text-primary'
                         : 'border-outline-variant/30 bg-surface-container-low text-on-surface'
                     }`}
                     style={{ fontFamily: option.css }}
                   >
-                    <span className="font-body-md text-body-md">{option.label}</span>
-                    <span className="ml-sm text-label-sm font-label-sm opacity-70">안녕, 오늘 뭐해?</span>
+                    <span className="font-body-md text-body-md flex-1">{option.label}</span>
+                    <span className="text-label-sm font-label-sm opacity-70">안녕, 오늘 뭐해?</span>
+                    {selected && (
+                      <span className="settings-font-option-check material-symbols-outlined shrink-0 text-primary" aria-hidden="true">
+                        check_circle
+                      </span>
+                    )}
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -614,7 +624,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 <span className="material-symbols-outlined text-secondary">info</span>
                 <span className="font-body-md text-body-md">App info</span>
               </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">v 0.1.0</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">{APP_VERSION_LABEL}</span>
             </div>
             <button
               onClick={() => setShowDisconnectDialog(true)}

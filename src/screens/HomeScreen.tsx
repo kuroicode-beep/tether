@@ -13,11 +13,12 @@ import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useRecentFeed } from '../hooks/useRecentFeed'
 import { CONDITION_EMOJI, Condition, useStatus } from '../hooks/useStatus'
 
+import { APP_VERSION_LABEL } from '../lib/appVersion'
+
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
 }
 
-const APP_VERSION = 'v0.1.0'
 const CONDITIONS: Condition[] = ['very_good', 'good', 'normal', 'sleepy', 'surprised', 'angry', 'bad', 'very_bad']
 const MOOD_TAGS = [
   '설렘', '평온', '힘듦', '보고싶어', '행복', '기쁨', '고마움', '슬픔', '우울', '화남',
@@ -131,7 +132,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       <header className="home-header sticky top-0 z-50 flex w-full items-center justify-between bg-surface px-margin-mobile py-sm">
         <div className="flex items-baseline gap-xs">
           <h1 className="font-headline-md text-headline-md font-semibold text-primary">Tether</h1>
-          <span className="font-label-sm text-[11px] text-on-surface-variant">{APP_VERSION}</span>
+          <span className="font-label-sm text-[11px] text-on-surface-variant">{APP_VERSION_LABEL}</span>
         </div>
 
         <div className="flex items-center gap-xs">

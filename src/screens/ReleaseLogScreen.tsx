@@ -1,7 +1,9 @@
 // src/screens/ReleaseLogScreen.tsx
 // Shows release, update, and hotfix notes for the app.
+import { useMemo, useState } from 'react'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { APP_VERSION_LABEL } from '../lib/appVersion'
 
 interface ReleaseLogScreenProps {
   onBack: () => void
@@ -17,6 +19,8 @@ interface ReleaseLogEntry {
   detail?: string
 }
 
+const PAGE_SIZE = 8
+
 const TYPE_LABEL: Record<LogType, string> = {
   release: '릴리즈',
   update: '업데이트',
@@ -30,6 +34,27 @@ const TYPE_CLASS: Record<LogType, string> = {
 }
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
+  {
+    id: '2026-06-12-release-v0-2-0',
+    date: '2026.06.12',
+    type: 'release',
+    title: `Tether ${APP_VERSION_LABEL} 릴리즈.`,
+    detail: '고대비 가독성 박스 전면 적용, Log 페이지 페이징, 설정 폰트 선택 표시 개선, PWA 아이콘 브랜딩 정리, Google 복구·재연결 알림 안정화를 포함합니다.',
+  },
+  {
+    id: '2026-06-12-hotfix-settings-font-selection-hc',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '고대비 설정 폰트 선택 표시 개선.',
+    detail: '선택된 폰트와 크기를 체크 아이콘과 고대비 테두리로 명확히 구분할 수 있게 했습니다.',
+  },
+  {
+    id: '2026-06-12-update-release-log-pagination',
+    date: '2026.06.12',
+    type: 'update',
+    title: 'Log 페이지 페이징 추가.',
+    detail: '업데이트 기록이 많아져 페이지 단위(8건)로 나눠 이전/다음 이동할 수 있게 했습니다.',
+  },
   {
     id: '2026-06-12-hotfix-high-contrast-readable-box',
     date: '2026.06.12',
@@ -207,6 +232,16 @@ const RELEASE_LOGS: ReleaseLogEntry[] = [
 ]
 
 export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
+  const [page, setPage] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(RELEASE_LOGS.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages - 1)
+  const pageItems = useMemo(
+    () => RELEASE_LOGS.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
+    [safePage],
+  )
+  const rangeStart = safePage * PAGE_SIZE + 1
+  const rangeEnd = Math.min(RELEASE_LOGS.length, (safePage + 1) * PAGE_SIZE)
+
   return (
     <SubScreen>
       <ScreenHeader title="Log" onBack={onBack} />
@@ -215,12 +250,12 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
         <section className="mb-lg rounded-xl bg-[#F5F2EB] p-md shadow-sm">
           <h2 className="font-label-md text-label-md font-semibold text-on-surface">업데이트 기록</h2>
           <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">
-            릴리즈, 핫픽스, 기능 변경 기록을 날짜순으로 확인할 수 있어요.
+            릴리즈, 핫픽스, 기능 변경 기록을 날짜순으로 확인할 수 있어요. ({APP_VERSION_LABEL})
           </p>
         </section>
 
         <div className="space-y-md">
-          {RELEASE_LOGS.map((entry) => (
+          {pageItems.map((entry) => (
             <article key={entry.id} className="rounded-xl bg-surface-container p-md shadow-sm">
               <div className="mb-sm flex flex-wrap items-center gap-xs">
                 <span className={`rounded-full px-sm py-xs font-label-sm text-label-sm ${TYPE_CLASS[entry.type]}`}>
@@ -237,6 +272,32 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
             </article>
           ))}
         </div>
+
+        <nav
+          className="release-log-pagination mt-xl flex items-center justify-between gap-sm rounded-xl bg-surface-container p-md"
+          aria-label="업데이트 기록 페이지"
+        >
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            disabled={safePage === 0}
+            className="release-log-page-btn min-h-[50px] rounded-full border border-outline-variant px-md py-sm font-label-md text-label-md text-on-surface disabled:opacity-40"
+          >
+            이전
+          </button>
+          <p className="font-label-sm text-label-sm text-on-surface-variant text-center">
+            {rangeStart}-{rangeEnd} / {RELEASE_LOGS.length}
+            <span className="block text-on-surface">{safePage + 1} / {totalPages} 페이지</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+            disabled={safePage >= totalPages - 1}
+            className="release-log-page-btn min-h-[50px] rounded-full border border-outline-variant px-md py-sm font-label-md text-label-md text-on-surface disabled:opacity-40"
+          >
+            다음
+          </button>
+        </nav>
       </main>
     </SubScreen>
   )

@@ -1204,3 +1204,62 @@ body {
   border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
   border-radius: var(--hc-box-radius) !important;
 }
+
+/* 설정 — 폰트 크기/폰트 선택 선택 상태 */
+[data-theme="high-contrast"] .settings-font-scale {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .settings-font-scale-option {
+  color: var(--hc-box-text) !important;
+  opacity: 0.75;
+}
+
+[data-theme="high-contrast"] .settings-font-scale-option--active {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: 12px !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="high-contrast"] .settings-font-option {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .settings-font-option--active {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: 3px solid var(--hc-box-border) !important;
+  box-shadow: 0 0 0 2px var(--color-primary) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] .settings-font-option-check {
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .release-log-pagination {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .release-log-page-btn {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  border-radius: var(--radius-pill) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="high-contrast"] .release-log-page-btn:disabled {
+  opacity: 0.35 !important;
+}
