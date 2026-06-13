@@ -79,8 +79,8 @@
 
 ## 06. 남은 작업
 
-- [ ] worktree 브랜치 `claude/nice-perlman-101d1d` → `main` 머지 (담당: 소장님)
-- [ ] `firebase deploy --only functions:onStatusUpdate` 재배포 (담당: 소장님 / Cursor)
+- [x] worktree 브랜치 `claude/nice-perlman-101d1d` → `main` 머지·푸시 (2026.06.13 완료)
+- [x] `firebase deploy --only functions:onStatusUpdate` 재배포 (2026.06.13 완료 — us-central1 update 성공)
 - [ ] 실기기 수동 QA — 원본 보고서 §04 절차 (담당: 소장님)
 - [ ] 미해결 시 원본 보고서 §05 핸드오프 + Functions 로그 캡처로 재진입 (담당: Claude Code)
 
@@ -95,7 +95,7 @@
 ## 08. Git 커밋
 
 - 커밋 해시: `dd73e41`
-- 배포 여부: 미배포 (소장님 승인 대기)
+- 배포 여부: 배포 완료 — `onStatusUpdate(us-central1)` 2026.06.13, main 머지·푸시 완료 (`03cde2c`)
 
 ---
 
