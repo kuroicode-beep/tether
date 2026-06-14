@@ -57,9 +57,9 @@
 
 ## 06. Git / 배포
 
-- 커밋 해시: (배포 후 기록)
-- Functions 배포: `debugPushPing` 포함
-- Hosting 배포: 예
+- 커밋 해시: `6b87218`
+- Functions 배포: 예 (`debugPushPing` 신규 생성)
+- Hosting 배포: 예 — https://tether-d1dab.web.app
 
 ---
 
