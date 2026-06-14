@@ -7,6 +7,7 @@ import { BottomNav } from '../components/BottomNav'
 import { MoodChip } from '../components/MoodChip'
 import { RecentFeed } from '../components/RecentFeed'
 import { PushPermissionBanner } from '../components/PushPermissionBanner'
+import { PushTokenHealthBanner } from '../components/PushTokenHealthBanner'
 import { useApp } from '../context/AppContext'
 import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useCoupleSession } from '../hooks/useCoupleSession'
@@ -155,6 +156,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
 
       <main className="w-full space-y-lg px-margin-mobile pt-lg">
         <PushPermissionBanner />
+        <PushTokenHealthBanner />
 
         <section className="relative flex flex-col gap-md">
           <article className="home-status-card flex flex-col gap-md rounded-xl border bg-[#F5F2EB] p-md shadow-sm">

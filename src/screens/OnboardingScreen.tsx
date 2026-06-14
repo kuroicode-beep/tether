@@ -217,7 +217,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       autoPreparedRef.current = null
       const code = await withTimeout(createInvite(uid), 8000, 'invite_timeout')
       setMyCode(code)
-      setStep('choice')
+      setStep('create')
     } catch (err) {
       const message = err instanceof Error ? err.message : ''
       if (message === 'invite_timeout') {
@@ -414,7 +414,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             <button
               onClick={handleRecoveryRetry}
               disabled={recoveryChecking || creatingConnection}
-              className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
+              className="hc-readable-box hc-readable-box--pill w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
             >
               {recoveryChecking ? '확인 중...' : '기존 연결 다시 확인'}
             </button>
@@ -422,7 +422,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             <button
               onClick={handleGoogleStart}
               disabled={loading || recoveryChecking || creatingConnection}
-              className="w-full bg-surface-container-low border border-outline-variant/30 rounded-full py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
+              className="hc-readable-box hc-readable-box--pill w-full bg-surface-container-low border border-outline-variant/30 rounded-full py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
             >
               다른 Google 계정으로 로그인
             </button>
@@ -435,7 +435,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               <button
                 onClick={handleStartNewConnection}
                 disabled={recoveryChecking || creatingConnection}
-                className="mt-md w-full rounded-full bg-primary py-md font-label-md text-label-md text-on-primary active:scale-95 transition-transform disabled:opacity-40"
+                className="hc-readable-box hc-readable-box--pill mt-md w-full rounded-full bg-primary py-md font-label-md text-label-md text-on-primary active:scale-95 transition-transform disabled:opacity-40"
               >
                 {creatingConnection ? '새 연결 준비 중...' : '새 연결 진행하기'}
               </button>

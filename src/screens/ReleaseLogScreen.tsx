@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-12-hotfix-push-diagnostics-v3',
+    date: '2026.06.12',
+    type: 'hotfix',
+    title: '알림 진단 ping·토큰 상태 배너·복구 새 연결 화면 수정.',
+    detail: 'debugPushPing callable, 홈/설정 토큰 만료 배너, 설정 테스트 알림 버튼을 추가했습니다. 복구 화면 새 연결 진행 시 초대 코드 화면으로 바로 이동합니다.',
+  },
+  {
     id: '2026-06-12-hotfix-push-token-resync-v2',
     date: '2026.06.12',
     type: 'hotfix',

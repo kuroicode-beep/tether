@@ -6,10 +6,13 @@ import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
 import { canRequestPushPermission, usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
+import { usePushTokenHealth } from '../hooks/usePushTokenHealth'
+import { debugPushPing, type PushPingTarget } from '../lib/pushDiagnostics'
 import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ProfileAvatar } from '../components/ProfileAvatar'
+import { PushTokenHealthBanner } from '../components/PushTokenHealthBanner'
 import { disconnectCouple, updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
 
 interface SettingsScreenProps {
@@ -86,6 +89,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   } = useApp()
   const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
+  const pushHealth = usePushTokenHealth(uid)
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
@@ -93,6 +97,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
   const [pushResyncing, setPushResyncing] = useState(false)
   const [pushSyncMessage, setPushSyncMessage] = useState('')
+  const [pushPingTarget, setPushPingTarget] = useState<PushPingTarget | null>(null)
+  const [pushPingMessage, setPushPingMessage] = useState('')
   const [googleLinking, setGoogleLinking] = useState(false)
   const [googleError, setGoogleError] = useState('')
   const [disconnecting, setDisconnecting] = useState(false)
@@ -176,6 +182,39 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
       }
     } finally {
       setPushResyncing(false)
+    }
+  }
+
+  const handlePushPing = async (target: PushPingTarget) => {
+    if (!uid || pushPingTarget) return
+    setPushPingTarget(target)
+    setPushPingMessage('')
+    try {
+      const result = await debugPushPing(target)
+      if (result.ok) {
+        setPushPingMessage(
+          target === 'self'
+            ? `테스트 알림 발송 성공 (${result.successCount}/${result.tokenCount})`
+            : `상대방 테스트 알림 발송 성공 (${result.successCount}/${result.tokenCount})`,
+        )
+      } else if (result.reason === 'no_tokens') {
+        setPushPingMessage(
+          target === 'self'
+            ? '등록된 알림 토큰이 없어요. 먼저 다시 등록해주세요.'
+            : '상대방 기기에 등록된 알림 토큰이 없어요.',
+        )
+      } else {
+        setPushPingMessage(`테스트 알림 발송 실패 (${result.failureCount}/${result.tokenCount})`)
+      }
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? ''
+      if (code === 'functions/failed-precondition') {
+        setPushPingMessage(target === 'partner' ? '커플 연결 또는 상대방 토큰이 없어요.' : '알림 테스트를 실행할 수 없어요.')
+      } else {
+        setPushPingMessage('테스트 알림 요청에 실패했어요.')
+      }
+    } finally {
+      setPushPingTarget(null)
     }
   }
 
@@ -555,6 +594,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           <h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest px-sm mb-sm">
             Notifications
           </h2>
+          <PushTokenHealthBanner />
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {pushGranted && (
               <div className="p-md border-b border-outline-variant/20">
@@ -571,12 +611,33 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                   <button
                     type="button"
                     onClick={handleResyncPush}
-                    disabled={pushResyncing}
+                    disabled={pushResyncing || pushHealth.resyncing}
                     className="min-h-[50px] shrink-0 rounded-full border border-outline-variant px-md py-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
                   >
-                    {pushResyncing ? '등록 중…' : '다시 등록'}
+                    {pushResyncing || pushHealth.resyncing ? '등록 중…' : '다시 등록'}
                   </button>
                 </div>
+                <div className="mt-md flex flex-col gap-sm sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => void handlePushPing('self')}
+                    disabled={!!pushPingTarget}
+                    className="hc-readable-box hc-readable-box--pill min-h-[50px] flex-1 rounded-full border border-outline-variant px-md py-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
+                  >
+                    {pushPingTarget === 'self' ? '발송 중…' : '내 기기 테스트 알림'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handlePushPing('partner')}
+                    disabled={!!pushPingTarget}
+                    className="hc-readable-box hc-readable-box--pill min-h-[50px] flex-1 rounded-full border border-outline-variant px-md py-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
+                  >
+                    {pushPingTarget === 'partner' ? '발송 중…' : '상대방 테스트 알림'}
+                  </button>
+                </div>
+                {pushPingMessage && (
+                  <p className="mt-sm font-label-sm text-label-sm text-primary">{pushPingMessage}</p>
+                )}
               </div>
             )}
             {/* 권한 미허용 배너 */}

@@ -223,18 +223,46 @@ async function cleanupInvalidTokens(uid: string, tokens: string[]) {
 }
 
 // Web/PWA 알림을 파트너의 모든 등록 기기에 발송한다
+async function collectUserTokens(uid: string): Promise<string[]> {
+  const snap = await db.doc(`users/${uid}`).get()
+  const data = snap.data() ?? {}
+  const tokenMap = data.fcmTokens as Record<string, string> | undefined
+  const tokens = new Set<string>()
+
+  if (typeof data.fcmToken === 'string' && data.fcmToken) {
+    tokens.add(data.fcmToken)
+  }
+  if (tokenMap && typeof tokenMap === 'object') {
+    Object.values(tokenMap).forEach((token) => {
+      if (typeof token === 'string' && token) tokens.add(token)
+    })
+  }
+
+  return [...tokens]
+}
+
+type PushPayloadType = 'message' | 'status' | 'diary' | 'debug'
+
+type PushSendStats = {
+  tokenCount: number
+  successCount: number
+  failureCount: number
+}
+
 async function sendWebPush(
   partnerUid: string,
   tokens: string[],
   payload: {
-    type: 'message' | 'status' | 'diary'
+    type: PushPayloadType
     title: string
     body: string
     data: Record<string, string>
     link: string
   },
-) {
-  if (tokens.length === 0) return
+): Promise<PushSendStats> {
+  if (tokens.length === 0) {
+    return { tokenCount: 0, successCount: 0, failureCount: 0 }
+  }
 
   const response = await messaging.sendEachForMulticast({
     tokens,
@@ -283,6 +311,12 @@ async function sendWebPush(
   }
 
   await cleanupInvalidTokens(partnerUid, invalidTokens)
+
+  return {
+    tokenCount: tokens.length,
+    successCount: response.successCount,
+    failureCount: response.failureCount,
+  }
 }
 
 async function isNotificationEnabled(
@@ -404,3 +438,74 @@ export const onNewDiary = functions.firestore
       link: '/?screen=diary',
     })
   })
+
+// ─── 알림 진단 ping (callable) ─────────────────────────────────────────────
+
+export const debugPushPing = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required')
+  }
+
+  const callerUid = context.auth.uid
+  const target = data?.target === 'partner' ? 'partner' : 'self'
+  let recipientUid = callerUid
+  let tokens: string[] = []
+
+  if (target === 'self') {
+    tokens = await collectUserTokens(callerUid)
+  } else {
+    const callerSnap = await db.doc(`users/${callerUid}`).get()
+    const coupleId = callerSnap.data()?.coupleId as string | undefined
+    if (!coupleId) {
+      throw new functions.https.HttpsError('failed-precondition', 'no_couple')
+    }
+
+    const result = await getPartnerToken(coupleId, callerUid)
+    if (!result) {
+      throw new functions.https.HttpsError('failed-precondition', 'no_partner_tokens')
+    }
+    recipientUid = result.partnerUid
+    tokens = result.tokens
+  }
+
+  if (tokens.length === 0) {
+    console.log('[Push] debugPushPing no tokens', { callerUid, target, recipientUid })
+    return {
+      ok: false,
+      reason: 'no_tokens',
+      target,
+      recipientUid,
+      tokenCount: 0,
+      successCount: 0,
+      failureCount: 0,
+    }
+  }
+
+  const stats = await sendWebPush(recipientUid, tokens, {
+    type: 'debug',
+    title: 'Tether 테스트 알림',
+    body: target === 'self'
+      ? '이 기기 알림 연결 테스트입니다.'
+      : '상대방 기기 알림 연결 테스트입니다.',
+    data: {
+      screen: 'home',
+      debug: '1',
+    },
+    link: '/?screen=home',
+  })
+
+  console.log('[Push] debugPushPing result', {
+    callerUid,
+    target,
+    recipientUid,
+    ...stats,
+  })
+
+  return {
+    ok: stats.successCount > 0,
+    reason: stats.successCount > 0 ? undefined : 'send_failed',
+    target,
+    recipientUid,
+    ...stats,
+  }
+})
