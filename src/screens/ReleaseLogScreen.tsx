@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-15-final-notification-apply-guide',
+    date: '2026.06.15',
+    type: 'update',
+    title: '알림 최종 적용 방법.',
+    detail: '앱을 새로고침한 뒤 설정 > Notifications > 다시 등록을 눌러 이 기기를 다시 등록해주세요. 그 다음 내 기기 테스트 알림으로 수신 여부를 확인하면 됩니다. Tether 최종 업데이트 입니다.',
+  },
+  {
     id: '2026-06-12-hotfix-push-diagnostics-v3',
     date: '2026.06.12',
     type: 'hotfix',
