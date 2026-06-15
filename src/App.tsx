@@ -128,6 +128,7 @@ function AppContent() {
         return
       }
       if (data.type !== SW_PLAY_SOUND_MESSAGE) return
+      if (document.visibilityState !== 'visible') return
       const type = (data.alertType as string) ?? undefined
       if (!shouldAlertForType(type, push.loadSettings())) return
       playNotificationSound()
