@@ -26,6 +26,16 @@ function screenFromUrl(rawUrl) {
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
   const data = payload.data ?? {};
+  const hasFcmNotification = !!payload.notification?.title || !!payload.notification?.body;
+  if (hasFcmNotification && data.forceSwDisplay !== '1') {
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const type = data.type ?? 'tether-msg';
+      clients.forEach((client) => {
+        client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
+      });
+    });
+  }
+
   const title = data.title ?? payload.notification?.title ?? 'Tether 💕';
   const body = data.body ?? payload.notification?.body ?? '';
   const type = data.type ?? 'tether-msg';

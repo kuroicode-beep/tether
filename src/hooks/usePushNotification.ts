@@ -137,7 +137,14 @@ export function isStandalonePwa(): boolean {
 
 // iOS Safari 탭에서는 push permission 요청을 막고 standalone PWA에서만 허용한다
 export function canRequestPushPermission(): boolean {
-  if (!('Notification' in window)) return false
-  if (isIOSBrowser() && !isStandalonePwa()) return false
+  if (getPushPermissionBlockReason() !== null) return false
   return true
+}
+
+export function getPushPermissionBlockReason(): 'unsupported' | 'ios_not_standalone' | null {
+  if (typeof window === 'undefined') return 'unsupported'
+  if (!('Notification' in window)) return 'unsupported'
+  if (!('serviceWorker' in navigator)) return 'unsupported'
+  if (isIOSBrowser() && !isStandalonePwa()) return 'ios_not_standalone'
+  return null
 }

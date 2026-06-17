@@ -5,7 +5,12 @@ import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
 import { useApp } from '../context/AppContext'
-import { canRequestPushPermission, usePushNotification, NotificationSettings } from '../hooks/usePushNotification'
+import {
+  canRequestPushPermission,
+  getPushPermissionBlockReason,
+  usePushNotification,
+  NotificationSettings,
+} from '../hooks/usePushNotification'
 import { usePushTokenHealth } from '../hooks/usePushTokenHealth'
 import { debugPushPing, type PushPingTarget } from '../lib/pushDiagnostics'
 import { useSession } from '../context/SessionContext'
@@ -90,6 +95,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
   const pushHealth = usePushTokenHealth(uid)
+  const pushPermissionBlockReason = getPushPermissionBlockReason()
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
@@ -596,6 +602,27 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           </h2>
           <PushTokenHealthBanner />
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+            {pushPermissionBlockReason === 'ios_not_standalone' && (
+              <div className="hc-readable-box p-md border-b border-outline-variant/20">
+                <div className="flex items-start gap-md">
+                  <span className="material-symbols-outlined text-secondary">ios_share</span>
+                  <div>
+                    <p className="font-label-md text-label-md text-on-surface">iPhone 알림은 홈 화면 앱에서만 켤 수 있어요</p>
+                    <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant leading-snug">
+                      Safari 공유 버튼에서 홈 화면에 추가한 뒤, 홈 화면의 Tether 아이콘으로 다시 열고 이 화면에서 알림을 허용해주세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {pushPermissionBlockReason === 'unsupported' && (
+              <div className="hc-readable-box p-md border-b border-outline-variant/20">
+                <p className="font-label-md text-label-md text-on-surface">이 브라우저는 웹 푸시 알림을 지원하지 않아요.</p>
+                <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
+                  Android Chrome, PC Chrome/Edge, iOS 16.4 이상 홈 화면 PWA에서 다시 확인해주세요.
+                </p>
+              </div>
+            )}
             {pushGranted && (
               <div className="p-md border-b border-outline-variant/20">
                 <div className="flex items-center justify-between gap-md">

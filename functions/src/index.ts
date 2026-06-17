@@ -266,6 +266,10 @@ async function sendWebPush(
 
   const response = await messaging.sendEachForMulticast({
     tokens,
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
     data: {
       type: payload.type,
       title: payload.title,
@@ -275,6 +279,20 @@ async function sendWebPush(
     },
     webpush: {
       headers: { Urgency: 'high' },
+      notification: {
+        title: payload.title,
+        body: payload.body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: payload.data.notificationId ?? `${payload.type}-${Date.now()}`,
+        requireInteraction: true,
+        renotify: true,
+        data: {
+          type: payload.type,
+          ...payload.data,
+          url: payload.link,
+        },
+      },
       fcmOptions: { link: payload.link },
     },
     android: { priority: 'high' as const },
