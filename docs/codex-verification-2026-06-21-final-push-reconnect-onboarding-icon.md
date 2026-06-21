@@ -66,7 +66,7 @@
 - 주의사항: iPhone은 Safari 탭이 아니라 홈 화면에 추가한 standalone PWA에서만 알림 권한 요청이 가능하다.
 
 ## 08. Git 커밋
-- 커밋 해시: COMMIT_PENDING
+- 커밋 해시: `7dc2104` (`Fix final push reconnect onboarding and app icon`)
 - 배포 여부: `firebase deploy --only functions,hosting` 완료
 
 ## 검증 명령
