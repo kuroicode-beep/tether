@@ -2,7 +2,7 @@
 // 포그라운드 FCM 수신 시 소리 + 시스템 알림 (Android PWA)
 import type { NotificationSettings } from '../hooks/usePushNotification'
 
-export const NOTIFICATION_SOUND_URL = '/sounds/chime.wav'
+export const NOTIFICATION_SOUND_URL = '/sounds/water-drop-20260621.wav'
 export const SW_PLAY_SOUND_MESSAGE = 'PLAY_NOTIFICATION_SOUND'
 export const SW_NAVIGATE_MESSAGE = 'NAVIGATE'
 

@@ -62,6 +62,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
   const olderRef = useRef<ChatMessage[]>([])
   const liveRef = useRef<ChatMessage[]>([])
   const pendingRef = useRef(new Map<string, ChatMessage>())
+  const lastSentTextRef = useRef<{ text: string; at: number } | null>(null)
 
   const applyMerge = useCallback(() => {
     setMessages(mergeChatMessages(
@@ -149,7 +150,25 @@ export function useChat(coupleId: string | null, myUid: string | null) {
   }, [applyMerge])
 
   const sendText = useCallback(async (text: string) => {
-    if (!text.trim() || !coupleId || !myUid) return
+    const trimmed = text.trim()
+    if (!trimmed || !coupleId || !myUid) return
+
+    const lastSent = lastSentTextRef.current
+    const now = Date.now()
+    const isTrailingImeDuplicate =
+      !!lastSent
+      && now - lastSent.at < 3000
+      && trimmed.length <= 2
+      && lastSent.text.length > trimmed.length
+      && lastSent.text.endsWith(trimmed)
+
+    if (isTrailingImeDuplicate) {
+      debugLog('useChat.ts:sendText', 'skip_trailing_ime_duplicate', {
+        textLength: trimmed.length,
+        previousLength: lastSent.text.length,
+      }, 'H4')
+      return
+    }
 
     const clientId = createClientId('msg')
     const optimistic: ChatMessage = {
@@ -157,11 +176,12 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       clientId,
       senderUid: myUid,
       type: 'text',
-      text: text.trim(),
-      createdAt: Date.now(),
+      text: trimmed,
+      createdAt: now,
       readBy: [myUid],
     }
     pendingRef.current.set(optimistic.id, optimistic)
+    lastSentTextRef.current = { text: trimmed, at: now }
     applyMerge()
 
     try {
@@ -170,7 +190,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         clientId,
         senderUid: myUid,
         type: 'text',
-        text: text.trim(),
+        text: trimmed,
         createdAt,
         readBy: [myUid],
       })

@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'firebase-messaging-sw.js', 'sounds/chime.wav'],
+      includeAssets: ['favicon.ico', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-192.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'firebase-messaging-sw.js', 'sounds/chime.wav', 'sounds/water-drop-20260621.wav'],
       manifest: {
         name: 'Tether',
         short_name: 'Tether',

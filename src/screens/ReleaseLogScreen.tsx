@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-21-hotfix-ios-ime-send-guard-sound-cache-bust',
+    date: '2026.06.21',
+    type: 'hotfix',
+    title: 'iOS 마지막 글자 중복 전송 2차 차단 및 알림음 캐시 우회.',
+    detail: 'iPhone 한글 입력에서 문장 전송 직후 마지막 1-2글자만 따로 전송되는 패턴을 Firestore 전송 직전에서 차단했습니다. 알림음은 새 파일명 `/sounds/water-drop-20260621.wav`로 바꿔 기존 캐시를 타지 않게 했습니다.',
+  },
+  {
     id: '2026-06-21-hotfix-ios-chat-input-water-drop-sound',
     date: '2026.06.21',
     type: 'hotfix',
