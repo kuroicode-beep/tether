@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-21-hotfix-recovery-new-connection-actions',
+    date: '2026.06.21',
+    type: 'hotfix',
+    title: '새 연결 복구 화면에 보내기/받기 선택 추가.',
+    detail: '기존 연결 복구 실패 후 새 연결을 진행할 때 내 코드를 만들 수도 있고, 상대방에게 받은 코드를 바로 입력할 수도 있도록 버튼을 분리했습니다.',
+  },
+  {
     id: '2026-06-21-final-push-reconnect-icon-onboarding',
     date: '2026.06.21',
     type: 'hotfix',

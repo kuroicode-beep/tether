@@ -268,6 +268,14 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     }
   }
 
+  const handleJoinNewConnection = () => {
+    if (!uid) return
+    autoPreparedRef.current = null
+    setJoinCode('')
+    setError('')
+    setStep('join')
+  }
+
   const handleCopy = () => {
     navigator.clipboard?.writeText(myCode)
     setCopied(true)
@@ -468,15 +476,24 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
             <div className="rounded-xl border border-outline-variant/30 p-md">
               <p className="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">
                 새 커플 연결로 진행하면 기존 익명 기기 데이터와 자동 병합되지 않을 수 있어요.
-                기존 기기에서 Google 연결이 안 되어 있었다면 새 연결이 필요합니다.
+                기존 기기에서 Google 연결이 안 되어 있었다면 새 연결이 필요합니다. 코드를 보낼 수도, 받은 코드를 입력할 수도 있어요.
               </p>
-              <button
-                onClick={handleStartNewConnection}
-                disabled={recoveryChecking || creatingConnection}
-                className="hc-readable-box hc-readable-box--pill mt-md w-full rounded-full bg-primary py-md font-label-md text-label-md text-on-primary active:scale-95 transition-transform disabled:opacity-40"
-              >
-                {creatingConnection ? '새 연결 준비 중...' : '새 연결 진행하기'}
-              </button>
+              <div className="mt-md grid grid-cols-1 gap-sm sm:grid-cols-2">
+                <button
+                  onClick={handleStartNewConnection}
+                  disabled={recoveryChecking || creatingConnection}
+                  className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full bg-primary px-md py-md font-label-md text-label-md text-on-primary active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  {creatingConnection ? '코드 만드는 중...' : '내 코드 만들기'}
+                </button>
+                <button
+                  onClick={handleJoinNewConnection}
+                  disabled={recoveryChecking || creatingConnection}
+                  className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border border-outline-variant/50 bg-surface-container-low px-md py-md font-label-md text-label-md text-on-surface active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  상대 코드 입력
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-center font-label-sm text-label-sm text-error">{error}</p>}
