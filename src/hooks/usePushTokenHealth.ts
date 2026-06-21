@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { getPushDeviceId, reconcilePushPermissionFlag, syncPushTokenForUid } from '../lib/pushTokenSync'
+import { getPushDeviceId, reconcilePushPermissionFlag, resetAndSyncPushTokenForUid } from '../lib/pushTokenSync'
 
 type PushTokenHealthState = {
   ready: boolean
@@ -48,7 +48,7 @@ export function usePushTokenHealth(uid: string | null): PushTokenHealthState {
     if (!uid || resyncing) return false
     setResyncing(true)
     try {
-      const result = await syncPushTokenForUid(uid)
+      const result = await resetAndSyncPushTokenForUid(uid, 'health_banner_resync')
       return result.ok
     } finally {
       setResyncing(false)

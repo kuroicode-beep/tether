@@ -179,10 +179,10 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     setPushResyncing(true)
     setPushSyncMessage('')
     try {
-      const result = await push.syncToken()
+      const result = await push.syncToken(true)
       setPushGranted(push.isGranted())
       if (result.ok) {
-        setPushSyncMessage('이 기기 알림 토큰을 다시 등록했어요.')
+        setPushSyncMessage('이 기기 알림 토큰을 새로 발급해서 다시 등록했어요.')
       } else {
         setPushSyncMessage(`알림 등록 실패: ${result.reason ?? 'unknown'}`)
       }

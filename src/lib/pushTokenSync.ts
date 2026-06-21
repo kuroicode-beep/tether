@@ -1,7 +1,7 @@
 // src/lib/pushTokenSync.ts
 // FCM 토큰 발급·Firestore 저장·자동 재동기화 (재연결/SW 갱신 대응)
-import { getToken } from 'firebase/messaging'
-import { doc, updateDoc } from 'firebase/firestore'
+import { deleteToken, getToken } from 'firebase/messaging'
+import { deleteField, doc, updateDoc } from 'firebase/firestore'
 import { db, VAPID_KEY, getMessagingIfSupported } from './firebase'
 import { debugLog } from './debugLog'
 
@@ -11,6 +11,11 @@ const LS_DEVICE_ID = 'tether_push_device_id'
 export type PushSyncResult = {
   ok: boolean
   token: string | null
+  reason?: string
+}
+
+type PushSyncOptions = {
+  forceRefresh?: boolean
   reason?: string
 }
 
@@ -57,8 +62,39 @@ async function persistToken(uid: string, token: string): Promise<void> {
   })
 }
 
+// 현재 설치의 기존 FCM 토큰을 폐기하고 Firestore의 현재 deviceId 슬롯을 비운다
+async function resetCurrentDeviceToken(uid: string): Promise<void> {
+  const messaging = await getMessagingIfSupported()
+  if (!messaging) return
+
+  try {
+    await deleteToken(messaging)
+  } catch (error) {
+    debugLog('pushTokenSync.ts', 'delete_token_skip', {
+      code: (error as { code?: string })?.code ?? 'unknown',
+    }, 'H3')
+  }
+
+  try {
+    const deviceId = getPushDeviceId()
+    await updateDoc(doc(db, 'users', uid), {
+      [`fcmTokens.${deviceId}`]: deleteField(),
+      fcmToken: deleteField(),
+      fcmUpdatedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    debugLog('pushTokenSync.ts', 'clear_device_token_skip', {
+      code: (error as { code?: string })?.code ?? 'unknown',
+    }, 'H3')
+  }
+}
+
 // FCM 토큰 발급 + Firestore 저장 (재시도 포함)
-export async function syncPushTokenForUid(uid: string | null, attempt = 1): Promise<PushSyncResult> {
+export async function syncPushTokenForUid(
+  uid: string | null,
+  options: PushSyncOptions = {},
+  attempt = 1,
+): Promise<PushSyncResult> {
   if (!uid) {
     return { ok: false, token: null, reason: 'no_uid' }
   }
@@ -80,6 +116,10 @@ export async function syncPushTokenForUid(uid: string | null, attempt = 1): Prom
       return { ok: false, token: null, reason: 'messaging_unsupported' }
     }
 
+    if (options.forceRefresh && attempt === 1) {
+      await resetCurrentDeviceToken(uid)
+    }
+
     const registration = await getMessagingServiceWorker()
     if (!registration) {
       return { ok: false, token: null, reason: 'sw_not_ready' }
@@ -93,7 +133,7 @@ export async function syncPushTokenForUid(uid: string | null, attempt = 1): Prom
     if (!token) {
       if (attempt < 3) {
         await new Promise((resolve) => setTimeout(resolve, attempt * 400))
-        return syncPushTokenForUid(uid, attempt + 1)
+        return syncPushTokenForUid(uid, options, attempt + 1)
       }
       return { ok: false, token: null, reason: 'token_empty' }
     }
@@ -104,8 +144,14 @@ export async function syncPushTokenForUid(uid: string | null, attempt = 1): Prom
       uid: `${uid.slice(0, 6)}…`,
       deviceId: getPushDeviceId(),
       token: `${token.slice(0, 12)}…`,
+      forceRefresh: options.forceRefresh === true,
+      reason: options.reason ?? 'sync',
     })
-    debugLog('pushTokenSync.ts', 'sync_ok', { deviceId: getPushDeviceId() }, 'H3')
+    debugLog('pushTokenSync.ts', 'sync_ok', {
+      deviceId: getPushDeviceId(),
+      forceRefresh: options.forceRefresh === true,
+      reason: options.reason ?? 'sync',
+    }, 'H3')
     return { ok: true, token }
   } catch (error) {
     const code = (error as { code?: string })?.code ?? 'unknown'
@@ -113,10 +159,18 @@ export async function syncPushTokenForUid(uid: string | null, attempt = 1): Prom
     debugLog('pushTokenSync.ts', 'sync_fail', { code, attempt }, 'H3')
     if (attempt < 3) {
       await new Promise((resolve) => setTimeout(resolve, attempt * 500))
-      return syncPushTokenForUid(uid, attempt + 1)
+      return syncPushTokenForUid(uid, options, attempt + 1)
     }
     return { ok: false, token: null, reason: code }
   }
+}
+
+// 재설치/재연결 직후 현재 설치의 FCM 토큰을 강제로 새로 발급해 저장한다
+export async function resetAndSyncPushTokenForUid(
+  uid: string | null,
+  reason = 'manual_reset',
+): Promise<PushSyncResult> {
+  return syncPushTokenForUid(uid, { forceRefresh: true, reason })
 }
 
 type AutoSyncOptions = {

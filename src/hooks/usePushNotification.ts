@@ -6,6 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db, getMessagingIfSupported } from '../lib/firebase'
 import {
   reconcilePushPermissionFlag,
+  resetAndSyncPushTokenForUid,
   syncPushTokenForUid as syncPushTokenCore,
   type PushSyncResult,
 } from '../lib/pushTokenSync'
@@ -43,14 +44,17 @@ export async function syncPushTokenForUid(uid: string | null): Promise<boolean> 
   return result.ok
 }
 
-export { syncPushTokenCore, reconcilePushPermissionFlag }
+export { syncPushTokenCore, resetAndSyncPushTokenForUid, reconcilePushPermissionFlag }
 export type { PushSyncResult }
 
 export function usePushNotification(uid: string | null) {
-  const syncToken = useCallback(async (): Promise<PushSyncResult> => {
+  const syncToken = useCallback(async (forceRefresh = false): Promise<PushSyncResult> => {
     if (!uid) {
       console.warn('[Push] uid 없음 — syncToken 건너뜀')
       return { ok: false, token: null, reason: 'no_uid' }
+    }
+    if (forceRefresh) {
+      return resetAndSyncPushTokenForUid(uid, 'settings_resync')
     }
     return syncPushTokenCore(uid)
   }, [uid])

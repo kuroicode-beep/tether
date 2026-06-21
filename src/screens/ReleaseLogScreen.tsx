@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-21-final-push-reconnect-icon-onboarding',
+    date: '2026.06.21',
+    type: 'hotfix',
+    title: 'Tether 최종 업데이트 입니다.',
+    detail: '재설치·재연결 시 알림 토큰을 강제로 새로 발급해 저장하도록 수정하고, iPhone PWA 백그라운드 알림을 Service Worker 직접 표시 방식으로 보강했습니다. 닉네임 시작 무한반복을 막고, 앱 아이콘을 새 잎사귀 아이콘으로 교체했습니다. 새로고침 후 홈 화면 앱에서 설정 > Notifications > 다시 등록을 누른 뒤 내 기기/상대방 테스트 알림으로 확인해주세요.',
+  },
+  {
     id: '2026-06-15-final-notification-apply-guide',
     date: '2026.06.15',
     type: 'update',

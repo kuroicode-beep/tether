@@ -11,10 +11,12 @@ import {
   waitForCoupleConnection,
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
-import { canRequestPushPermission, syncPushTokenForUid, usePushNotification } from '../hooks/usePushNotification'
+import { canRequestPushPermission, resetAndSyncPushTokenForUid, usePushNotification } from '../hooks/usePushNotification'
 import { useSession } from '../context/SessionContext'
 
 type Step = 'nickname' | 'choice' | 'create' | 'join' | 'recover'
+
+const PENDING_NICKNAME_KEY = 'tether_pending_nickname_start'
 
 interface OnboardingScreenProps {
   onConnected: () => void
@@ -56,6 +58,14 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
   const [recoveryEmail, setRecoveryEmail] = useState('')
   const push = usePushNotification(uid || null)
   const autoPreparedRef = useRef<string | null>(null)
+  const mountedRef = useRef(true)
+
+  // 로그인 중 세션 라우팅으로 온보딩이 재마운트되어도 닉네임 시작 흐름을 이어간다
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   // AuthProvider에서 설정한 redirect/로그인 오류를 화면에 반영한다
   useEffect(() => {
@@ -73,7 +83,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
       const ok = await notifyCoupleLinked()
       if (!ok) return false
       connect(restored)
-      void syncPushTokenForUid(connectedUid)
+      void resetAndSyncPushTokenForUid(connectedUid, 'connected_restore')
       onConnected()
       return true
     } catch {
@@ -88,6 +98,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     displayName?: string | null,
   ) => {
     const profile = await createOrGetUserDoc(nextUid, displayName, nextNickname)
+    sessionStorage.removeItem(PENDING_NICKNAME_KEY)
     setUid(nextUid)
     setNickname(profile.nickname || nextNickname)
     setMyCode(profile.inviteCode)
@@ -133,6 +144,30 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     prepareGoogleUser(user)
   }, [user, uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 닉네임 시작 중 익명 로그인 상태 변경으로 화면이 재마운트되면 저장된 닉네임으로 이어간다
+  useEffect(() => {
+    if (!user || !user.isAnonymous) return
+    if (autoPreparedRef.current === user.uid) return
+    if (uid && uid === user.uid) return
+
+    const pendingNickname = sessionStorage.getItem(PENDING_NICKNAME_KEY)?.trim()
+    if (!pendingNickname) return
+
+    autoPreparedRef.current = user.uid
+    setLoading(true)
+    setError('')
+    setNickname(pendingNickname)
+    void prepareUser(user.uid, pendingNickname)
+      .catch(() => {
+        autoPreparedRef.current = null
+        setError('시작 정보를 만들지 못했어요. Firebase 연결을 확인해주세요.')
+      })
+      .finally(() => {
+        sessionStorage.removeItem(PENDING_NICKNAME_KEY)
+        setLoading(false)
+      })
+  }, [user, uid]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // 코드 생성 화면에 머무는 동안 상대방의 코드 입력을 실시간 감지한다
   useEffect(() => {
     if (!uid || step !== 'create') return
@@ -160,12 +195,15 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
     setLoading(true)
     setError('')
     try {
+      sessionStorage.setItem(PENDING_NICKNAME_KEY, nickname.trim())
       const anonUser = await signInAnon()
+      if (!mountedRef.current) return
       await prepareUser(anonUser.uid, nickname.trim())
     } catch {
+      sessionStorage.removeItem(PENDING_NICKNAME_KEY)
       setError('시작 정보를 만들지 못했어요. Firebase 연결을 확인해주세요.')
     } finally {
-      setLoading(false)
+      if (mountedRef.current) setLoading(false)
     }
   }
 
@@ -266,7 +304,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
         partnerNickname: partner.nickname,
         partnerUid,
       })
-      void syncPushTokenForUid(uid)
+      void resetAndSyncPushTokenForUid(uid, 'invite_claim_connected')
 
       if (!push.isGranted() && canRequestPushPermission()) {
         setShowPushSheet(true)
