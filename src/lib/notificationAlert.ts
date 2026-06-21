@@ -18,34 +18,44 @@ function getChimeAudio(): HTMLAudioElement {
   return chimeAudio
 }
 
-// 종소리(차임) 한 번 울림 — Web Audio 폴백
-function playBellStrike(ctx: AudioContext, startAt: number, fundamental: number, volume = 1) {
-  const partials = [
-    { ratio: 0.5, amp: 0.42, decay: 1.9 },
-    { ratio: 1, amp: 1, decay: 1.7 },
-    { ratio: 2.01, amp: 0.58, decay: 1.15 },
-    { ratio: 2.62, amp: 0.32, decay: 0.9 },
-    { ratio: 3.48, amp: 0.16, decay: 0.6 },
-  ]
+// 물방울 한 번 떨어지는 소리 — Web Audio 폴백
+function playWaterDrop(ctx: AudioContext, startAt: number, baseFreq: number, volume = 1) {
+  const osc = ctx.createOscillator()
+  const harmonic = ctx.createOscillator()
+  const click = ctx.createOscillator()
+  const toneGain = ctx.createGain()
+  const clickGain = ctx.createGain()
 
-  for (const partial of partials) {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'sine'
-    osc.frequency.value = fundamental * partial.ratio
-    const peak = 0.18 * partial.amp * volume
-    gain.gain.setValueAtTime(0.0001, startAt)
-    gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), startAt + 0.012)
-    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + partial.decay)
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(startAt)
-    osc.stop(startAt + partial.decay + 0.08)
-  }
+  osc.type = 'sine'
+  harmonic.type = 'sine'
+  click.type = 'triangle'
+  osc.frequency.setValueAtTime(baseFreq + 420, startAt)
+  osc.frequency.exponentialRampToValueAtTime(baseFreq, startAt + 0.08)
+  harmonic.frequency.setValueAtTime((baseFreq + 420) * 1.92, startAt)
+  harmonic.frequency.exponentialRampToValueAtTime(baseFreq * 1.92, startAt + 0.08)
+  click.frequency.setValueAtTime(1850, startAt)
+
+  toneGain.gain.setValueAtTime(0.0001, startAt)
+  toneGain.gain.exponentialRampToValueAtTime(0.34 * volume, startAt + 0.008)
+  toneGain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.42)
+  clickGain.gain.setValueAtTime(0.22 * volume, startAt)
+  clickGain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.04)
+
+  osc.connect(toneGain)
+  harmonic.connect(toneGain)
+  click.connect(clickGain)
+  toneGain.connect(ctx.destination)
+  clickGain.connect(ctx.destination)
+  osc.start(startAt)
+  harmonic.start(startAt)
+  click.start(startAt)
+  osc.stop(startAt + 0.48)
+  harmonic.stop(startAt + 0.48)
+  click.stop(startAt + 0.05)
 }
 
-// Web Audio로 딩-동 차임을 합성한다 (파일 재생 실패 시)
-function playSyntheticChime() {
+// Web Audio로 물방울 소리를 합성한다 (파일 재생 실패 시)
+function playSyntheticWaterDrop() {
   try {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     if (!Ctx) return
@@ -54,26 +64,25 @@ function playSyntheticChime() {
     if (audioCtx.state === 'suspended') void audioCtx.resume()
 
     const t = audioCtx.currentTime
-    playBellStrike(audioCtx, t, 659, 1)
-    playBellStrike(audioCtx, t + 0.38, 880, 0.95)
-    playBellStrike(audioCtx, t + 0.78, 1175, 0.72)
+    playWaterDrop(audioCtx, t, 680, 1)
+    playWaterDrop(audioCtx, t + 0.18, 920, 0.72)
   } catch {
     /* ignore */
   }
 }
 
-// Tether 차임 알림음 재생
+// Tether 물방울 알림음 재생
 export function playNotificationSound() {
   try {
     const audio = getChimeAudio()
     audio.currentTime = 0
-    void audio.play().catch(() => playSyntheticChime())
+    void audio.play().catch(() => playSyntheticWaterDrop())
 
     if ('vibrate' in navigator) {
       navigator.vibrate([180, 80, 180, 80, 240])
     }
   } catch {
-    playSyntheticChime()
+    playSyntheticWaterDrop()
   }
 }
 

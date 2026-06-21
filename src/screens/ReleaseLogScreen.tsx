@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-21-hotfix-ios-chat-input-water-drop-sound',
+    date: '2026.06.21',
+    type: 'hotfix',
+    title: 'iPhone 채팅 마지막 글자 중복 및 알림음 수정.',
+    detail: 'iOS 한글 조합 입력에서 전송 후 마지막 글자가 입력창에 남아 한 번 더 보내지는 문제를 막기 위해 채팅 입력창을 textarea 기반으로 바꾸고, 알림음을 큰 물방울 떨어지는 소리로 교체했습니다.',
+  },
+  {
     id: '2026-06-21-hotfix-recovery-new-connection-actions',
     date: '2026.06.21',
     type: 'hotfix',

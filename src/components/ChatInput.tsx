@@ -15,8 +15,9 @@ interface ImagePreview {
 export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<ImagePreview | null>(null)
-  const editorRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const composingRef = useRef(false)
 
   const adjustHeight = () => {
     const el = editorRef.current
@@ -30,44 +31,35 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
       const el = editorRef.current
       if (!el) return
       el.focus()
-      const range = document.createRange()
-      range.selectNodeContents(el)
-      range.collapse(false)
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
+      el.setSelectionRange(el.value.length, el.value.length)
     })
   }
 
   const handleSend = () => {
-    if (!text.trim() || disabled) return
-    onSendText(text.trim())
+    const current = editorRef.current?.value ?? text
+    const trimmed = current.trim()
+    if (!trimmed || disabled || composingRef.current) return
+    onSendText(trimmed)
     setText('')
     if (editorRef.current) {
-      editorRef.current.textContent = ''
+      editorRef.current.value = ''
       editorRef.current.style.height = 'auto'
     }
     keepInputFocus()
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing || composingRef.current) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }
 
-  const handleInput = () => {
-    const next = editorRef.current?.innerText ?? ''
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.currentTarget.value
     setText(next.replace(/\u00a0/g, ' '))
     adjustHeight()
-  }
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const pasted = e.clipboardData.getData('text/plain')
-    document.execCommand('insertText', false, pasted)
-    handleInput()
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,21 +135,24 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
           onChange={handleFileChange}
         />
 
-        <div
+        <textarea
           ref={editorRef}
-          role="textbox"
           aria-label="메시지 입력"
-          aria-multiline="true"
-          contentEditable={!disabled}
-          suppressContentEditableWarning
-          data-empty={text.trim() ? 'false' : 'true'}
-          data-placeholder="메시지 입력..."
+          rows={1}
+          value={text}
+          disabled={disabled}
+          placeholder="메시지 입력..."
           className="chat-input-editor"
-          onInput={handleInput}
+          onChange={handleChange}
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
+          onCompositionStart={() => { composingRef.current = true }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false
+            setText(e.currentTarget.value.replace(/\u00a0/g, ' '))
+            requestAnimationFrame(adjustHeight)
+          }}
           style={{ maxHeight: '120px' }}
         />
 

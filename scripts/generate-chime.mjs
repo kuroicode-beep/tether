@@ -1,47 +1,53 @@
-// scripts/generate-chime.mjs — Tether 알림 차임 WAV 생성
+// scripts/generate-chime.mjs — Tether 알림 물방울 WAV 생성
 import { mkdirSync, writeFileSync } from 'fs'
 import { dirname, resolve } from 'path'
 
 const sampleRate = 44100
-const duration = 2.4
+const duration = 1.15
 const samples = Math.floor(sampleRate * duration)
 const buffer = new Float32Array(samples)
 
-// 큰 종소리 배음 합성으로 한 번 울리는 소리를 만든다
-function addBellStrike(startSec, fundamental, volume) {
-  const partials = [
-    { ratio: 0.5, amp: 0.42, decay: 1.9 },
-    { ratio: 1, amp: 1.0, decay: 1.7 },
-    { ratio: 2.01, amp: 0.58, decay: 1.15 },
-    { ratio: 2.62, amp: 0.32, decay: 0.9 },
-    { ratio: 3.48, amp: 0.16, decay: 0.6 },
-  ]
+function addDrop(startSec, baseFreq, volume) {
   const start = Math.floor(startSec * sampleRate)
+  const dropLength = Math.floor(0.62 * sampleRate)
 
-  for (let i = start; i < samples; i++) {
-    const t = (i - start) / sampleRate
-    let sample = 0
-    for (const partial of partials) {
-      const env = Math.exp(-t / partial.decay)
-      sample += partial.amp * Math.sin(2 * Math.PI * fundamental * partial.ratio * t) * env
-    }
-    buffer[i] += sample * volume * 0.48
+  for (let n = 0; n < dropLength && start + n < samples; n++) {
+    const i = start + n
+    const t = n / sampleRate
+    const env = Math.exp(-t / 0.18)
+    const clickEnv = Math.exp(-t / 0.018)
+    const pitch = baseFreq + 420 * Math.exp(-t / 0.055)
+    const tone =
+      Math.sin(2 * Math.PI * pitch * t)
+      + 0.38 * Math.sin(2 * Math.PI * pitch * 1.92 * t + 0.5)
+      + 0.22 * Math.sin(2 * Math.PI * pitch * 2.74 * t)
+    const click = Math.sin(2 * Math.PI * 1850 * t) * clickEnv
+    buffer[i] += (tone * env * 0.58 + click * 0.34) * volume
   }
 }
 
-addBellStrike(0, 659, 1.0)
-addBellStrike(0.38, 880, 0.95)
-addBellStrike(0.78, 1175, 0.72)
+function addTinyRoom() {
+  const delay = Math.floor(0.055 * sampleRate)
+  for (let i = delay; i < samples; i++) {
+    buffer[i] += buffer[i - delay] * 0.18 * Math.exp(-(i - delay) / sampleRate / 0.9)
+  }
+}
+
+addDrop(0.02, 680, 1.15)
+addDrop(0.19, 920, 0.82)
+addTinyRoom()
 
 let peak = 0
 for (let i = 0; i < samples; i++) {
   peak = Math.max(peak, Math.abs(buffer[i]))
 }
-const normalize = peak > 0 ? Math.min(1 / peak, 1.15) : 1
+const normalize = peak > 0 ? 1 / peak : 1
 
 const pcm = Buffer.alloc(samples * 2)
 for (let i = 0; i < samples; i++) {
-  const boosted = Math.tanh(buffer[i] * normalize * 1.35)
+  const t = i / sampleRate
+  const fadeOut = t > duration - 0.08 ? Math.max(0, (duration - t) / 0.08) : 1
+  const boosted = Math.tanh(buffer[i] * normalize * 1.55) * fadeOut
   const clamped = Math.max(-1, Math.min(1, boosted))
   pcm.writeInt16LE(Math.round(clamped * 32767), i * 2)
 }
@@ -64,4 +70,4 @@ header.writeUInt32LE(pcm.length, 40)
 const outPath = resolve('public/sounds/chime.wav')
 mkdirSync(dirname(outPath), { recursive: true })
 writeFileSync(outPath, Buffer.concat([header, pcm]))
-console.log('Wrote', outPath)
+console.log('Wrote water drop notification sound to', outPath)
