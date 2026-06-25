@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-update-v0-5-0-listen-together',
+    date: '2026.06.26',
+    type: 'update',
+    title: 'Tether v0.5.0 업데이트.',
+    detail: '자료실 음악 파일을 기반으로 한 같이듣기 메뉴를 추가했습니다. 커플이 각각 3곡씩 고르고, 상대방의 곡은 수정하지 못하되 한 곡만 내 재생 목록에서 제외할 수 있습니다. 선택된 4~6곡은 상단 플레이어에서 랜덤 반복 재생되며, 플레이어 숨김 버튼과 홈 Log 옆 Player 버튼으로 다시 보기를 지원합니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-12-library-theme-music-button',
     date: '2026.06.26',
     type: 'hotfix',

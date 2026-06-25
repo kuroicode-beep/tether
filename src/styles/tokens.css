@@ -1166,6 +1166,58 @@ body {
   border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
 }
 
+.listen-track-row {
+  display: flex;
+  min-height: 50px;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--color-outline-variant) 55%, transparent);
+  border-radius: 12px;
+  background: var(--color-surface-container-low);
+  color: var(--color-text);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.listen-track-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.listen-track-row--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.listen-track-row--active .text-primary {
+  color: var(--color-on-primary) !important;
+}
+
+.listen-track-row--excluded {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 12%, var(--color-surface));
+}
+
+[data-theme="high-contrast"] .listen-track-row,
+[data-theme="high-contrast"] .listen-track-row--active,
+[data-theme="high-contrast"] .listen-track-row--excluded {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .listen-track-row:disabled {
+  opacity: 0.45 !important;
+}
+
+[data-theme="high-contrast"] .listen-track-row * {
+  color: var(--hc-box-text) !important;
+}
+
 /* 공통 outline 버튼 */
 .btn-outline {
   background: var(--color-bg);

@@ -13,6 +13,7 @@ import { ChatScreen } from './screens/ChatScreen'
 import { DiaryScreen } from './screens/DiaryScreen'
 import { ContentsScreen } from './screens/ContentsScreen'
 import { DateRecipeScreen, LibraryScreen, LinkShareScreen } from './screens/LibraryScreen'
+import { ListenTogetherScreen } from './screens/ListenTogetherScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
@@ -34,12 +35,13 @@ import {
 import { debugLog } from './lib/debugLog'
 import { useTheme } from './hooks/useTheme'
 import { useCoupleSession } from './hooks/useCoupleSession'
+import { useListeningTogether } from './hooks/useListeningTogether'
 import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 import { db } from './lib/firebase'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'library' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
+  | 'settings' | 'photo' | 'library' | 'listenTogether' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
   | 'admin'
 
 const NAVIGATION_SCREENS = new Set<string>([
@@ -50,6 +52,7 @@ const NAVIGATION_SCREENS = new Set<string>([
   'settings',
   'photo',
   'library',
+  'listenTogether',
   'links',
   'dateRecipe',
   'history',
@@ -87,10 +90,13 @@ function AppContent() {
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadCachedThemeTrack())
+  const [playerHidden, setPlayerHidden] = useState(false)
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
   screenRef.current = screen
+  const partnerUid = session.connection?.partnerUid ?? null
+  const listeningTogether = useListeningTogether(session.coupleId, session.uid, partnerUid)
 
   useEffect(() => {
     return installPushTokenAutoSync({
@@ -184,6 +190,10 @@ function AppContent() {
       console.warn('[App] set theme track failed', err)
     }
   }, [session.coupleId, session.uid])
+
+  const showPlayer = useCallback(() => {
+    setPlayerHidden(false)
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -319,14 +329,15 @@ function AppContent() {
   }
 
   const toHome = () => setScreen('home')
-  const showThemePlayer = themeTrack && session.status === 'connected'
+  const activePlaylist = listeningTogether.activeTracks.length > 0 ? listeningTogether.activeTracks : (themeTrack ? [themeTrack] : [])
+  const showThemePlayer = activePlaylist.length > 0 && session.status === 'connected' && !playerHidden
 
   return (
     <>
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
       {showThemePlayer && (
-        <ThemeMusicPlayer track={themeTrack} />
+        <ThemeMusicPlayer tracks={activePlaylist} onHide={() => setPlayerHidden(true)} />
       )}
 
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
@@ -336,6 +347,7 @@ function AppContent() {
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
         {screen === 'library'     && <LibraryScreen onBack={toHome} onNavigate={navigate} onSetThemeTrack={handleSetThemeTrack} />}
+        {screen === 'listenTogether' && <ListenTogetherScreen onBack={toHome} onNavigate={navigate} onShowPlayer={showPlayer} />}
         {screen === 'links'       && <LinkShareScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'dateRecipe'  && <DateRecipeScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'history'     && <StatusHistoryScreen onBack={toHome} />}
@@ -352,7 +364,7 @@ function AppContent() {
             onOpenAdmin={() => setScreen('admin')}
           />
         )}
-        {screen === 'home' && <HomeScreen onNavigate={navigate} />}
+        {screen === 'home' && <HomeScreen onNavigate={navigate} onShowPlayer={showPlayer} hasPlayer={activePlaylist.length > 0} />}
       </div>
     </>
   )

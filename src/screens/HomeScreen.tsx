@@ -21,6 +21,8 @@ import { isAdminEmail } from '../lib/coupleAuth'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
+  onShowPlayer?: () => void
+  hasPlayer?: boolean
 }
 
 const CONDITIONS: Condition[] = [
@@ -35,6 +37,7 @@ const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
   { icon: 'featured_play_list', label: '콘텐츠', screen: 'contents' },
   { icon: 'photo_library', label: '사진첩', screen: 'photo' },
   { icon: 'folder_open', label: '자료실', screen: 'library' },
+  { icon: 'queue_music', label: '같이듣기', screen: 'listenTogether' },
   { icon: 'bookmark', label: '링크공유', screen: 'links' },
   { icon: 'restaurant', label: '데이트 레시피', screen: 'dateRecipe' },
   { icon: 'history', label: '히스토리', screen: 'history' },
@@ -56,7 +59,7 @@ function timeAgo(ts: number | null): string {
   }
 }
 
-export function HomeScreen({ onNavigate }: HomeScreenProps) {
+export function HomeScreen({ onNavigate, onShowPlayer, hasPlayer }: HomeScreenProps) {
   const { user } = useSession()
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
@@ -150,6 +153,14 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
             aria-label="업데이트 로그"
           >
             Log
+          </button>
+          <button
+            className="min-h-[50px] rounded-full px-md font-label-md text-label-md text-primary transition-colors duration-200 hover:bg-surface-container disabled:opacity-40"
+            onClick={onShowPlayer}
+            disabled={!hasPlayer}
+            aria-label="같이듣기 플레이어 보이기"
+          >
+            Player
           </button>
           {showAdminLink && (
             <button
