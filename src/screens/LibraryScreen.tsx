@@ -11,7 +11,6 @@ import { useLibrary } from '../hooks/useLibrary'
 interface LibraryScreenProps {
   onBack: () => void
   onNavigate: (screen: 'home' | 'chat' | 'diary' | 'more') => void
-  onSetThemeTrack?: (track: { title: string; url: string }) => void
 }
 
 interface StandaloneScreenProps {
@@ -169,7 +168,7 @@ function RecipeSheet({
   )
 }
 
-export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibraryScreenProps) {
+export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
   const { files, deleteFile } = useLibrary(coupleId, uid)
@@ -184,9 +183,10 @@ export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibrarySc
   }
 
   const filteredFiles = useMemo(() => {
+    const libraryFiles = files.filter((item) => !isAudioFile(item.fileName, item.fileType))
     const keyword = search.trim().toLowerCase()
-    if (!keyword) return files
-    return files.filter((item) => {
+    if (!keyword) return libraryFiles
+    return libraryFiles.filter((item) => {
       const haystack = [
         item.fileName,
         item.fileType,
@@ -196,6 +196,11 @@ export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibrarySc
       return haystack.includes(keyword)
     })
   }, [files, search, myNickname, partnerNickname, partnerUid, uid])
+
+  const libraryFileCount = useMemo(
+    () => files.filter((item) => !isAudioFile(item.fileName, item.fileType)).length,
+    [files],
+  )
 
   const handleDeleteFile = async (id: string) => {
     if (deletingId) return
@@ -226,22 +231,21 @@ export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibrarySc
             {deleteError}
           </p>
         )}
-        {files.length === 0 ? (
+        {libraryFileCount === 0 ? (
           <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
-            채팅에서 파일이나 음악을 올리면 여기에 모여요.
+            채팅에서 문서, 압축파일, 기타 파일을 올리면 여기에 모여요. 음악 파일은 같이듣기에서 확인할 수 있어요.
           </p>
         ) : filteredFiles.length === 0 ? (
           <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
             검색 결과가 없어요.
           </p>
         ) : filteredFiles.map((item) => {
-          const audio = isAudioFile(item.fileName, item.fileType)
           const canDelete = item.senderUid === uid
           return (
           <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
             <div className="flex items-start gap-sm">
               <span className="material-symbols-outlined text-primary">
-                {audio ? 'audio_file' : 'draft'}
+                draft
               </span>
               <div className="min-w-0 flex-1">
                 <p className="break-words font-label-md text-label-md font-semibold text-on-surface">{item.fileName}</p>
@@ -249,26 +253,9 @@ export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibrarySc
                   {nameOf(item.senderUid)} 님 · {formatFileSize(item.fileSize)} · {formatTime(item.createdAt)}
                 </p>
                 <div className="mt-sm flex flex-col gap-sm">
-                  {audio ? (
-                    <>
-                      <audio controls src={item.fileUrl} preload="metadata" className="w-full">
-                        <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName}>음악 파일 열기</a>
-                      </audio>
-                      {onSetThemeTrack && (
-                        <button
-                          type="button"
-                          onClick={() => onSetThemeTrack({ title: item.fileName, url: item.fileUrl })}
-                          className="message-theme-button w-fit px-md"
-                        >
-                          메인테마로 지정
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName} className="inline-flex min-h-[44px] w-fit items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
-                      열기 / 다운로드
-                    </a>
-                  )}
+                  <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName} className="inline-flex min-h-[44px] w-fit items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
+                    열기 / 다운로드
+                  </a>
                   {canDelete && (
                     <button
                       type="button"

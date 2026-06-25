@@ -366,7 +366,7 @@ function AppContent() {
         {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
-        {screen === 'library'     && <LibraryScreen onBack={toHome} onNavigate={navigate} onSetThemeTrack={handleSetThemeTrack} />}
+        {screen === 'library'     && <LibraryScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'listenTogether' && <ListenTogetherScreen onBack={toHome} onNavigate={navigate} onShowPlayer={showPlayer} />}
         {screen === 'links'       && <LinkShareScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'dateRecipe'  && <DateRecipeScreen onBack={toHome} onNavigate={navigate} />}

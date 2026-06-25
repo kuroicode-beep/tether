@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-2-library-listen-split',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.2 핫픽스.',
+    detail: '자료실과 같이듣기의 파일 분류를 다시 정리했습니다. 자료실에는 음악 파일을 제외한 문서·압축파일·기타 파일만 표시하고, 같이듣기에는 자료실에 쌓인 음악 파일만 모두 표시되도록 분리했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-1-visible-window-notification',
     date: '2026.06.26',
     type: 'hotfix',
