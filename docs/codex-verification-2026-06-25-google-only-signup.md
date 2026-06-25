@@ -50,5 +50,5 @@
 - 주의사항: Firebase Console에서 Anonymous provider도 가능하면 비활성화하면 정책이 더 단단해진다.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `f7fcbb3`
 - 배포 여부: Firebase Hosting + Firestore rules 배포 완료 (`https://tether-d1dab.web.app`)
