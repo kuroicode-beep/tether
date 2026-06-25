@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-release-v0-4-0-library-content-chat',
+    date: '2026.06.25',
+    type: 'release',
+    title: 'Tether v0.4.0 업데이트.',
+    detail: '사진첩 코멘트 목록 표시, 콘텐츠 URL·이미지 첨부, 관리자 상태 태그 관리 정리, 편집창 상태 태그 선택 대비 강화, 자료실·링크공유·데이트 레시피 추가, 채팅 입력 포커스와 읽기 전 아이콘 표시를 반영했습니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-3-2-chat-files-diary-log-signup',
     date: '2026.06.25',
     type: 'hotfix',
