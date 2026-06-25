@@ -9,6 +9,7 @@ import { RecentFeed } from '../components/RecentFeed'
 import { PushPermissionBanner } from '../components/PushPermissionBanner'
 import { PushTokenHealthBanner } from '../components/PushTokenHealthBanner'
 import { useApp } from '../context/AppContext'
+import { useSession } from '../context/SessionContext'
 import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useRecentFeed } from '../hooks/useRecentFeed'
@@ -16,6 +17,7 @@ import { CONDITION_EMOJI, Condition, useStatus } from '../hooks/useStatus'
 import { useStatusOptions } from '../hooks/useStatusOptions'
 
 import { APP_VERSION_LABEL } from '../lib/appVersion'
+import { isAdminEmail } from '../lib/coupleAuth'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
@@ -52,6 +54,7 @@ function timeAgo(ts: number | null): string {
 }
 
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
+  const { user } = useSession()
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
@@ -126,6 +129,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
+  const showAdminLink = isAdminEmail(user?.email)
   const urgentAnniversaries = upcoming.filter(({ dday }) => dday >= 0 && dday <= 7).slice(0, 2)
 
   return (
@@ -144,6 +148,15 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           >
             Log
           </button>
+          {showAdminLink && (
+            <button
+              className="min-h-[50px] rounded-full border border-primary px-md font-label-md text-label-md text-primary transition-colors duration-200 hover:bg-surface-container"
+              onClick={() => onNavigate('admin')}
+              aria-label="관리자 페이지"
+            >
+              Admin
+            </button>
+          )}
           <button
             className="flex min-h-[50px] min-w-[50px] items-center justify-center rounded-full transition-colors duration-200 hover:bg-surface-container"
             onClick={() => onNavigate('more')}
