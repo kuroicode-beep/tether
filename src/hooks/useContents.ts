@@ -3,7 +3,8 @@ import {
   collection, addDoc, onSnapshot, doc,
   updateDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../lib/firebase'
 import { createClientId, createOptimisticId } from '../lib/clientId'
 import { isOptimisticId, mergeByCreatedAtDesc, readClientId, reconcilePending } from '../lib/syncHelpers'
 
@@ -17,6 +18,9 @@ export interface ContentItem {
   category: ContentCategory
   title: string
   memo: string | null
+  url: string | null
+  imageUrl: string | null
+  imagePath: string | null
   status: ContentStatus
   rating: number | null
   review: string | null
@@ -32,6 +36,9 @@ function toItem(data: Record<string, unknown>, id: string): ContentItem {
     category: (data['category'] as ContentCategory) ?? 'etc',
     title: (data['title'] as string) ?? '',
     memo: (data['memo'] as string | null) ?? null,
+    url: (data['url'] as string | null) ?? null,
+    imageUrl: (data['imageUrl'] as string | null) ?? null,
+    imagePath: (data['imagePath'] as string | null) ?? null,
     status: (data['status'] as ContentStatus) ?? 'want',
     rating: (data['rating'] as number | null) ?? null,
     review: (data['review'] as string | null) ?? null,
@@ -42,6 +49,15 @@ function toItem(data: Record<string, unknown>, id: string): ContentItem {
 export function useContents(coupleId: string | null, myUid: string | null) {
   const [items, setItems] = useState<ContentItem[]>([])
   const pendingRef = useRef(new Map<string, ContentItem>())
+
+  const uploadContentImage = async (file: File, clientId: string) => {
+    if (!coupleId || !myUid) return { imageUrl: null, imagePath: null }
+    const safeName = file.name.replace(/[^\w.\-]/g, '_') || 'content.jpg'
+    const imagePath = `couples/${coupleId}/contents/${myUid}/${clientId}_${safeName}`
+    const storageRef = ref(storage, imagePath)
+    await uploadBytes(storageRef, file, { contentType: file.type || 'image/jpeg' })
+    return { imageUrl: await getDownloadURL(storageRef), imagePath }
+  }
 
   useEffect(() => {
     if (!coupleId) {
@@ -73,9 +89,16 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     return () => unsub()
   }, [coupleId])
 
-  const addContent = async (data: { category: ContentCategory; title: string; memo?: string }) => {
+  const addContent = async (data: {
+    category: ContentCategory
+    title: string
+    memo?: string
+    url?: string
+    imageFile?: File | null
+  }) => {
     if (!coupleId || !myUid) return
     const clientId = createClientId('content')
+    const localImageUrl = data.imageFile ? URL.createObjectURL(data.imageFile) : null
     const optimistic: ContentItem = {
       id: createOptimisticId(clientId),
       clientId,
@@ -83,6 +106,9 @@ export function useContents(coupleId: string | null, myUid: string | null) {
       category: data.category,
       title: data.title,
       memo: data.memo ?? null,
+      url: data.url ?? null,
+      imageUrl: localImageUrl,
+      imagePath: null,
       status: 'want',
       rating: null,
       review: null,
@@ -92,12 +118,18 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     setItems((prev) => mergeByCreatedAtDesc(prev.filter((i) => i.id !== optimistic.id), [optimistic]))
 
     try {
+      const uploaded = data.imageFile
+        ? await uploadContentImage(data.imageFile, clientId)
+        : { imageUrl: null, imagePath: null }
       await addDoc(collection(db, 'couples', coupleId, 'contents'), {
         clientId,
         addedBy: myUid,
         category: data.category,
         title: data.title,
         memo: data.memo ?? null,
+        url: data.url ?? null,
+        imageUrl: uploaded.imageUrl,
+        imagePath: uploaded.imagePath,
         status: 'want',
         rating: null,
         review: null,
@@ -108,6 +140,7 @@ export function useContents(coupleId: string | null, myUid: string | null) {
       console.warn('[useContents] addContent failed', err)
       pendingRef.current.delete(optimistic.id)
       setItems((prev) => prev.filter((i) => i.id !== optimistic.id))
+      if (localImageUrl) URL.revokeObjectURL(localImageUrl)
     }
   }
 
@@ -144,6 +177,10 @@ export function useContents(coupleId: string | null, myUid: string | null) {
       category: ContentCategory
       title: string
       memo?: string | null
+      url?: string | null
+      imageUrl?: string | null
+      imagePath?: string | null
+      imageFile?: File | null
       status: ContentStatus
       rating?: number | null
       review?: string | null
@@ -156,10 +193,16 @@ export function useContents(coupleId: string | null, myUid: string | null) {
     })
     if (!coupleId || isOptimisticId(contentId)) return
     try {
+      const uploaded = data.imageFile
+        ? await uploadContentImage(data.imageFile, createClientId('content_img'))
+        : { imageUrl: data.imageUrl ?? null, imagePath: data.imagePath ?? null }
       await updateDoc(doc(db, 'couples', coupleId, 'contents', contentId), {
         category: data.category,
         title: data.title,
         memo: data.memo ?? null,
+        url: data.url ?? null,
+        imageUrl: uploaded.imageUrl,
+        imagePath: uploaded.imagePath,
         status: data.status,
         rating: data.status === 'done' ? data.rating ?? null : null,
         review: data.status === 'done' ? data.review ?? null : null,

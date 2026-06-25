@@ -27,7 +27,13 @@ const STATUS_INFO: Record<ContentStatus, { text: string; className: string }> = 
 // ── 추가 바텀시트 ───────────────────────────────────────────────────────────
 
 interface AddSheetProps {
-  onAdd: (data: { category: ContentCategory; title: string; memo?: string }) => void
+  onAdd: (data: {
+    category: ContentCategory
+    title: string
+    memo?: string
+    url?: string
+    imageFile?: File | null
+  }) => void
   onClose: () => void
 }
 
@@ -35,10 +41,38 @@ function AddSheet({ onAdd, onClose }: AddSheetProps) {
   const [category, setCategory] = useState<ContentCategory>('movie')
   const [title, setTitle] = useState('')
   const [memo, setMemo] = useState('')
+  const [url, setUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setImageFile(file)
+    setPreviewUrl(file ? URL.createObjectURL(file) : null)
+    e.target.value = ''
+  }
+
+  const handleClose = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    onClose()
+  }
+
+  const handleAdd = () => {
+    if (!title.trim()) return
+    onAdd({
+      category,
+      title: title.trim(),
+      memo: memo.trim() || undefined,
+      url: url.trim() || undefined,
+      imageFile,
+    })
+    handleClose()
+  }
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={handleClose} />
       <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
         <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
         <h2 className="font-label-md text-label-md font-semibold text-on-surface mb-lg">항목 추가</h2>
@@ -74,8 +108,25 @@ function AddSheet({ onAdd, onClose }: AddSheetProps) {
           placeholder="메모 (선택)"
           className="w-full bg-surface-container rounded-xl px-lg py-md font-body-md text-body-md text-on-surface placeholder-on-surface-variant/40 outline-none mb-lg"
         />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="URL (선택)"
+          inputMode="url"
+          className="w-full bg-surface-container rounded-xl px-lg py-md font-body-md text-body-md text-on-surface placeholder-on-surface-variant/40 outline-none mb-sm"
+        />
+        <label className="mb-lg flex min-h-[50px] cursor-pointer items-center justify-center gap-sm rounded-xl border border-outline-variant/30 bg-surface-container px-lg py-sm font-label-md text-label-md text-on-surface-variant">
+          <span className="material-symbols-outlined text-base">add_photo_alternate</span>
+          {previewUrl ? '이미지 다시 선택' : '이미지 추가 (선택)'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+        </label>
+        {previewUrl && (
+          <div className="mb-lg overflow-hidden rounded-xl bg-surface-container-low">
+            <img src={previewUrl} alt="콘텐츠 이미지 미리보기" className="h-40 w-full object-cover" />
+          </div>
+        )}
         <button
-          onClick={() => { if (!title.trim()) return; onAdd({ category, title: title.trim(), memo: memo.trim() || undefined }); onClose() }}
+          onClick={handleAdd}
           disabled={!title.trim()}
           className="w-full bg-primary text-on-primary rounded-full py-md font-label-md text-label-md disabled:opacity-40 active:scale-95 transition-transform"
         >
@@ -141,6 +192,10 @@ interface EditSheetProps {
     category: ContentCategory
     title: string
     memo: string | null
+    url: string | null
+    imageUrl: string | null
+    imagePath: string | null
+    imageFile?: File | null
     status: ContentStatus
     rating: number | null
     review: string | null
@@ -152,9 +207,26 @@ function EditSheet({ item, onSave, onClose }: EditSheetProps) {
   const [category, setCategory] = useState<ContentCategory>(item.category)
   const [title, setTitle] = useState(item.title)
   const [memo, setMemo] = useState(item.memo ?? '')
+  const [url, setUrl] = useState(item.url ?? '')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(item.imageUrl)
   const [status, setStatus] = useState<ContentStatus>(item.status)
   const [rating, setRating] = useState(item.rating ?? 0)
   const [review, setReview] = useState(item.review ?? '')
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+    setImageFile(file)
+    setPreviewUrl(file ? URL.createObjectURL(file) : item.imageUrl)
+    e.target.value = ''
+  }
+
+  const clearImage = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+    setImageFile(null)
+    setPreviewUrl(null)
+  }
 
   const handleSave = () => {
     if (!title.trim()) return
@@ -162,6 +234,10 @@ function EditSheet({ item, onSave, onClose }: EditSheetProps) {
       category,
       title: title.trim(),
       memo: memo.trim() || null,
+      url: url.trim() || null,
+      imageUrl: previewUrl?.startsWith('blob:') ? item.imageUrl : previewUrl,
+      imagePath: previewUrl ? item.imagePath : null,
+      imageFile,
       status,
       rating: status === 'done' ? rating || null : null,
       review: status === 'done' ? review.trim() || null : null,
@@ -206,6 +282,30 @@ function EditSheet({ item, onSave, onClose }: EditSheetProps) {
           rows={3}
           className="mb-lg w-full resize-none rounded-xl bg-surface-container px-lg py-md font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/40"
         />
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="URL"
+          inputMode="url"
+          className="mb-sm w-full rounded-xl bg-surface-container px-lg py-md font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/40"
+        />
+        <label className="mb-sm flex min-h-[50px] cursor-pointer items-center justify-center gap-sm rounded-xl border border-outline-variant/30 bg-surface-container px-lg py-sm font-label-md text-label-md text-on-surface-variant">
+          <span className="material-symbols-outlined text-base">add_photo_alternate</span>
+          {previewUrl ? '이미지 다시 선택' : '이미지 추가'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+        </label>
+        {previewUrl && (
+          <div className="mb-lg overflow-hidden rounded-xl bg-surface-container-low">
+            <img src={previewUrl} alt="콘텐츠 이미지 미리보기" className="h-40 w-full object-cover" />
+            <button
+              type="button"
+              onClick={clearImage}
+              className="w-full py-sm font-label-sm text-label-sm text-on-surface-variant"
+            >
+              이미지 제거
+            </button>
+          </div>
+        )}
 
         <div className="mb-lg grid grid-cols-3 gap-sm">
           {(['want', 'watching', 'done'] as ContentStatus[]).map((next) => (
@@ -352,6 +452,14 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
                     onDelete={() => deleteContent(item.id)}
                   >
                   <div className="bg-[#F5F2EB] rounded-xl shadow-sm p-md space-y-sm relative">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={`${item.title} 이미지`}
+                        className="-mx-md -mt-md mb-sm h-36 w-[calc(100%+2rem)] rounded-t-xl object-cover"
+                        loading="lazy"
+                      />
+                    )}
                     {/* 상태 배지 + 이모지 */}
                     <div className="flex justify-between items-start">
                       <span className={`text-[11px] px-sm py-[2px] rounded-full font-medium ${statusInfo.className}`}>
@@ -366,6 +474,18 @@ export function ContentsScreen({ onNavigate }: ContentsScreenProps) {
                     {/* 메모 */}
                     {item.memo && (
                       <p className="text-[12px] text-on-surface-variant leading-relaxed line-clamp-2">{item.memo}</p>
+                    )}
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex min-h-[44px] items-center gap-xs rounded-full border border-primary/40 px-sm py-xs text-[11px] font-semibold text-primary"
+                      >
+                        <span className="material-symbols-outlined text-sm">open_in_new</span>
+                        바로가기
+                      </a>
                     )}
 
                     {/* 별점 (done) */}
