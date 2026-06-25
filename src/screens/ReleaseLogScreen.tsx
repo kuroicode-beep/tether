@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-hotfix-v0-4-3-notification-sounds',
+    date: '2026.06.25',
+    type: 'hotfix',
+    title: 'Tether v0.4.3 핫픽스.',
+    detail: '알림소리 설정에 반짝, 포근벨, 톡톡 3가지 새 알림음을 추가했습니다. 기존 물방울, 차임, 무음과 함께 선택할 수 있고 PWA 캐시에 포함되도록 빌드 설정도 반영했습니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-4-2-partner-nickname-status-tags',
     date: '2026.06.25',
     type: 'hotfix',

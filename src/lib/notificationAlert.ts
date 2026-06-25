@@ -4,6 +4,9 @@ import type { NotificationSettings } from '../hooks/usePushNotification'
 
 export const NOTIFICATION_SOUND_URL = '/sounds/water-drop-20260621.wav'
 export const CHIME_SOUND_URL = '/sounds/chime.wav'
+export const SPARKLE_SOUND_URL = '/sounds/sparkle-20260625.wav'
+export const SOFT_BELL_SOUND_URL = '/sounds/soft-bell-20260625.wav'
+export const GENTLE_KNOCK_SOUND_URL = '/sounds/gentle-knock-20260625.wav'
 export const SW_PLAY_SOUND_MESSAGE = 'PLAY_NOTIFICATION_SOUND'
 export const SW_NAVIGATE_MESSAGE = 'NAVIGATE'
 
@@ -76,7 +79,12 @@ function playSyntheticWaterDrop() {
 // Tether 물방울 알림음 재생
 export function playNotificationSound(sound: NotificationSettings['sound'] = 'waterDrop') {
   if (sound === 'silent') return
-  const nextUrl = sound === 'chime' ? CHIME_SOUND_URL : NOTIFICATION_SOUND_URL
+  const nextUrl =
+    sound === 'chime' ? CHIME_SOUND_URL
+    : sound === 'sparkle' ? SPARKLE_SOUND_URL
+    : sound === 'softBell' ? SOFT_BELL_SOUND_URL
+    : sound === 'gentleKnock' ? GENTLE_KNOCK_SOUND_URL
+    : NOTIFICATION_SOUND_URL
   if (soundUrl !== nextUrl) {
     soundUrl = nextUrl
     chimeAudio = null

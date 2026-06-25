@@ -17,7 +17,7 @@ export interface NotificationSettings {
   message: boolean
   status: boolean
   diary: boolean
-  sound?: 'waterDrop' | 'chime' | 'silent'
+  sound?: 'waterDrop' | 'chime' | 'sparkle' | 'softBell' | 'gentleKnock' | 'silent'
 }
 
 const DEFAULT_SETTINGS: NotificationSettings = {

@@ -715,6 +715,9 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 {([
                   ['waterDrop', '물방울'],
                   ['chime', '차임'],
+                  ['sparkle', '반짝'],
+                  ['softBell', '포근벨'],
+                  ['gentleKnock', '톡톡'],
                   ['silent', '무음'],
                 ] as const).map(([sound, label]) => {
                   const selected = (notifSettings.sound ?? 'waterDrop') === sound
