@@ -200,19 +200,26 @@ export function PhotoAlbum({ onBack }: PhotoAlbumProps) {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-[2px]">
+          <div className="grid grid-cols-2 gap-sm sm:grid-cols-3">
             {photos.map((photo) => (
               <button
                 key={photo.id}
                 onClick={() => setSelectedPhoto(photo)}
-                className="aspect-square overflow-hidden bg-surface-container active:opacity-80 transition-opacity"
+                className="overflow-hidden rounded-xl bg-surface-container text-left shadow-sm active:opacity-80 transition-opacity"
               >
-                <img
-                  src={photo.imageUrl}
-                  alt={photo.caption ?? ''}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+                <div className="aspect-square overflow-hidden bg-surface-container-low">
+                  <img
+                    src={photo.imageUrl}
+                    alt={photo.caption ?? ''}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                {photo.caption && (
+                  <p className="px-sm py-xs font-body-sm text-body-sm leading-snug text-on-surface line-clamp-2">
+                    {photo.caption}
+                  </p>
+                )}
               </button>
             ))}
           </div>
