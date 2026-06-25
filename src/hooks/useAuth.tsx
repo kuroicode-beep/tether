@@ -16,7 +16,6 @@ type AuthContextValue = {
   setCoupleId: (nextCoupleId: string | null) => Promise<void>
   linkGoogle: () => Promise<void>
   signInWithGoogle: () => Promise<User | null>
-  signInAnon: () => Promise<User>
   isGoogleLinked: boolean
   clearAuthError: () => void
 }
@@ -50,7 +49,6 @@ export function useAuth(): AuthContextValue {
     },
     linkGoogle: session.linkGoogle,
     signInWithGoogle: session.signInWithGoogle,
-    signInAnon: session.signInAnon,
     isGoogleLinked: session.isGoogleLinked,
     clearAuthError: session.clearAuthError,
   }

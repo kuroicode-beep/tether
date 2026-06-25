@@ -15,7 +15,6 @@ import {
   User,
   getRedirectResult,
   onAuthStateChanged,
-  signInAnonymously,
   signInWithCredential,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
@@ -56,7 +55,6 @@ type SessionContextValue = SessionState & {
   retryRestore: () => Promise<void>
   refreshSession: () => Promise<void>
   signInWithGoogle: () => Promise<User | null>
-  signInAnon: () => Promise<User>
   linkGoogle: () => Promise<void>
   signOut: () => Promise<void>
   notifyCoupleLinked: () => Promise<boolean>
@@ -219,6 +217,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       restoreGenerationRef.current += 1
       currentUserRef.current = null
       profileCoupleIdRef.current = null
+      setSession({
+        status: 'signed_out',
+        user: null,
+        uid: null,
+        coupleId: null,
+        connection: null,
+        error: null,
+      })
+      return
+    }
+
+    // Anonymous sessions are no longer valid: signup must start with Google.
+    if (user.isAnonymous) {
+      restoreGenerationRef.current += 1
+      currentUserRef.current = null
+      profileCoupleIdRef.current = null
+      await firebaseSignOut(auth)
       setSession({
         status: 'signed_out',
         user: null,
@@ -434,12 +449,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signInAnon = async () => {
-    const result = await signInAnonymously(auth)
-    await handleAuthUser(result.user)
-    return result.user
-  }
-
   const linkGoogle = async () => {
     if (!auth.currentUser) throw new Error('로그인 정보가 없습니다.')
     try {
@@ -504,7 +513,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         retryRestore,
         refreshSession,
         signInWithGoogle,
-        signInAnon,
         linkGoogle,
         signOut,
         notifyCoupleLinked,

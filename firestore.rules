@@ -60,6 +60,10 @@ service cloud.firestore {
 
     // User docs: self and coupled partner can read; clients cannot mutate coupleId.
     match /users/{uid} {
+      function isGoogleAuth() {
+        return request.auth.token.firebase.sign_in_provider == 'google.com';
+      }
+
       function coupleIdUnchanged() {
         return request.resource.data.coupleId == resource.data.coupleId;
       }
@@ -115,6 +119,7 @@ service cloud.firestore {
                   && (isAdmin() || request.auth.uid == uid || isPartnerUser(uid));
       allow create: if request.auth != null
                     && request.auth.uid == uid
+                    && isGoogleAuth()
                     && validUserCreate();
       allow update: if request.auth != null
                     && (
