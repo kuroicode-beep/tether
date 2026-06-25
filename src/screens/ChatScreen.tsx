@@ -37,7 +37,7 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
 export function ChatScreen({ onBack }: ChatScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { partnerNickname, partnerUid, myPhotoUrl, partnerPhotoUrl, myNickname } = useApp()
-  const { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage } = useChat(
+  const { messages, hasMore, loading, loadMore, sendText, sendFile, markManyAsRead, updateMessage, deleteMessage } = useChat(
     coupleId,
     uid,
   )
@@ -260,7 +260,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
       <ChatInput
         onSendText={sendText}
-        onSendImage={sendImage}
+        onSendFile={sendFile}
         onFocusChange={(focused) => { inputFocusedRef.current = focused }}
       />
 

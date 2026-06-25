@@ -397,7 +397,12 @@ export const onNewMessage = functions.firestore
     if (!(await isNotificationEnabled(partnerUid, 'message'))) return
 
     const senderName = await getSenderName(msg.senderUid as string)
-    const body: string = msg.type === 'image' ? '사진을 보냈어요 📸' : (msg.text as string) ?? ''
+    const body: string =
+      msg.type === 'image'
+        ? '사진을 보냈어요 📸'
+        : msg.type === 'file'
+          ? `${(msg.fileName as string | undefined) ?? '파일'}을 보냈어요 📎`
+          : (msg.text as string) ?? ''
 
     await sendWebPush(partnerUid, tokens, {
       type: 'message',

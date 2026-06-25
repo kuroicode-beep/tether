@@ -968,6 +968,71 @@ body {
   color: var(--color-primary);
 }
 
+.message-file-card {
+  display: flex;
+  min-width: 220px;
+  max-width: 280px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.message-file-name {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.message-file-size {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.message-file-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.message-audio-player {
+  width: 100%;
+  min-width: 210px;
+  max-width: 260px;
+}
+
+[data-theme="high-contrast"] .message-file-card {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+}
+
+[data-theme="high-contrast"] .message-file-size {
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .message-file-link {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+}
+
 /* 공통 outline 버튼 */
 .btn-outline {
   background: var(--color-bg);

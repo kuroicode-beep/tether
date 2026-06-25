@@ -2,19 +2,29 @@ import { useRef, useState } from 'react'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
-  onSendImage: (file: File) => void
+  onSendFile: (file: File) => void
   disabled?: boolean
   onFocusChange?: (focused: boolean) => void
 }
 
-interface ImagePreview {
+interface FilePreview {
   file: File
   url: string
 }
 
-export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: ChatInputProps) {
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/')
+}
+
+function formatFileSize(size: number): string {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+export function ChatInput({ onSendText, onSendFile, disabled, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
-  const [preview, setPreview] = useState<ImagePreview | null>(null)
+  const [preview, setPreview] = useState<FilePreview | null>(null)
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const composingRef = useRef(false)
@@ -69,15 +79,15 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
     e.target.value = ''
   }
 
-  const handleConfirmImage = () => {
+  const handleConfirmFile = () => {
     if (!preview) return
-    onSendImage(preview.file)
+    onSendFile(preview.file)
     URL.revokeObjectURL(preview.url)
     setPreview(null)
     keepInputFocus()
   }
 
-  const handleCancelImage = () => {
+  const handleCancelFile = () => {
     if (preview) URL.revokeObjectURL(preview.url)
     setPreview(null)
   }
@@ -86,26 +96,38 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
     <>
       {preview && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelImage} />
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelFile} />
           <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
-              이 사진을 보낼까요?
+              이 파일을 보낼까요?
             </p>
             <div className="flex justify-center mb-xl">
-              <img
-                src={preview.url}
-                alt="미리보기"
-                className="max-h-60 max-w-full rounded-2xl object-contain shadow-md"
-              />
+              {isImageFile(preview.file) ? (
+                <img
+                  src={preview.url}
+                  alt="미리보기"
+                  className="max-h-60 max-w-full rounded-2xl object-contain shadow-md"
+                />
+              ) : (
+                <div className="w-full rounded-2xl border border-outline-variant/40 bg-surface-container p-lg text-center shadow-sm">
+                  <span className="material-symbols-outlined mb-sm text-4xl text-primary">
+                    {preview.file.type.startsWith('audio/') ? 'audio_file' : 'description'}
+                  </span>
+                  <p className="break-all font-label-md text-label-md text-on-surface">{preview.file.name}</p>
+                  <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
+                    {preview.file.type || '알 수 없는 파일'} · {formatFileSize(preview.file.size)}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-sm">
-              <button type="button" onClick={handleConfirmImage} className="btn-outline w-full active">
+              <button type="button" onClick={handleConfirmFile} className="btn-outline w-full active">
                 전송
               </button>
               <button
                 type="button"
-                onClick={handleCancelImage}
+                onClick={handleCancelFile}
                 className="w-full py-md font-label-md text-label-md opacity-60"
                 style={{ color: 'var(--color-text-muted)' }}
               >
@@ -123,14 +145,14 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
           className="img-btn"
-          aria-label="사진 첨부"
+          aria-label="파일 첨부"
         >
-          <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
+          <span className="material-symbols-outlined text-xl">attach_file</span>
         </button>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,audio/*,.zip,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.hwpx,.csv,.json"
           className="hidden"
           onChange={handleFileChange}
         />

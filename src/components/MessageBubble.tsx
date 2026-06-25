@@ -18,6 +18,13 @@ function formatTime(ts: number | null): string {
   return new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatFileSize(size?: number): string {
+  if (!size) return ''
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
 export function MessageBubble({
   message,
   isMe,
@@ -26,15 +33,18 @@ export function MessageBubble({
   senderName,
   onImageTap,
 }: MessageBubbleProps) {
-  const { type, text, imageUrl, createdAt, readBy, senderUid } = message
+  const { type, text, imageUrl, fileUrl, fileName, fileType, fileSize, createdAt, readBy, senderUid } = message
   const [imgError, setImgError] = useState(false)
   const isRead = isMe && readBy.filter((uid) => uid !== senderUid).length > 0
   const timeText = formatTime(createdAt)
   const accessibleSender = isMe ? '내가 보낸' : `${senderName ?? '상대방'}이 보낸`
   const accessibleContent = type === 'image'
     ? (imgError ? '불러올 수 없는 사진 메시지' : '사진 메시지')
+    : type === 'file'
+      ? `${fileName ?? '파일'} 파일 메시지`
     : (text || '빈 메시지')
   const accessibilityLabel = `${accessibleSender} 메시지${timeText ? `, ${timeText}` : ''}, ${accessibleContent}`
+  const isAudio = type === 'file' && (fileType?.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg)$/i.test(fileName ?? ''))
 
   useEffect(() => {
     setImgError(false)
@@ -69,6 +79,41 @@ export function MessageBubble({
         ) : (
           <div className="bubble message-image-fallback" role="status" aria-live="polite">
             {imgError ? '사진을 불러올 수 없어요' : '사진 전송 중...'}
+          </div>
+        )
+      ) : type === 'file' ? (
+        fileUrl ? (
+          <div className="bubble message-file-card" role="group" aria-label={`${accessibleSender} 파일 메시지`}>
+            <div className="message-file-meta">
+              <span className="material-symbols-outlined text-[22px]" aria-hidden="true">
+                {isAudio ? 'audio_file' : 'description'}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="message-file-name">{fileName ?? '파일'}</p>
+                <p className="message-file-size">
+                  {[fileType || '파일', formatFileSize(fileSize)].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            </div>
+            {isAudio ? (
+              <audio className="message-audio-player" src={fileUrl} controls preload="metadata">
+                <a href={fileUrl} target="_blank" rel="noreferrer" download={fileName}>음악 파일 열기</a>
+              </audio>
+            ) : (
+              <a
+                className="message-file-link"
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                download={fileName}
+              >
+                열기 / 다운로드
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="bubble message-image-fallback" role="status" aria-live="polite">
+            파일 전송 중...
           </div>
         )
       ) : null}

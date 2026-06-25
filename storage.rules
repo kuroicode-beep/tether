@@ -21,6 +21,12 @@ service firebase.storage {
       allow write: if request.auth != null && request.auth.uid == uploaderUid;
     }
 
+    // Chat files: couples/{coupleId}/files/{uploaderUid}/{filename}
+    match /couples/{coupleId}/files/{uploaderUid}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uploaderUid;
+    }
+
     // Legacy chat images: couples/{coupleId}/images/{filename}
     match /couples/{coupleId}/images/{filename} {
       allow read: if request.auth != null;

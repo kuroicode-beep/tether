@@ -23,9 +23,13 @@ export interface ChatMessage {
   id: string
   clientId?: string
   senderUid: string
-  type: 'text' | 'image'
+  type: 'text' | 'image' | 'file'
   text?: string
   imageUrl?: string
+  fileUrl?: string
+  fileName?: string
+  fileType?: string
+  fileSize?: number
   createdAt: number | null
   readBy: string[]
 }
@@ -36,9 +40,13 @@ function toMessage(d: DocumentData, id: string): ChatMessage {
     id,
     clientId: readClientId(d),
     senderUid: d['senderUid'] as string ?? '',
-    type: (d['type'] as 'text' | 'image') ?? 'text',
+    type: (d['type'] as 'text' | 'image' | 'file') ?? 'text',
     text: d['text'] as string | undefined,
     imageUrl: d['imageUrl'] as string | undefined,
+    fileUrl: d['fileUrl'] as string | undefined,
+    fileName: d['fileName'] as string | undefined,
+    fileType: d['fileType'] as string | undefined,
+    fileSize: d['fileSize'] as number | undefined,
     createdAt: ts?.toMillis() ?? null,
     readBy: (d['readBy'] as string[]) ?? [],
   }
@@ -51,7 +59,17 @@ function chatMatchesPending(p: ChatMessage, s: ChatMessage): boolean {
     return p.createdAt != null && s.createdAt != null
       && Math.abs(p.createdAt - s.createdAt) < 120_000
   }
+  if (p.type === 'file' && s.type === 'file') {
+    return p.fileName === s.fileName
+      && p.createdAt != null
+      && s.createdAt != null
+      && Math.abs(p.createdAt - s.createdAt) < 120_000
+  }
   return false
+}
+
+function safeFileName(name: string): string {
+  return name.replace(/[^\w.\-가-힣]/g, '_') || 'file'
 }
 
 export function useChat(coupleId: string | null, myUid: string | null) {
@@ -144,6 +162,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     const item = pendingRef.current.get(id)
     if (item) {
       revokeBlobUrl(item.imageUrl)
+      revokeBlobUrl(item.fileUrl)
       pendingRef.current.delete(id)
       applyMerge()
     }
@@ -240,6 +259,55 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [coupleId, myUid, applyMerge, failOptimistic])
 
+  const sendFile = useCallback(async (file: File) => {
+    if (!coupleId || !myUid) return
+    if (file.type.startsWith('image/')) {
+      await sendImage(file)
+      return
+    }
+
+    const clientId = createClientId('file')
+    const localUrl = URL.createObjectURL(file)
+    const optimistic: ChatMessage = {
+      id: createOptimisticId(clientId),
+      clientId,
+      senderUid: myUid,
+      type: 'file',
+      fileUrl: localUrl,
+      fileName: file.name || 'file',
+      fileType: file.type || 'application/octet-stream',
+      fileSize: file.size,
+      createdAt: Date.now(),
+      readBy: [myUid],
+    }
+    pendingRef.current.set(optimistic.id, optimistic)
+    applyMerge()
+
+    try {
+      const path = `couples/${coupleId}/files/${myUid}/${clientId}_${safeFileName(file.name)}`
+      const storageRef = ref(storage, path)
+      await uploadBytes(storageRef, file, {
+        contentType: file.type || 'application/octet-stream',
+      })
+      const fileUrl = await getDownloadURL(storageRef)
+      const createdAt = Timestamp.now()
+      await addDoc(collection(db, 'couples', coupleId, 'messages'), {
+        clientId,
+        senderUid: myUid,
+        type: 'file',
+        fileUrl,
+        fileName: file.name || 'file',
+        fileType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+        createdAt,
+        readBy: [myUid],
+      })
+    } catch (err) {
+      console.warn('[useChat] sendFile failed', err)
+      failOptimistic(optimistic.id)
+    }
+  }, [coupleId, myUid, sendImage, applyMerge, failOptimistic])
+
   const markManyAsRead = useCallback(async (messageIds: string[]) => {
     if (!coupleId || !myUid || messageIds.length === 0) return
     const ids = messageIds.filter((id) => !isOptimisticId(id))
@@ -281,5 +349,5 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [coupleId])
 
-  return { messages, hasMore, loading, loadMore, sendText, sendImage, markManyAsRead, updateMessage, deleteMessage }
+  return { messages, hasMore, loading, loadMore, sendText, sendImage, sendFile, markManyAsRead, updateMessage, deleteMessage }
 }
