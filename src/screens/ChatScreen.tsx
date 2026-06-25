@@ -43,6 +43,8 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   )
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [droppedFile, setDroppedFile] = useState<{ id: number; file: File } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -51,6 +53,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const lastMessageIdRef = useRef<string | null>(null)
   const inputFocusedRef = useRef(false)
   const markingReadRef = useRef<Set<string>>(new Set())
+  const dragDepthRef = useRef(0)
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
@@ -147,11 +150,57 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     [messages],
   )
 
+  const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!event.dataTransfer.types.includes('Files')) return
+    dragDepthRef.current += 1
+    setDragActive(true)
+  }, [])
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    if (!event.dataTransfer.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+    setDragActive(true)
+  }, [])
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+    if (dragDepthRef.current === 0) setDragActive(false)
+  }, [])
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    dragDepthRef.current = 0
+    setDragActive(false)
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+    setDroppedFile({ id: Date.now(), file })
+  }, [])
+
   return (
     <div
-      className="screen flex flex-col overflow-hidden"
+      className="screen relative flex flex-col overflow-hidden"
       style={{ background: 'var(--color-bg)', height: '100dvh' }}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
+      {dragActive && (
+        <div className="pointer-events-none absolute inset-0 z-[80] flex items-center justify-center bg-black/45 px-margin-mobile">
+          <div className="hc-readable-box rounded-2xl border-2 border-dashed border-white bg-black px-xl py-lg text-center text-white shadow-2xl">
+            <span className="material-symbols-outlined mb-sm text-4xl">upload_file</span>
+            <p className="font-label-md text-label-md font-semibold">파일을 놓으면 채팅에 첨부돼요</p>
+            <p className="mt-xs font-label-sm text-label-sm opacity-80">이미지, 음악, 문서, zip 파일을 보낼 수 있어요.</p>
+          </div>
+        </div>
+      )}
       <header className="chat-header">
         <button type="button" onClick={onBack} className="back-btn" aria-label="뒤로">
           <span className="material-symbols-outlined">arrow_back</span>
@@ -262,6 +311,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
         onSendText={sendText}
         onSendFile={sendFile}
         autoFocus
+        droppedFile={droppedFile}
         onFocusChange={(focused) => { inputFocusedRef.current = focused }}
       />
 

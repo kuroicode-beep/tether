@@ -5,6 +5,7 @@ interface ChatInputProps {
   onSendFile: (file: File) => void
   disabled?: boolean
   autoFocus?: boolean
+  droppedFile?: { id: number; file: File } | null
   onFocusChange?: (focused: boolean) => void
 }
 
@@ -23,7 +24,7 @@ function formatFileSize(size: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, onFocusChange }: ChatInputProps) {
+export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, droppedFile, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const editorRef = useRef<HTMLTextAreaElement>(null)
@@ -51,6 +52,14 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, onFocus
     const timer = window.setTimeout(keepInputFocus, 250)
     return () => window.clearTimeout(timer)
   }, [autoFocus, disabled])
+
+  useEffect(() => {
+    if (!droppedFile || disabled) return
+    setPreview((current) => {
+      if (current) URL.revokeObjectURL(current.url)
+      return { file: droppedFile.file, url: URL.createObjectURL(droppedFile.file) }
+    })
+  }, [disabled, droppedFile])
 
   const handleSend = () => {
     const current = editorRef.current?.value ?? text
@@ -82,7 +91,10 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, onFocus
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setPreview({ file, url: URL.createObjectURL(file) })
+    setPreview((current) => {
+      if (current) URL.revokeObjectURL(current.url)
+      return { file, url: URL.createObjectURL(file) }
+    })
     e.target.value = ''
   }
 

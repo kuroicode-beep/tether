@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-hotfix-v0-4-4-chat-drag-drop-upload',
+    date: '2026.06.25',
+    type: 'hotfix',
+    title: 'Tether v0.4.4 핫픽스.',
+    detail: '채팅창에 파일을 드래그앤드랍해서 첨부할 수 있게 했습니다. 드롭한 파일은 기존 파일 첨부와 같은 미리보기/전송 확인 화면을 거쳐 이미지, 음악, 문서, zip 파일을 업로드합니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-4-3-notification-sounds',
     date: '2026.06.25',
     type: 'hotfix',
