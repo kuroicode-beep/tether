@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
   onSendFile: (file: File) => void
   disabled?: boolean
+  autoFocus?: boolean
   onFocusChange?: (focused: boolean) => void
 }
 
@@ -22,7 +23,7 @@ function formatFileSize(size: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function ChatInput({ onSendText, onSendFile, disabled, onFocusChange }: ChatInputProps) {
+export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const editorRef = useRef<HTMLTextAreaElement>(null)
@@ -44,6 +45,12 @@ export function ChatInput({ onSendText, onSendFile, disabled, onFocusChange }: C
       el.setSelectionRange(el.value.length, el.value.length)
     })
   }
+
+  useEffect(() => {
+    if (!autoFocus || disabled) return
+    const timer = window.setTimeout(keepInputFocus, 250)
+    return () => window.clearTimeout(timer)
+  }, [autoFocus, disabled])
 
   const handleSend = () => {
     const current = editorRef.current?.value ?? text

@@ -121,12 +121,13 @@ export function MessageBubble({
       {showTime && (
         <div className="message-time" aria-hidden="true">
           <span>{timeText}</span>
-          {isMe && (
+          {isMe && !isRead && (
             <span
-              className={`material-symbols-outlined text-[12px] ${isRead ? 'text-primary' : 'opacity-50'}`}
-              style={{ fontVariationSettings: isRead ? "'FILL' 1" : "'FILL' 0" }}
+              className="material-symbols-outlined text-[12px] opacity-50"
+              style={{ fontVariationSettings: "'FILL' 0" }}
+              title="상대가 아직 읽지 않음"
             >
-              {isRead ? 'done_all' : 'done'}
+              done
             </span>
           )}
         </div>

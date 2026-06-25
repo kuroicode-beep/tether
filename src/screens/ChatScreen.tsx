@@ -261,6 +261,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
       <ChatInput
         onSendText={sendText}
         onSendFile={sendFile}
+        autoFocus
         onFocusChange={(focused) => { inputFocusedRef.current = focused }}
       />
 
