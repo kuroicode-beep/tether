@@ -407,6 +407,20 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
                     {entry.content}
                   </p>
 
+                  {entry.reply && (
+                    <div className="mt-sm rounded-xl border border-outline-variant/30 bg-surface-container/80 px-sm py-sm">
+                      <div className="mb-xs flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-primary text-sm">reply</span>
+                        <span className="font-label-sm text-label-sm font-semibold text-primary">
+                          {entry.reply.authorUid === uid ? myName : partnerName}의 댓글
+                        </span>
+                      </div>
+                      <p className="font-label-sm text-label-sm text-on-surface line-clamp-2 leading-snug">
+                        {entry.reply.content}
+                      </p>
+                    </div>
+                  )}
+
                   {isUnread && (
                     <div className="mt-sm flex items-center gap-xs">
                       <span className="material-symbols-outlined text-primary-container text-sm">lock</span>

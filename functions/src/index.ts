@@ -440,6 +440,39 @@ export const onNewDiary = functions.firestore
     })
   })
 
+export const onDiaryReplyCreated = functions.firestore
+  .document('couples/{coupleId}/diary/{diaryId}')
+  .onUpdate(async (change, context) => {
+    const { coupleId } = context.params as { coupleId: string }
+    const before = change.before.data()
+    const after = change.after.data()
+    const beforeReply = before?.reply
+    const afterReply = after?.reply
+
+    if (beforeReply || !afterReply?.authorUid) return
+    if (!after?.authorUid || after.authorUid === afterReply.authorUid) return
+
+    const result = await getPartnerToken(coupleId, afterReply.authorUid as string)
+    if (!result) return
+
+    const { tokens, partnerUid } = result
+    if (partnerUid !== after.authorUid) return
+    if (!(await isNotificationEnabled(partnerUid, 'diary'))) return
+
+    const senderName = await getSenderName(afterReply.authorUid as string)
+
+    await sendWebPush(partnerUid, tokens, {
+      type: 'diary',
+      title: 'Tether 💬',
+      body: `${senderName}이(가) 일기에 댓글을 남겼어요`,
+      data: {
+        coupleId,
+        screen: 'diary',
+      },
+      link: '/?screen=diary',
+    })
+  })
+
 // ─── 알림 진단 ping (callable) ─────────────────────────────────────────────
 
 export const debugPushPing = functions.https.onCall(async (data, context) => {
