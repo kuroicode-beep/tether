@@ -51,5 +51,5 @@
 - 주의사항: 교환일기 알림 설정을 꺼둔 사용자는 댓글 알림도 받지 않는다.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `72c25ae`
 - 배포 여부: Firebase Hosting + Functions 배포 완료 (`https://tether-d1dab.web.app`)
