@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-10-shared-theme-music',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.10 핫픽스.',
+    detail: '메인테마 음악을 기기별 localStorage가 아니라 커플 공용 설정으로 동기화했습니다. 한 사람이 채팅 음악 파일을 메인테마로 지정하면 `couples` 문서에 저장되고, 두 사람 모두 마지막으로 지정된 같은 곡을 상단 플레이어에서 보게 됩니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-9-theme-music-player',
     date: '2026.06.26',
     type: 'hotfix',

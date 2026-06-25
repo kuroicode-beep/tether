@@ -1,6 +1,7 @@
 // src/App.tsx
 // 앱 루트: Session/AppContext 제공 + status 기반 라우팅
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { AppProvider, useApp } from './context/AppContext'
 import { SessionProvider, useSession } from './context/SessionContext'
 import { LockScreen } from './screens/LockScreen'
@@ -34,6 +35,7 @@ import { debugLog } from './lib/debugLog'
 import { useTheme } from './hooks/useTheme'
 import { useCoupleSession } from './hooks/useCoupleSession'
 import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
+import { db } from './lib/firebase'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
@@ -57,19 +59,6 @@ const NAVIGATION_SCREENS = new Set<string>([
   'admin',
 ])
 
-const THEME_TRACK_STORAGE_KEY = 'tether_theme_track_v1'
-
-// Loads the selected theme track saved from a chat audio message.
-function loadThemeTrack(): ThemeTrack | null {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(THEME_TRACK_STORAGE_KEY) ?? 'null') as Partial<ThemeTrack> | null
-    if (!parsed || typeof parsed.title !== 'string' || typeof parsed.url !== 'string') return null
-    return { title: parsed.title, url: parsed.url }
-  } catch {
-    return null
-  }
-}
-
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
@@ -77,7 +66,7 @@ function AppContent() {
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
-  const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadThemeTrack())
+  const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(null)
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
@@ -134,15 +123,43 @@ function AppContent() {
     navigate(target)
   }, [unlocked, navigate])
 
-  const handleSetThemeTrack = useCallback((track: ThemeTrack) => {
-    setThemeTrack(track)
-    localStorage.setItem(THEME_TRACK_STORAGE_KEY, JSON.stringify(track))
-  }, [])
+  useEffect(() => {
+    if (session.status !== 'connected' || !session.coupleId) {
+      setThemeTrack(null)
+      return
+    }
 
-  const handleClearThemeTrack = useCallback(() => {
-    setThemeTrack(null)
-    localStorage.removeItem(THEME_TRACK_STORAGE_KEY)
-  }, [])
+    return onSnapshot(
+      doc(db, 'couples', session.coupleId),
+      (snap) => {
+        const data = snap.data() as { mainThemeTrack?: Partial<ThemeTrack> } | undefined
+        const track = data?.mainThemeTrack
+        if (!track || typeof track.title !== 'string' || typeof track.url !== 'string') {
+          setThemeTrack(null)
+          return
+        }
+        setThemeTrack({ title: track.title, url: track.url })
+      },
+      (err) => console.warn('[App] theme track listener failed', err),
+    )
+  }, [session.status, session.coupleId])
+
+  const handleSetThemeTrack = useCallback(async (track: ThemeTrack) => {
+    if (!session.coupleId || !session.uid) return
+    setThemeTrack(track)
+    try {
+      await setDoc(doc(db, 'couples', session.coupleId), {
+        mainThemeTrack: {
+          title: track.title,
+          url: track.url,
+          updatedBy: session.uid,
+          updatedAt: serverTimestamp(),
+        },
+      }, { merge: true })
+    } catch (err) {
+      console.warn('[App] set theme track failed', err)
+    }
+  }, [session.coupleId, session.uid])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -285,7 +302,7 @@ function AppContent() {
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
       {showThemePlayer && (
-        <ThemeMusicPlayer track={themeTrack} onClear={handleClearThemeTrack} />
+        <ThemeMusicPlayer track={themeTrack} />
       )}
 
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
