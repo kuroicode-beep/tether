@@ -139,9 +139,9 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, myPhotoUrl, partn
   const authorPhotoUrl = isMe ? myPhotoUrl : partnerPhotoUrl
 
   return (
-    <div className="screen flex flex-col min-h-screen bg-[#EEE9DC]">
-      <header className="sticky top-0 z-50 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
-        <button onClick={onBack} className="p-xs rounded-full hover:bg-surface-container transition-colors">
+    <div className="diary-read-screen screen flex flex-col min-h-screen bg-[#EEE9DC]">
+      <header className="diary-read-header sticky top-0 z-50 bg-surface/90 backdrop-blur-md flex items-center px-margin-mobile py-sm gap-md">
+        <button onClick={onBack} className="diary-read-back p-xs rounded-full hover:bg-surface-container transition-colors">
           <span className="material-symbols-outlined text-primary">arrow_back</span>
         </button>
         <span className="font-label-md text-label-md text-on-surface-variant flex-1">{formatTs(entry.createdAt)}</span>
@@ -159,7 +159,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, myPhotoUrl, partn
 
       <main className="flex-1 px-margin-mobile py-lg overflow-y-auto pb-32">
         {/* 작성자 */}
-        <div className="flex items-center gap-sm mb-lg">
+        <div className="diary-read-author flex items-center gap-sm mb-lg">
           <ProfileAvatar src={authorPhotoUrl} name={authorName} size="md" />
           <span className="font-label-md text-label-md text-on-surface font-semibold">{authorName}</span>
         </div>
@@ -186,7 +186,7 @@ function ReadView({ entry, myUid, myNickname, partnerNickname, myPhotoUrl, partn
 
         {/* 답장 */}
         {entry.reply && (
-          <div className="bg-surface-container/60 rounded-xl p-md">
+          <div className="diary-reply-card rounded-xl bg-surface-container p-md">
             <div className="flex items-center gap-sm mb-sm">
               <span className="material-symbols-outlined text-primary text-sm">reply</span>
               <span className="font-label-sm text-label-sm text-primary font-semibold">

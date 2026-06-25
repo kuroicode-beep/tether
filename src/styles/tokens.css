@@ -1272,3 +1272,52 @@ body {
 [data-theme="high-contrast"] .release-log-page-btn:disabled {
   opacity: 0.35 !important;
 }
+
+/* 교환일기 읽기 화면 — 반투명 밝은 박스가 생기지 않도록 고대비를 강제한다 */
+[data-theme="high-contrast"] .diary-read-screen {
+  background: #0D0D0D !important;
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .diary-read-header {
+  background: var(--hc-box-bg) !important;
+  border-bottom: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+}
+
+[data-theme="high-contrast"] .diary-read-back {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .diary-read-screen .text-on-surface,
+[data-theme="high-contrast"] .diary-read-screen .text-on-surface-variant,
+[data-theme="high-contrast"] .diary-read-screen .text-primary,
+[data-theme="high-contrast"] .diary-read-screen .text-error {
+  color: var(--hc-box-text) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .diary-read-screen .bg-surface-container,
+[data-theme="high-contrast"] .diary-read-screen .bg-error\/10 {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .diary-reply-card {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="high-contrast"] .diary-reply-card * {
+  color: var(--hc-box-text) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .diary-read-screen .bg-outline-variant\/30 {
+  background: var(--hc-box-border) !important;
+  opacity: 1 !important;
+}
