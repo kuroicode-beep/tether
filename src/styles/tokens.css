@@ -458,6 +458,24 @@ body {
     0 0 0 5px #ffffff !important;
 }
 
+[data-theme="high-contrast"] .mood-chip-edit[data-active="true"] {
+  color: #000000 !important;
+  background: #ffffff !important;
+  border: 3px solid #FFE600 !important;
+  font-weight: 800 !important;
+  transform: scale(1.12) !important;
+  box-shadow:
+    0 0 0 3px #000000,
+    0 0 0 8px #FFE600 !important;
+}
+
+[data-theme="high-contrast"] .mood-chip-edit[data-active="false"] {
+  color: #ffffff !important;
+  background: #000000 !important;
+  border-color: #777777 !important;
+  opacity: 1 !important;
+}
+
 [data-theme="high-contrast"] .home-status-card .mood-chip[data-active="false"],
 [data-theme="high-contrast"] .mood-chip[data-active="false"] {
   color: #ffffff !important;

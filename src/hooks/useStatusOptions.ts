@@ -33,7 +33,6 @@ function unique(items: string[]): string[] {
 
 export function useStatusOptions() {
   const [extraTags, setExtraTags] = useState<string[]>([])
-  const [extraMessages, setExtraMessages] = useState<string[]>([])
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -41,12 +40,10 @@ export function useStatusOptions() {
       (snap) => {
         const data = snap.data() ?? {}
         setExtraTags(sanitizeList(data.extraTags))
-        setExtraMessages(sanitizeList(data.quickMessages))
       },
       (error) => {
         console.warn('[useStatusOptions] config listener failed', error)
         setExtraTags([])
-        setExtraMessages([])
       },
     )
     return () => unsub()
@@ -54,6 +51,6 @@ export function useStatusOptions() {
 
   return useMemo(() => ({
     tags: unique([...DEFAULT_STATUS_TAGS, ...extraTags]),
-    quickMessages: unique([...DEFAULT_QUICK_STATUS_MESSAGES, ...extraMessages]),
-  }), [extraMessages, extraTags])
+    quickMessages: DEFAULT_QUICK_STATUS_MESSAGES,
+  }), [extraTags])
 }

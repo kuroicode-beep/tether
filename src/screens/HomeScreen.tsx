@@ -276,7 +276,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 <div className="status-edit-tag-panel flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl p-sm">
                   {statusOptions.tags.map((tag) => (
                     <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
-                      <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
+                      <MoodChip label={tag} active={draftStatus.mood.includes(tag)} variant="edit" />
                     </button>
                   ))}
                 </div>

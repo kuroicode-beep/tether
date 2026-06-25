@@ -18,7 +18,7 @@ import { ADMIN_EMAIL, isAdminEmail } from '../lib/coupleAuth'
 import { useSession } from '../context/SessionContext'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { DEFAULT_QUICK_STATUS_MESSAGES, DEFAULT_STATUS_TAGS } from '../hooks/useStatusOptions'
+import { DEFAULT_STATUS_TAGS } from '../hooks/useStatusOptions'
 
 interface AdminScreenProps {
   onBack: () => void
@@ -60,9 +60,7 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [logs, setLogs] = useState<AdminLog[]>([])
   const [tags, setTags] = useState<string[]>(DEFAULT_STATUS_TAGS)
-  const [messages, setMessages] = useState<string[]>(DEFAULT_QUICK_STATUS_MESSAGES)
   const [tagInput, setTagInput] = useState('')
-  const [messageInput, setMessageInput] = useState('')
   const [error, setError] = useState('')
   const canAdmin = isAdminEmail(user?.email)
 
@@ -99,7 +97,6 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
       (snap) => {
         const data = snap.data() ?? {}
         setTags(toStringList(data.extraTags, DEFAULT_STATUS_TAGS))
-        setMessages(toStringList(data.quickMessages, DEFAULT_QUICK_STATUS_MESSAGES))
       },
       (err) => {
         console.warn('[AdminScreen] config listener failed', err)
@@ -138,10 +135,9 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
     [users],
   )
 
-  const saveOptions = async (nextTags: string[], nextMessages: string[]) => {
+  const saveOptions = async (nextTags: string[]) => {
     await setDoc(doc(db, 'adminConfig', 'statusOptions'), {
       extraTags: nextTags,
-      quickMessages: nextMessages,
       updatedAt: serverTimestamp(),
       updatedBy: user?.uid ?? null,
     }, { merge: true })
@@ -161,28 +157,13 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
     const nextTags = [...tags, next]
     setTags(nextTags)
     setTagInput('')
-    await saveOptions(nextTags, messages)
+    await saveOptions(nextTags)
   }
 
   const removeTag = async (tag: string) => {
     const nextTags = tags.filter((item) => item !== tag)
     setTags(nextTags)
-    await saveOptions(nextTags, messages)
-  }
-
-  const addMessage = async () => {
-    const next = messageInput.trim()
-    if (!next || messages.includes(next)) return
-    const nextMessages = [...messages, next]
-    setMessages(nextMessages)
-    setMessageInput('')
-    await saveOptions(tags, nextMessages)
-  }
-
-  const removeMessage = async (message: string) => {
-    const nextMessages = messages.filter((item) => item !== message)
-    setMessages(nextMessages)
-    await saveOptions(tags, nextMessages)
+    await saveOptions(nextTags)
   }
 
   if (!canAdmin) {
@@ -270,28 +251,6 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
             {tags.map((tag) => (
               <button key={tag} type="button" onClick={() => void removeTag(tag)} className="rounded-full border border-outline-variant px-sm py-xs text-on-surface">
                 {tag} ×
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="hc-readable-box rounded-xl bg-surface p-md">
-          <h2 className="mb-md font-label-md text-label-md font-semibold text-on-surface">상태 메세지 추가/삭제</h2>
-          <div className="mb-md flex gap-sm">
-            <input
-              value={messageInput}
-              onChange={(event) => setMessageInput(event.target.value)}
-              className="min-h-[50px] flex-1 rounded-xl border border-outline-variant bg-surface-container-low px-md text-on-surface"
-              placeholder="예: 이동중"
-            />
-            <button type="button" onClick={() => void addMessage()} className="min-h-[50px] rounded-full bg-primary px-md text-on-primary">
-              추가
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-xs">
-            {messages.map((message) => (
-              <button key={message} type="button" onClick={() => void removeMessage(message)} className="rounded-full border border-outline-variant px-sm py-xs text-on-surface">
-                {message} ×
               </button>
             ))}
           </div>
