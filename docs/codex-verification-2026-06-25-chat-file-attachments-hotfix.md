@@ -59,5 +59,5 @@
 - 주의사항: 이미지 파일은 `file`이 아니라 기존 `image` 메시지로 처리된다.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `1c4f388`
 - 배포 여부: Firebase Hosting + Functions + Storage rules 배포 완료 (`https://tether-d1dab.web.app`)
