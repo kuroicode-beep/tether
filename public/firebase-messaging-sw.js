@@ -13,6 +13,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+function postInAppAlert(client, message) {
+  client.postMessage({
+    type: 'PLAY_NOTIFICATION_SOUND',
+    alertType: message.type,
+    title: message.title,
+    body: message.body,
+    screen: message.screen,
+    url: message.url,
+    notificationId: message.notificationId,
+  });
+}
+
 function screenFromUrl(rawUrl) {
   try {
     const url = new URL(rawUrl, self.location.origin);
@@ -26,27 +38,29 @@ function screenFromUrl(rawUrl) {
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
   const data = payload.data ?? {};
-  const hasFcmNotification = !!payload.notification?.title || !!payload.notification?.body;
-  if (hasFcmNotification && data.forceSwDisplay !== '1') {
-    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const type = data.type ?? 'tether-msg';
-      clients.forEach((client) => {
-        client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
-      });
-    });
-  }
-
   const title = data.title ?? payload.notification?.title ?? 'Tether 💕';
   const body = data.body ?? payload.notification?.body ?? '';
   const type = data.type ?? 'tether-msg';
   const targetUrl = data.url ?? '/';
+  const screen = data.screen ?? screenFromUrl(targetUrl);
   const notificationTag = data.notificationId ?? `${type}-${Date.now()}`;
+  const inAppMessage = { title, body, type, screen, url: targetUrl, notificationId: notificationTag };
+
+  const hasFcmNotification = !!payload.notification?.title || !!payload.notification?.body;
+  if (hasFcmNotification && data.forceSwDisplay !== '1') {
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      clients
+        .filter((client) => client.visibilityState === 'visible')
+        .forEach((client) => postInAppAlert(client, inAppMessage));
+    });
+  }
 
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-    const screen = data.screen ?? screenFromUrl(targetUrl);
-    clients.forEach((client) => {
-      client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND', alertType: type });
-    });
+    const visibleClients = clients.filter((client) => client.visibilityState === 'visible');
+    if (visibleClients.length > 0) {
+      visibleClients.forEach((client) => postInAppAlert(client, inAppMessage));
+      return undefined;
+    }
 
     return self.registration.showNotification(title, {
       body,

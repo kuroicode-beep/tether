@@ -94,6 +94,7 @@ function AppContent() {
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
+  const recentNotificationIdsRef = useRef<Map<string, number>>(new Map())
   screenRef.current = screen
   const partnerUid = session.connection?.partnerUid ?? null
   const listeningTogether = useListeningTogether(session.coupleId, session.uid, partnerUid)
@@ -148,6 +149,18 @@ function AppContent() {
     }
     navigate(target)
   }, [unlocked, navigate])
+
+  const shouldHandleNotification = useCallback((id: string | null | undefined) => {
+    if (!id) return true
+    const now = Date.now()
+    const recent = recentNotificationIdsRef.current
+    for (const [key, createdAt] of recent.entries()) {
+      if (now - createdAt > 8000) recent.delete(key)
+    }
+    if (recent.has(id)) return false
+    recent.set(id, now)
+    return true
+  }, [])
 
   useEffect(() => {
     if (session.status !== 'connected' || !session.coupleId) {
@@ -212,9 +225,14 @@ function AppContent() {
       }
       if (data.type !== SW_PLAY_SOUND_MESSAGE) return
       if (document.visibilityState !== 'visible') return
+      if (!shouldHandleNotification(data.notificationId as string | undefined)) return
       const type = (data.alertType as string) ?? undefined
-      if (!shouldAlertForType(type, push.loadSettings())) return
-      playNotificationSound(push.loadSettings().sound)
+      const settings = push.loadSettings()
+      if (!shouldAlertForType(type, settings)) return
+      playNotificationSound(settings.sound)
+      const title = (data.title as string | undefined) ?? 'Tether'
+      const body = (data.body as string | undefined) ?? ''
+      setToast({ title, body, type })
     }
 
     navigator.serviceWorker.addEventListener('message', onSwMessage)
@@ -229,6 +247,8 @@ function AppContent() {
       const body = payload.notification?.body ?? data.body ?? ''
       const type = (data.type as string) ?? undefined
       const settings = push.loadSettings()
+      const notificationId = (data.notificationId as string | undefined) ?? `${type ?? 'notification'}-${title}-${body}`
+      if (!shouldHandleNotification(notificationId)) return
 
       const willAlert = shouldAlertForType(type, settings)
       const isVisible = document.visibilityState === 'visible'
@@ -243,7 +263,7 @@ function AppContent() {
       if (isVisible) setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [session.uid, push, requestNavigation])
+  }, [session.uid, push, requestNavigation, shouldHandleNotification])
 
   // 세션이 앱 진입 가능 상태를 벗어나면 잠금 상태와 AppContext 캐시를 정리한다.
   useEffect(() => {

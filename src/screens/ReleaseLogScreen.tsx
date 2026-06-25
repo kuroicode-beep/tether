@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-1-visible-window-notification',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.1 핫픽스.',
+    detail: 'PC에서 앱 창이 열려 있지만 포커스가 없을 때 윈도우 시스템 알림이 화면을 가리지 않도록 수정했습니다. 보이는 앱 창이 있으면 내부 토스트와 알림음만 사용하고, 실제로 앱이 hidden/minimized 상태일 때만 시스템 알림을 표시합니다.',
+  },
+  {
     id: '2026-06-26-update-v0-5-0-listen-together',
     date: '2026.06.26',
     type: 'update',
