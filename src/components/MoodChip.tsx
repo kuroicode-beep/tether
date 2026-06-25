@@ -19,13 +19,13 @@ export function MoodChip({ label, active, variant = 'display' }: MoodChipProps) 
         boxShadow: '0 0 0 2px var(--color-bg), 0 0 0 5px var(--color-primary)',
       }
     : {
-        background: 'var(--color-primary)',
-        color: '#FFFFFF',
-        transform: 'scale(1.04)',
-        border: '2px solid var(--color-primary)',
+        background: 'var(--color-surface)',
+        color: 'var(--color-text)',
+        transform: 'scale(1)',
+        border: '1.5px solid var(--color-border)',
         padding: '4px 10px',
         opacity: 1,
-        boxShadow: '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary)',
+        boxShadow: 'none',
       }
 
   return (

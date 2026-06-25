@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-hotfix-v0-4-2-partner-nickname-status-tags',
+    date: '2026.06.25',
+    type: 'hotfix',
+    title: 'Tether v0.4.2 핫픽스.',
+    detail: '설정에서 상대방 닉네임은 상대가 설정한 이름 그대로 읽기 전용으로 표시되게 바꾸고, 메인 상태 표시창의 상태 태그는 편집창 선택 스타일과 분리해 고대비 기준 검은 배경·흰 글씨·흰 라인으로 가독성을 유지하도록 수정했습니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-4-1-separate-library-menus',
     date: '2026.06.25',
     type: 'hotfix',

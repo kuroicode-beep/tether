@@ -91,7 +91,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const { clearPin } = usePinAuth()
   const {
     uid, myNickname, partnerNickname, myPhotoUrl, startDate,
-    disconnect, setStartDate, setMyNickname, setPartnerNickname, setMyPhotoUrl,
+    disconnect, setStartDate, setMyNickname, setMyPhotoUrl,
   } = useApp()
   const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
@@ -114,8 +114,6 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   // 커플 정보 편집
   const [editingMyNick, setEditingMyNick] = useState(false)
   const [myNickInput, setMyNickInput] = useState(myNickname)
-  const [editingPartnerNick, setEditingPartnerNick] = useState(false)
-  const [partnerNickInput, setPartnerNickInput] = useState(partnerNickname)
   const [editingDate, setEditingDate] = useState(false)
   const [dateInput, setDateInput] = useState(() => startDate ?? new Date().toISOString().split('T')[0])
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -280,13 +278,6 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
     }
   }
 
-  const handleSavePartnerNick = () => {
-    const trimmed = partnerNickInput.trim()
-    if (trimmed) setPartnerNickname(trimmed)
-    else setPartnerNickInput(partnerNickname)
-    setEditingPartnerNick(false)
-  }
-
   const handleSaveDate = () => {
     if (dateInput) setStartDate(dateInput)
     setEditingDate(false)
@@ -376,28 +367,10 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 <span className="material-symbols-outlined text-secondary">favorite</span>
                 <span className="font-body-md text-body-md">파트너 닉네임</span>
               </div>
-              {editingPartnerNick ? (
-                <div className="flex items-center gap-sm">
-                  <input
-                    autoFocus
-                    value={partnerNickInput}
-                    onChange={(e) => setPartnerNickInput(e.target.value.slice(0, 12))}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSavePartnerNick(); if (e.key === 'Escape') setEditingPartnerNick(false) }}
-                    className="w-28 bg-surface-container-highest rounded-lg px-sm py-xs font-body-md text-body-md text-on-surface outline-none text-right"
-                  />
-                  <button onClick={handleSavePartnerNick} className="text-primary">
-                    <span className="material-symbols-outlined text-sm">check</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => { setPartnerNickInput(partnerNickname); setEditingPartnerNick(true) }}
-                  className="flex items-center gap-xs text-on-surface-variant hover:text-on-surface transition-colors"
-                >
-                  <span className="font-label-md text-label-md">{partnerNickname || '미설정'}</span>
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                </button>
-              )}
+              <div className="flex flex-col items-end gap-xs text-right">
+                <span className="font-label-md text-label-md text-on-surface">{partnerNickname || '미설정'}</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">상대가 설정한 이름</span>
+              </div>
             </div>
 
             {/* 처음 만난 날 */}
