@@ -34,6 +34,7 @@ const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
   { icon: 'auto_stories', label: '교환일기', screen: 'diary' },
   { icon: 'featured_play_list', label: '콘텐츠', screen: 'contents' },
   { icon: 'photo_library', label: '사진첩', screen: 'photo' },
+  { icon: 'folder_open', label: '자료실', screen: 'library' },
   { icon: 'history', label: '히스토리', screen: 'history' },
 ]
 
