@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-7-diary-high-contrast',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.7 핫픽스.',
+    detail: '교환일기 고대비 화면에서 댓글 미리보기와 읽음/답장완료 배지가 밝은 회색 배경에 흰 글씨로 표시되던 문제를 수정했습니다. 목록 댓글 박스와 상태 배지를 검은 배경·흰 글씨·흰 테두리 기준으로 고정했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-6-chat-library-diary-fixes',
     date: '2026.06.26',
     type: 'hotfix',

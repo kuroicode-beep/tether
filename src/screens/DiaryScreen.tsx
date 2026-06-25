@@ -389,12 +389,12 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
                         <p className="font-label-sm text-label-sm text-on-surface-variant">{formatTs(entry.createdAt)}</p>
                       </div>
                     </div>
-                    <span className={`px-sm py-xs rounded-full text-[10px] font-bold tracking-tight ${
+                    <span className={`diary-status-pill px-sm py-xs rounded-full text-[10px] font-bold tracking-tight ${
                       isUnread
-                        ? 'bg-primary-container text-on-primary-container'
+                        ? 'diary-status-pill--unread bg-primary-container text-on-primary-container'
                         : entry.reply
-                        ? 'bg-secondary-container text-on-surface-variant'
-                        : 'bg-surface-variant text-on-surface-variant'
+                        ? 'diary-status-pill--replied bg-secondary-container text-on-surface-variant'
+                        : 'diary-status-pill--read bg-surface-variant text-on-surface-variant'
                     }`}>
                       {isUnread ? '새 일기' : entry.reply ? '답장 완료 ✅' : '읽음'}
                     </span>
@@ -409,7 +409,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
                   </p>
 
                   {entry.reply && (
-                    <div className="mt-sm rounded-xl border border-outline-variant/30 bg-surface-container/80 px-sm py-sm">
+                    <div className="diary-reply-preview mt-sm rounded-xl border border-outline-variant/30 bg-surface-container/80 px-sm py-sm">
                       <div className="mb-xs flex items-center gap-xs">
                         <span className="material-symbols-outlined text-primary text-sm">reply</span>
                         <span className="font-label-sm text-label-sm font-semibold text-primary">

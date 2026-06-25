@@ -1430,3 +1430,23 @@ body {
   background: var(--hc-box-border) !important;
   opacity: 1 !important;
 }
+
+/* 교환일기 목록 — 밝은 회색 카드/배지가 남지 않도록 고대비 전용 클래스를 고정한다 */
+[data-theme="high-contrast"] .diary-reply-preview,
+[data-theme="high-contrast"] .diary-status-pill {
+  background: var(--hc-box-bg) !important;
+  color: var(--hc-box-text) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .diary-reply-preview *,
+[data-theme="high-contrast"] .diary-status-pill * {
+  color: var(--hc-box-text) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="high-contrast"] .diary-status-pill--unread {
+  border-color: var(--color-primary) !important;
+}
