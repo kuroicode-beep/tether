@@ -16,6 +16,7 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
+import { ThemeMusicPlayer, type ThemeTrack } from './components/ThemeMusicPlayer'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
 import { AdminScreen } from './screens/AdminScreen'
@@ -56,6 +57,19 @@ const NAVIGATION_SCREENS = new Set<string>([
   'admin',
 ])
 
+const THEME_TRACK_STORAGE_KEY = 'tether_theme_track_v1'
+
+// Loads the selected theme track saved from a chat audio message.
+function loadThemeTrack(): ThemeTrack | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(THEME_TRACK_STORAGE_KEY) ?? 'null') as Partial<ThemeTrack> | null
+    if (!parsed || typeof parsed.title !== 'string' || typeof parsed.url !== 'string') return null
+    return { title: parsed.title, url: parsed.url }
+  } catch {
+    return null
+  }
+}
+
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
@@ -63,6 +77,7 @@ function AppContent() {
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
+  const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadThemeTrack())
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
@@ -118,6 +133,16 @@ function AppContent() {
     }
     navigate(target)
   }, [unlocked, navigate])
+
+  const handleSetThemeTrack = useCallback((track: ThemeTrack) => {
+    setThemeTrack(track)
+    localStorage.setItem(THEME_TRACK_STORAGE_KEY, JSON.stringify(track))
+  }, [])
+
+  const handleClearThemeTrack = useCallback(() => {
+    setThemeTrack(null)
+    localStorage.removeItem(THEME_TRACK_STORAGE_KEY)
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -253,15 +278,19 @@ function AppContent() {
   }
 
   const toHome = () => setScreen('home')
+  const showThemePlayer = themeTrack && session.status === 'connected'
 
   return (
     <>
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
+      {showThemePlayer && (
+        <ThemeMusicPlayer track={themeTrack} onClear={handleClearThemeTrack} />
+      )}
 
-      <div key={screen} className="app-screen-slot">
+      <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
         {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
-        {screen === 'chat'        && <ChatScreen onBack={toHome} />}
+        {screen === 'chat'        && <ChatScreen onBack={toHome} onSetThemeTrack={handleSetThemeTrack} />}
         {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}

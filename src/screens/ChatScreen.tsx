@@ -13,6 +13,7 @@ import { ProfileAvatar } from '../components/ProfileAvatar'
 
 interface ChatScreenProps {
   onBack: () => void
+  onSetThemeTrack?: (track: { title: string; url: string }) => void
 }
 
 // 연속된 동일 발신자 메시지를 1분 단위로 그룹화
@@ -34,7 +35,7 @@ function groupMessages(messages: ChatMessage[]): ChatMessage[][] {
   }, [])
 }
 
-export function ChatScreen({ onBack }: ChatScreenProps) {
+export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { partnerNickname, partnerUid, myPhotoUrl, partnerPhotoUrl, myNickname } = useApp()
   const { messages, hasMore, loading, loadMore, sendText, sendFile, markManyAsRead, updateMessage, deleteMessage } = useChat(
@@ -278,6 +279,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
                     showSenderName={showSenderName}
                     senderName={partnerName}
                     onImageTap={setViewerUrl}
+                    onSetThemeTrack={onSetThemeTrack}
                   />
                 )
 

@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-9-theme-music-player',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.9 핫픽스.',
+    detail: '채팅창의 음악 파일에 메인테마로 지정 버튼을 추가했습니다. 선택한 음악은 앱 상단에 얇은 전역 플레이어로 표시되며, 제목 확인과 재생/일시정지, 닫기가 가능하고 반복 재생됩니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-8-pc-notification-dedupe',
     date: '2026.06.26',
     type: 'hotfix',

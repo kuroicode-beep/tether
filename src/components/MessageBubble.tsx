@@ -10,6 +10,7 @@ interface MessageBubbleProps {
   showSenderName?: boolean
   senderName?: string
   onImageTap?: (url: string) => void
+  onSetThemeTrack?: (track: { title: string; url: string }) => void
 }
 
 // Formats a Firestore timestamp in HH:MM.
@@ -32,6 +33,7 @@ export function MessageBubble({
   showSenderName = false,
   senderName,
   onImageTap,
+  onSetThemeTrack,
 }: MessageBubbleProps) {
   const { type, text, imageUrl, fileUrl, fileName, fileType, fileSize, createdAt, readBy, senderUid } = message
   const [imgError, setImgError] = useState(false)
@@ -97,9 +99,20 @@ export function MessageBubble({
               </div>
             </div>
             {isAudio ? (
-              <audio className="message-audio-player" src={fileUrl} controls preload="metadata">
-                <a href={fileUrl} target="_blank" rel="noreferrer" download={fileName}>음악 파일 열기</a>
-              </audio>
+              <>
+                <audio className="message-audio-player" src={fileUrl} controls preload="metadata">
+                  <a href={fileUrl} target="_blank" rel="noreferrer" download={fileName}>음악 파일 열기</a>
+                </audio>
+                {onSetThemeTrack && (
+                  <button
+                    type="button"
+                    className="message-theme-button"
+                    onClick={() => onSetThemeTrack({ title: fileName ?? 'Tether theme', url: fileUrl })}
+                  >
+                    메인테마로 지정
+                  </button>
+                )}
+              </>
             ) : (
               <a
                 className="message-file-link"
