@@ -38,5 +38,5 @@
 - 주의사항: 이름 뒤에 공백 포함 `님이`를 붙인다.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `9277b6c`
 - 배포 여부: Firebase Hosting 배포 완료 (`https://tether-d1dab.web.app`)
