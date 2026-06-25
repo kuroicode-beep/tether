@@ -11,7 +11,7 @@ import { HomeScreen } from './screens/HomeScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { DiaryScreen } from './screens/DiaryScreen'
 import { ContentsScreen } from './screens/ContentsScreen'
-import { LibraryScreen } from './screens/LibraryScreen'
+import { DateRecipeScreen, LibraryScreen, LinkShareScreen } from './screens/LibraryScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { PhotoAlbum } from './screens/PhotoAlbum'
 import { AnniversaryScreen } from './screens/AnniversaryScreen'
@@ -37,7 +37,7 @@ import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'library' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
+  | 'settings' | 'photo' | 'library' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
   | 'admin'
 
 const NAVIGATION_SCREENS = new Set<string>([
@@ -48,6 +48,8 @@ const NAVIGATION_SCREENS = new Set<string>([
   'settings',
   'photo',
   'library',
+  'links',
+  'dateRecipe',
   'history',
   'anniversary',
   'statusHistory',
@@ -268,6 +270,8 @@ function AppContent() {
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
         {screen === 'library'     && <LibraryScreen onBack={toHome} onNavigate={navigate} />}
+        {screen === 'links'       && <LinkShareScreen onBack={toHome} onNavigate={navigate} />}
+        {screen === 'dateRecipe'  && <DateRecipeScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'history'     && <StatusHistoryScreen onBack={toHome} />}
         {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
         {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}

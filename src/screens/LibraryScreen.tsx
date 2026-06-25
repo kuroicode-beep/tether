@@ -8,18 +8,15 @@ import { useApp } from '../context/AppContext'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useLibrary } from '../hooks/useLibrary'
 
-type LibraryTab = 'files' | 'links' | 'recipes'
-
 interface LibraryScreenProps {
   onBack: () => void
   onNavigate: (screen: 'home' | 'chat' | 'diary' | 'more') => void
 }
 
-const TABS: { id: LibraryTab; label: string; icon: string }[] = [
-  { id: 'files', label: '자료실', icon: 'folder_open' },
-  { id: 'links', label: '링크공유', icon: 'bookmark' },
-  { id: 'recipes', label: '데이트 레시피', icon: 'restaurant' },
-]
+interface StandaloneScreenProps {
+  onBack: () => void
+  onNavigate: (screen: 'home' | 'chat' | 'diary' | 'more') => void
+}
 
 function formatFileSize(size: number | null): string {
   if (!size) return ''
@@ -169,10 +166,7 @@ function RecipeSheet({
 export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
-  const { files, links, recipes, addLink, addRecipe } = useLibrary(coupleId, uid)
-  const [tab, setTab] = useState<LibraryTab>('files')
-  const [showLinkSheet, setShowLinkSheet] = useState(false)
-  const [showRecipeSheet, setShowRecipeSheet] = useState(false)
+  const { files } = useLibrary(coupleId, uid)
 
   const nameOf = (senderUid: string) => {
     if (senderUid === uid) return myNickname || '나'
@@ -182,109 +176,83 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
 
   return (
     <SubScreen>
-      <ScreenHeader
-        title="자료실"
-        onBack={onBack}
-        right={tab === 'links' ? (
-          <button type="button" onClick={() => setShowLinkSheet(true)} className="min-h-[44px] rounded-full px-sm text-primary">
-            <span className="material-symbols-outlined">add_link</span>
-          </button>
-        ) : tab === 'recipes' ? (
-          <button type="button" onClick={() => setShowRecipeSheet(true)} className="min-h-[44px] rounded-full px-sm text-primary">
-            <span className="material-symbols-outlined">add</span>
-          </button>
-        ) : undefined}
-      />
-
-      <div className="flex gap-sm overflow-x-auto px-margin-mobile py-sm hide-scrollbar">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={`flex min-h-[44px] flex-none items-center gap-xs rounded-full px-md font-label-md text-label-md ${
-              tab === item.id ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <ScreenHeader title="자료실" onBack={onBack} />
 
       <main className="sub-screen-body space-y-sm px-margin-mobile pb-32 pt-sm">
-        {tab === 'files' && (
-          files.length === 0 ? (
-            <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
-              채팅에서 파일이나 음악을 올리면 여기에 모여요.
-            </p>
-          ) : files.map((item) => (
-            <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
-              <div className="flex items-start gap-sm">
-                <span className="material-symbols-outlined text-primary">
-                  {item.fileType.startsWith('audio/') ? 'audio_file' : 'draft'}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="break-words font-label-md text-label-md font-semibold text-on-surface">{item.fileName}</p>
-                  <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
-                    {nameOf(item.senderUid)} 님 · {formatFileSize(item.fileSize)} · {formatTime(item.createdAt)}
-                  </p>
-                  {item.fileType.startsWith('audio/') ? (
-                    <audio controls src={item.fileUrl} className="mt-sm w-full" />
-                  ) : (
-                    <a href={item.fileUrl} target="_blank" rel="noreferrer" className="mt-sm inline-flex min-h-[44px] items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
-                      열기
-                    </a>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))
-        )}
-
-        {tab === 'links' && (
-          links.length === 0 ? (
-            <div className="hc-readable-box rounded-xl bg-surface p-lg text-center">
-              <p className="mb-md font-body-md text-body-md text-on-surface-variant">공유한 링크가 없어요.</p>
-              <button type="button" onClick={() => setShowLinkSheet(true)} className="min-h-[50px] rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary">
-                링크 추가
-              </button>
-            </div>
-          ) : links.map((item) => (
-            <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
-              <p className="font-label-md text-label-md font-semibold text-on-surface">{item.title}</p>
-              {item.summary && <p className="mt-xs whitespace-pre-wrap font-body-sm text-body-sm text-on-surface-variant">{item.summary}</p>}
-              <div className="mt-sm flex flex-wrap gap-xs">
-                <a href={item.url} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
-                  사이트 열기
-                </a>
-                {item.fileUrl && (
-                  <a href={item.fileUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center rounded-full border border-outline-variant px-md font-label-sm text-label-sm text-on-surface">
-                    {item.fileName || '파일 열기'}
+        {files.length === 0 ? (
+          <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
+            채팅에서 파일이나 음악을 올리면 여기에 모여요.
+          </p>
+        ) : files.map((item) => (
+          <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
+            <div className="flex items-start gap-sm">
+              <span className="material-symbols-outlined text-primary">
+                {item.fileType.startsWith('audio/') ? 'audio_file' : 'draft'}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-label-md text-label-md font-semibold text-on-surface">{item.fileName}</p>
+                <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
+                  {nameOf(item.senderUid)} 님 · {formatFileSize(item.fileSize)} · {formatTime(item.createdAt)}
+                </p>
+                {item.fileType.startsWith('audio/') ? (
+                  <audio controls src={item.fileUrl} className="mt-sm w-full" />
+                ) : (
+                  <a href={item.fileUrl} target="_blank" rel="noreferrer" className="mt-sm inline-flex min-h-[44px] items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
+                    열기
                   </a>
                 )}
               </div>
-            </article>
-          ))
-        )}
-
-        {tab === 'recipes' && (
-          recipes.length === 0 ? (
-            <div className="hc-readable-box rounded-xl bg-surface p-lg text-center">
-              <p className="mb-md font-body-md text-body-md text-on-surface-variant">같이 먹은 음식을 한 줄로 남겨보세요.</p>
-              <button type="button" onClick={() => setShowRecipeSheet(true)} className="min-h-[50px] rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary">
-                기록 추가
-              </button>
             </div>
-          ) : recipes.map((item) => (
-            <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
-              <p className="font-label-md text-label-md font-semibold text-on-surface">
-                {item.date} · {item.food}
-              </p>
-              {item.memo && <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">{item.memo}</p>}
-            </article>
-          ))
+          </article>
+        ))}
+      </main>
+
+      <BottomNav active="more" onNavigate={onNavigate} />
+    </SubScreen>
+  )
+}
+
+export function LinkShareScreen({ onBack, onNavigate }: StandaloneScreenProps) {
+  const { uid, coupleId } = useCoupleSession()
+  const { links, addLink } = useLibrary(coupleId, uid)
+  const [showLinkSheet, setShowLinkSheet] = useState(false)
+
+  return (
+    <SubScreen>
+      <ScreenHeader
+        title="링크공유"
+        onBack={onBack}
+        right={(
+          <button type="button" onClick={() => setShowLinkSheet(true)} className="min-h-[44px] rounded-full px-sm text-primary" aria-label="링크 추가">
+            <span className="material-symbols-outlined">add_link</span>
+          </button>
         )}
+      />
+
+      <main className="sub-screen-body space-y-sm px-margin-mobile pb-32 pt-sm">
+        {links.length === 0 ? (
+          <div className="hc-readable-box rounded-xl bg-surface p-lg text-center">
+            <p className="mb-md font-body-md text-body-md text-on-surface-variant">공유한 링크가 없어요.</p>
+            <button type="button" onClick={() => setShowLinkSheet(true)} className="min-h-[50px] rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary">
+              링크 추가
+            </button>
+          </div>
+        ) : links.map((item) => (
+          <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
+            <p className="font-label-md text-label-md font-semibold text-on-surface">{item.title}</p>
+            {item.summary && <p className="mt-xs whitespace-pre-wrap font-body-sm text-body-sm text-on-surface-variant">{item.summary}</p>}
+            <div className="mt-sm flex flex-wrap gap-xs">
+              <a href={item.url} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
+                사이트 열기
+              </a>
+              {item.fileUrl && (
+                <a href={item.fileUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center rounded-full border border-outline-variant px-md font-label-sm text-label-sm text-on-surface">
+                  {item.fileName || '파일 열기'}
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
       </main>
 
       <BottomNav active="more" onNavigate={onNavigate} />
@@ -292,6 +260,47 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
       {showLinkSheet && (
         <LinkSheet onClose={() => setShowLinkSheet(false)} onSave={addLink} />
       )}
+    </SubScreen>
+  )
+}
+
+export function DateRecipeScreen({ onBack, onNavigate }: StandaloneScreenProps) {
+  const { uid, coupleId } = useCoupleSession()
+  const { recipes, addRecipe } = useLibrary(coupleId, uid)
+  const [showRecipeSheet, setShowRecipeSheet] = useState(false)
+
+  return (
+    <SubScreen>
+      <ScreenHeader
+        title="데이트 레시피"
+        onBack={onBack}
+        right={(
+          <button type="button" onClick={() => setShowRecipeSheet(true)} className="min-h-[44px] rounded-full px-sm text-primary" aria-label="기록 추가">
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        )}
+      />
+
+      <main className="sub-screen-body space-y-sm px-margin-mobile pb-32 pt-sm">
+        {recipes.length === 0 ? (
+          <div className="hc-readable-box rounded-xl bg-surface p-lg text-center">
+            <p className="mb-md font-body-md text-body-md text-on-surface-variant">같이 먹은 음식을 한 줄로 남겨보세요.</p>
+            <button type="button" onClick={() => setShowRecipeSheet(true)} className="min-h-[50px] rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary">
+              기록 추가
+            </button>
+          </div>
+        ) : recipes.map((item) => (
+          <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
+            <p className="font-label-md text-label-md font-semibold text-on-surface">
+              {item.date} · {item.food}
+            </p>
+            {item.memo && <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">{item.memo}</p>}
+          </article>
+        ))}
+      </main>
+
+      <BottomNav active="more" onNavigate={onNavigate} />
+
       {showRecipeSheet && (
         <RecipeSheet onClose={() => setShowRecipeSheet(false)} onSave={addRecipe} />
       )}

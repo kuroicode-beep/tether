@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-hotfix-v0-4-1-separate-library-menus',
+    date: '2026.06.25',
+    type: 'hotfix',
+    title: 'Tether v0.4.1 핫픽스.',
+    detail: '자료실 안에 묶여 있던 링크공유와 데이트 레시피를 홈의 별도 메뉴로 분리했습니다. 자료실은 채팅 파일/음악 모음 전용, 링크공유는 즐겨찾기 공유 전용, 데이트 레시피는 음식 날짜 로그 전용 화면으로 동작합니다.',
+  },
+  {
     id: '2026-06-25-release-v0-4-0-library-content-chat',
     date: '2026.06.25',
     type: 'release',
