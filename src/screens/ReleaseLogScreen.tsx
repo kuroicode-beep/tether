@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-hotfix-v0-4-5-chat-multi-file-paste',
+    date: '2026.06.25',
+    type: 'hotfix',
+    title: 'Tether v0.4.5 핫픽스.',
+    detail: '채팅창에서 여러 파일을 한 번에 선택하거나 드래그앤드랍해도 순차적으로 첨부할 수 있게 했습니다. 또한 Ctrl+V 붙여넣기로 클립보드의 이미지/파일을 채팅 첨부 미리보기로 가져올 수 있게 했습니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-4-4-chat-drag-drop-upload',
     date: '2026.06.25',
     type: 'hotfix',

@@ -5,7 +5,7 @@ interface ChatInputProps {
   onSendFile: (file: File) => void
   disabled?: boolean
   autoFocus?: boolean
-  droppedFile?: { id: number; file: File } | null
+  incomingFiles?: { id: number; files: File[] } | null
   onFocusChange?: (focused: boolean) => void
 }
 
@@ -24,9 +24,10 @@ function formatFileSize(size: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, droppedFile, onFocusChange }: ChatInputProps) {
+export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomingFiles, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
+  const [fileQueue, setFileQueue] = useState<File[]>([])
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const composingRef = useRef(false)
@@ -53,13 +54,26 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
     return () => window.clearTimeout(timer)
   }, [autoFocus, disabled])
 
-  useEffect(() => {
-    if (!droppedFile || disabled) return
+  const appendFiles = (files: File[]) => {
+    const validFiles = files.filter((file) => file.size > 0)
+    if (validFiles.length === 0) return
     setPreview((current) => {
-      if (current) URL.revokeObjectURL(current.url)
-      return { file: droppedFile.file, url: URL.createObjectURL(droppedFile.file) }
+      if (current) {
+        setFileQueue((queue) => [...queue, ...validFiles])
+        return current
+      }
+      setFileQueue((queue) => [...queue, ...validFiles.slice(1)])
+      return {
+        file: validFiles[0],
+        url: URL.createObjectURL(validFiles[0]),
+      }
     })
-  }, [disabled, droppedFile])
+  }
+
+  useEffect(() => {
+    if (!incomingFiles || disabled) return
+    appendFiles(incomingFiles.files)
+  }, [disabled, incomingFiles])
 
   const handleSend = () => {
     const current = editorRef.current?.value ?? text
@@ -88,26 +102,42 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
     adjustHeight()
   }
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = Array.from(e.clipboardData.files ?? [])
+    if (files.length === 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    appendFiles(files)
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPreview((current) => {
-      if (current) URL.revokeObjectURL(current.url)
-      return { file, url: URL.createObjectURL(file) }
-    })
+    const files = Array.from(e.target.files ?? [])
+    appendFiles(files)
     e.target.value = ''
+  }
+
+  const showNextQueuedFile = (queue: File[]) => {
+    const [nextFile, ...rest] = queue
+    setFileQueue(rest)
+    setPreview(nextFile ? { file: nextFile, url: URL.createObjectURL(nextFile) } : null)
   }
 
   const handleConfirmFile = () => {
     if (!preview) return
     onSendFile(preview.file)
     URL.revokeObjectURL(preview.url)
-    setPreview(null)
+    showNextQueuedFile(fileQueue)
     keepInputFocus()
   }
 
   const handleCancelFile = () => {
     if (preview) URL.revokeObjectURL(preview.url)
+    showNextQueuedFile(fileQueue)
+  }
+
+  const handleCancelAllFiles = () => {
+    if (preview) URL.revokeObjectURL(preview.url)
+    setFileQueue([])
     setPreview(null)
   }
 
@@ -115,11 +145,11 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
     <>
       {preview && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelFile} />
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelAllFiles} />
           <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
-              이 파일을 보낼까요?
+              이 파일을 보낼까요? {fileQueue.length > 0 ? `(${fileQueue.length + 1}개 중 1개)` : ''}
             </p>
             <div className="flex justify-center mb-xl">
               {isImageFile(preview.file) ? (
@@ -144,13 +174,18 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
               <button type="button" onClick={handleConfirmFile} className="btn-outline w-full active">
                 전송
               </button>
+              {fileQueue.length > 0 && (
+                <button type="button" onClick={handleCancelFile} className="btn-outline w-full">
+                  이 파일 건너뛰기
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleCancelFile}
+                onClick={handleCancelAllFiles}
                 className="w-full py-md font-label-md text-label-md opacity-60"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                취소
+                {fileQueue.length > 0 ? '전체 취소' : '취소'}
               </button>
             </div>
           </div>
@@ -171,6 +206,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept="image/*,audio/*,.zip,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.hwp,.hwpx,.csv,.json"
           className="hidden"
           onChange={handleFileChange}
@@ -188,6 +224,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, dropped
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onCompositionStart={() => { composingRef.current = true }}
           onCompositionEnd={(e) => {
             composingRef.current = false

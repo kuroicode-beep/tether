@@ -44,7 +44,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
-  const [droppedFile, setDroppedFile] = useState<{ id: number; file: File } | null>(null)
+  const [incomingFiles, setIncomingFiles] = useState<{ id: number; files: File[] } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -178,9 +178,16 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     event.stopPropagation()
     dragDepthRef.current = 0
     setDragActive(false)
-    const file = event.dataTransfer.files?.[0]
-    if (!file) return
-    setDroppedFile({ id: Date.now(), file })
+    const files = Array.from(event.dataTransfer.files ?? [])
+    if (files.length === 0) return
+    setIncomingFiles({ id: Date.now(), files })
+  }, [])
+
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    const files = Array.from(event.clipboardData.files ?? [])
+    if (files.length === 0) return
+    event.preventDefault()
+    setIncomingFiles({ id: Date.now(), files })
   }, [])
 
   return (
@@ -191,6 +198,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onPaste={handlePaste}
     >
       {dragActive && (
         <div className="pointer-events-none absolute inset-0 z-[80] flex items-center justify-center bg-black/45 px-margin-mobile">
@@ -311,7 +319,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
         onSendText={sendText}
         onSendFile={sendFile}
         autoFocus
-        droppedFile={droppedFile}
+        incomingFiles={incomingFiles}
         onFocusChange={(focused) => { inputFocusedRef.current = focused }}
       />
 
