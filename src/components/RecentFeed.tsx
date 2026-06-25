@@ -13,11 +13,11 @@ interface RecentFeedProps {
 }
 
 const CATEGORY_META: Record<FeedCategory, { icon: string; label: (name: string) => string }> = {
-  message: { icon: '💬', label: (name) => `${name}가 채팅을 보냈어요` },
-  diary: { icon: '📖', label: (name) => `${name}가 교환일기를 작성했어요` },
-  contents: { icon: '🎬', label: (name) => `${name}가 콘텐츠를 추가했어요` },
-  photo: { icon: '📷', label: (name) => `${name}가 사진을 올렸어요` },
-  status: { icon: '💭', label: (name) => `${name}가 상태를 변경했어요` },
+  message: { icon: '💬', label: (name) => `${name} 님이 채팅을 보냈어요` },
+  diary: { icon: '📖', label: (name) => `${name} 님이 교환일기를 작성했어요` },
+  contents: { icon: '🎬', label: (name) => `${name} 님이 콘텐츠를 추가했어요` },
+  photo: { icon: '📷', label: (name) => `${name} 님이 사진을 올렸어요` },
+  status: { icon: '💭', label: (name) => `${name} 님이 상태를 변경했어요` },
 }
 
 // Formats recent activity times in short Korean labels.
