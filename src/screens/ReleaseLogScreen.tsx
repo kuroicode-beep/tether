@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-8-pc-notification-dedupe',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.8 핫픽스.',
+    detail: 'PC에서 알림이 두 번씩 뜰 수 있는 경로를 정리했습니다. 앱이 백그라운드/hidden 상태일 때는 서비스워커 알림만 사용하고, 메시지·일기·댓글·테스트 알림에 안정적인 notificationId를 넣어 같은 이벤트가 중복 토큰으로 도착해도 하나의 알림으로 교체되게 했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-7-diary-high-contrast',
     date: '2026.06.26',
     type: 'hotfix',

@@ -26,7 +26,6 @@ import {
   playNotificationSound,
   screenFromNotificationUrl,
   shouldAlertForType,
-  showSystemNotification,
   SW_NAVIGATE_MESSAGE,
   SW_PLAY_SOUND_MESSAGE,
 } from './lib/notificationAlert'
@@ -153,7 +152,6 @@ function AppContent() {
       const title = payload.notification?.title ?? data.title ?? 'Tether'
       const body = payload.notification?.body ?? data.body ?? ''
       const type = (data.type as string) ?? undefined
-      const target = (data.screen as string | undefined) ?? screenFromNotificationUrl((data.url as string | undefined) ?? '')
       const settings = push.loadSettings()
 
       const willAlert = shouldAlertForType(type, settings)
@@ -163,8 +161,6 @@ function AppContent() {
         if (isVisible) {
           playNotificationSound(settings.sound)
           setToast({ title, body, type })
-        } else {
-          showSystemNotification(title, body, type ?? 'tether-fg', () => requestNavigation(target))
         }
         return
       }

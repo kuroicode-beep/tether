@@ -53,7 +53,7 @@ messaging.onBackgroundMessage((payload) => {
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: notificationTag,
-      renotify: true,
+      renotify: false,
       silent: false,
       vibrate: [220, 100, 220, 100, 320],
       requireInteraction: true,

@@ -271,6 +271,7 @@ async function sendWebPush(
       title: payload.title,
       body: payload.body,
       forceSwDisplay: '1',
+      notificationId: payload.data.notificationId ?? `${payload.type}-${payload.link}`,
       ...payload.data,
       url: payload.link,
     },
@@ -386,7 +387,7 @@ export const onStatusUpdate = functions.firestore
 export const onNewMessage = functions.firestore
   .document('couples/{coupleId}/messages/{messageId}')
   .onCreate(async (snap, context) => {
-    const { coupleId } = context.params as { coupleId: string }
+    const { coupleId, messageId } = context.params as { coupleId: string; messageId: string }
     const msg = snap.data()
     if (!msg?.senderUid) return
 
@@ -411,6 +412,7 @@ export const onNewMessage = functions.firestore
       data: {
         coupleId,
         screen: 'chat',
+        notificationId: `message-${coupleId}-${messageId}`,
       },
       link: '/?screen=chat',
     })
@@ -421,7 +423,7 @@ export const onNewMessage = functions.firestore
 export const onNewDiary = functions.firestore
   .document('couples/{coupleId}/diary/{diaryId}')
   .onCreate(async (snap, context) => {
-    const { coupleId } = context.params as { coupleId: string }
+    const { coupleId, diaryId } = context.params as { coupleId: string; diaryId: string }
     const diary = snap.data()
     if (!diary?.authorUid) return
 
@@ -440,6 +442,7 @@ export const onNewDiary = functions.firestore
       data: {
         coupleId,
         screen: 'diary',
+        notificationId: `diary-${coupleId}-${diaryId}`,
       },
       link: '/?screen=diary',
     })
@@ -448,7 +451,7 @@ export const onNewDiary = functions.firestore
 export const onDiaryReplyCreated = functions.firestore
   .document('couples/{coupleId}/diary/{diaryId}')
   .onUpdate(async (change, context) => {
-    const { coupleId } = context.params as { coupleId: string }
+    const { coupleId, diaryId } = context.params as { coupleId: string; diaryId: string }
     const before = change.before.data()
     const after = change.after.data()
     const beforeReply = before?.reply
@@ -473,6 +476,7 @@ export const onDiaryReplyCreated = functions.firestore
       data: {
         coupleId,
         screen: 'diary',
+        notificationId: `diary-reply-${coupleId}-${diaryId}`,
       },
       link: '/?screen=diary',
     })
@@ -529,6 +533,7 @@ export const debugPushPing = functions.https.onCall(async (data, context) => {
     data: {
       screen: 'home',
       debug: '1',
+      notificationId: `debug-${target}-${callerUid}`,
     },
     link: '/?screen=home',
   })
