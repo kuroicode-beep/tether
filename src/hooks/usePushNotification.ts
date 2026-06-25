@@ -17,12 +17,14 @@ export interface NotificationSettings {
   message: boolean
   status: boolean
   diary: boolean
+  sound?: 'waterDrop' | 'chime' | 'silent'
 }
 
 const DEFAULT_SETTINGS: NotificationSettings = {
   message: true,
   status: true,
   diary: true,
+  sound: 'waterDrop',
 }
 
 // 권한 요청 후 FCM 토큰을 발급·저장한다 (WI #22 진단용 export)

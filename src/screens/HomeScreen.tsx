@@ -13,6 +13,7 @@ import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useRecentFeed } from '../hooks/useRecentFeed'
 import { CONDITION_EMOJI, Condition, useStatus } from '../hooks/useStatus'
+import { useStatusOptions } from '../hooks/useStatusOptions'
 
 import { APP_VERSION_LABEL } from '../lib/appVersion'
 
@@ -20,11 +21,9 @@ interface HomeScreenProps {
   onNavigate: (screen: string) => void
 }
 
-const CONDITIONS: Condition[] = ['very_good', 'good', 'normal', 'sleepy', 'surprised', 'angry', 'bad', 'very_bad']
-const MOOD_TAGS = [
-  '설렘', '평온', '힘듦', '보고싶어', '행복', '기쁨', '고마움', '슬픔', '우울', '화남',
-  '집중중', '노는중', '삐짐', '질투중', '멍함', '눈치보는중', '욕구불만', '예민함',
-  '생리중', '외로움', '기다림', '충만함',
+const CONDITIONS: Condition[] = [
+  'very_good', 'good', 'normal', 'sleepy', 'surprised', 'flustered',
+  'playful', 'tongue', 'annoyed', 'nauseous', 'angry', 'bad', 'very_bad',
 ]
 
 const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
@@ -58,6 +57,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { myStatus, partnerStatus, updateMyStatus } = useStatus(coupleId, uid, partnerUid)
   const feedItems = useRecentFeed(coupleId, uid, partnerUid)
   const { firstMet, upcoming, getDday } = useAnniversaries(coupleId)
+  const statusOptions = useStatusOptions()
 
   const [draftStatus, setDraftStatus] = useState<StatusDraft>({
     condition: myStatus.condition,
@@ -261,9 +261,26 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                 </div>
 
                 <div className="status-edit-tag-panel flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl p-sm">
-                  {MOOD_TAGS.map((tag) => (
+                  {statusOptions.tags.map((tag) => (
                     <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
                       <MoodChip label={tag} active={draftStatus.mood.includes(tag)} />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-xs rounded-2xl p-sm">
+                  {statusOptions.quickMessages.map((message) => (
+                    <button
+                      key={message}
+                      type="button"
+                      onClick={() => {
+                        setEditMsg(message)
+                        setDraftStatus((prev) => ({ ...prev, message }))
+                        setIsEditingMsg(false)
+                      }}
+                      className="hc-readable-box hc-readable-box--pill min-h-[40px] rounded-full border border-outline-variant px-sm font-label-sm text-label-sm text-on-surface"
+                    >
+                      {message}
                     </button>
                   ))}
                 </div>

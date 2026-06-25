@@ -3,16 +3,18 @@
 import type { NotificationSettings } from '../hooks/usePushNotification'
 
 export const NOTIFICATION_SOUND_URL = '/sounds/water-drop-20260621.wav'
+export const CHIME_SOUND_URL = '/sounds/chime.wav'
 export const SW_PLAY_SOUND_MESSAGE = 'PLAY_NOTIFICATION_SOUND'
 export const SW_NAVIGATE_MESSAGE = 'NAVIGATE'
 
 let audioCtx: AudioContext | null = null
 let chimeAudio: HTMLAudioElement | null = null
+let soundUrl = NOTIFICATION_SOUND_URL
 
 // 차임 오디오 엘리먼트를 준비한다
 function getChimeAudio(): HTMLAudioElement {
   if (!chimeAudio) {
-    chimeAudio = new Audio(NOTIFICATION_SOUND_URL)
+    chimeAudio = new Audio(soundUrl)
     chimeAudio.preload = 'auto'
   }
   return chimeAudio
@@ -72,7 +74,13 @@ function playSyntheticWaterDrop() {
 }
 
 // Tether 물방울 알림음 재생
-export function playNotificationSound() {
+export function playNotificationSound(sound: NotificationSettings['sound'] = 'waterDrop') {
+  if (sound === 'silent') return
+  const nextUrl = sound === 'chime' ? CHIME_SOUND_URL : NOTIFICATION_SOUND_URL
+  if (soundUrl !== nextUrl) {
+    soundUrl = nextUrl
+    chimeAudio = null
+  }
   try {
     const audio = getChimeAudio()
     audio.currentTime = 0

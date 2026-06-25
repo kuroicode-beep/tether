@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import { addDoc, collection, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
-export type Condition = 'very_bad' | 'bad' | 'normal' | 'good' | 'very_good' | 'sleepy' | 'surprised' | 'angry'
+export type Condition =
+  | 'very_bad' | 'bad' | 'normal' | 'good' | 'very_good'
+  | 'sleepy' | 'surprised' | 'angry'
+  | 'nauseous' | 'annoyed' | 'flustered' | 'playful' | 'tongue'
 
 export const CONDITION_EMOJI: Record<Condition, string> = {
   very_bad: '😭',
@@ -15,6 +18,11 @@ export const CONDITION_EMOJI: Record<Condition, string> = {
   sleepy: '😴',
   surprised: '😳',
   angry: '😡',
+  nauseous: '🤮',
+  annoyed: '🙄',
+  flustered: '😵‍💫',
+  playful: '😜',
+  tongue: '😛',
 }
 
 const LEGACY_CONDITION: Record<string, Condition> = {
@@ -24,6 +32,11 @@ const LEGACY_CONDITION: Record<string, Condition> = {
   sleepy: 'sleepy',
   surprised: 'surprised',
   angry: 'angry',
+  nauseous: 'nauseous',
+  annoyed: 'annoyed',
+  flustered: 'flustered',
+  playful: 'playful',
+  tongue: 'tongue',
 }
 
 export interface UserStatus {

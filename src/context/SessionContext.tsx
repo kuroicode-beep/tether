@@ -24,6 +24,7 @@ import { auth, db, isAndroid } from '../lib/firebase'
 import { linkGoogleViaGsi, signInWithGoogleViaGsi } from '../lib/googleSignIn'
 import {
   createOrGetUserDoc,
+  isAdminEmail,
   restoreConnectionFromProfile,
   RestoredConnection,
 } from '../lib/coupleAuth'
@@ -33,6 +34,7 @@ export type SessionStatus =
   | 'loading'
   | 'signed_out'
   | 'no_couple'
+  | 'approval_pending'
   | 'restoring'
   | 'connected'
   | 'restore_failed'
@@ -205,6 +207,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         user.uid,
         user.displayName,
         user.isAnonymous ? '나' : undefined,
+        user.email,
       )
     } catch (err) {
       console.warn('[Session] createOrGetUserDoc failed', err)
@@ -293,6 +296,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const unsub = onSnapshot(
       doc(db, 'users', user.uid),
       (snap) => {
+        const data = snap.data()
+        if (data?.approved === false && !isAdminEmail(user.email)) {
+          restoreGenerationRef.current += 1
+          currentUserRef.current = user
+          profileCoupleIdRef.current = null
+          setSession({
+            status: 'approval_pending',
+            user,
+            uid: user.uid,
+            coupleId: null,
+            connection: null,
+            error: null,
+          })
+          return
+        }
         const cid = snap.data()?.coupleId
         const nextCoupleId = typeof cid === 'string' && cid.length > 0 ? cid : null
         applyProfileCoupleId(user, nextCoupleId)

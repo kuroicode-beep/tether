@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-25-update-v0-3-1-admin-status-sound',
+    date: '2026.06.25',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트.`,
+    detail: 'kuroicode@gmail.com 전용 Admin 페이지를 추가하고, 회원가입 승인 대기/승인 처리, 회원 토큰 연결 상태와 리포트 로그 확인, 상태 태그·빠른 상태 메시지 추가/삭제, 알림소리 설정을 반영했습니다. 상태 아이콘도 토함·띠꺼움·놀람·당황·익살·메롱 계열을 확장했습니다.',
+  },
+  {
     id: '2026-06-25-release-v0-3-0-feedback-sync-accessibility',
     date: '2026.06.25',
     type: 'release',

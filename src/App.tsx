@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from './context/SessionContext'
 import { LockScreen } from './screens/LockScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { RestoreFailedScreen } from './screens/RestoreFailedScreen'
+import { ApprovalPendingScreen } from './screens/ApprovalPendingScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { DiaryScreen } from './screens/DiaryScreen'
@@ -16,6 +17,7 @@ import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
+import { AdminScreen } from './screens/AdminScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
@@ -35,6 +37,7 @@ import { UnreadBadgesProvider } from './context/UnreadBadgesContext'
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
   | 'settings' | 'photo' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
+  | 'admin'
 
 const NAVIGATION_SCREENS = new Set<string>([
   'home',
@@ -47,6 +50,7 @@ const NAVIGATION_SCREENS = new Set<string>([
   'anniversary',
   'statusHistory',
   'releaseLog',
+  'admin',
 ])
 
 function AppContent() {
@@ -131,7 +135,7 @@ function AppContent() {
       if (document.visibilityState !== 'visible') return
       const type = (data.alertType as string) ?? undefined
       if (!shouldAlertForType(type, push.loadSettings())) return
-      playNotificationSound()
+      playNotificationSound(push.loadSettings().sound)
     }
 
     navigator.serviceWorker.addEventListener('message', onSwMessage)
@@ -153,7 +157,7 @@ function AppContent() {
       debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert, isVisible }, 'H4')
       if (willAlert) {
         if (isVisible) {
-          playNotificationSound()
+          playNotificationSound(settings.sound)
           setToast({ title, body, type })
         } else {
           showSystemNotification(title, body, type ?? 'tether-fg', () => requestNavigation(target))
@@ -173,6 +177,7 @@ function AppContent() {
     if (
       session.status === 'signed_out'
       || session.status === 'no_couple'
+      || session.status === 'approval_pending'
       || session.status === 'restore_failed'
     ) {
       setUnlocked(false)
@@ -227,6 +232,10 @@ function AppContent() {
     return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
   }
 
+  if (session.status === 'approval_pending') {
+    return <ApprovalPendingScreen />
+  }
+
   if (session.status === 'restore_failed') {
     return <RestoreFailedScreen />
   }
@@ -260,12 +269,14 @@ function AppContent() {
         {screen === 'anniversary' && <AnniversaryScreen onBack={toHome} />}
         {screen === 'statusHistory' && <StatusHistoryScreen onBack={toHome} />}
         {screen === 'releaseLog'  && <ReleaseLogScreen onBack={toHome} />}
+        {screen === 'admin'       && <AdminScreen onBack={() => setScreen('settings')} />}
         {screen === 'settings'    && (
           <SettingsScreen
             onBack={toHome}
             onChangePin={handleChangePin}
             onDisconnect={handleDisconnect}
             onOpenAnniversary={() => setScreen('anniversary')}
+            onOpenAdmin={() => setScreen('admin')}
           />
         )}
         {screen === 'home' && <HomeScreen onNavigate={navigate} />}

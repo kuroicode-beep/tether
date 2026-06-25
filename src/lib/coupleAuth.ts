@@ -18,6 +18,7 @@ export type UserProfile = {
   inviteCode: string
   coupleId: string | null
   photoUrl: string | null
+  approved?: boolean
 }
 
 export type RestoredConnection = {
@@ -34,6 +35,12 @@ export type RestoredConnection = {
 export type ClaimInviteResult = {
   coupleId: string
   partnerUid: string
+}
+
+export const ADMIN_EMAIL = 'kuroicode@gmail.com'
+
+export function isAdminEmail(email?: string | null): boolean {
+  return (email ?? '').trim().toLowerCase() === ADMIN_EMAIL
 }
 
 // 6자리 영숫자 초대 코드 생성
@@ -65,6 +72,7 @@ export const createOrGetUserDoc = async (
   uid: string,
   displayName?: string | null,
   nickname?: string,
+  email?: string | null,
 ): Promise<UserProfile & { isNew: boolean }> => {
   const userRef = doc(db, 'users', uid)
   const snap = await getDoc(userRef)
@@ -84,6 +92,7 @@ export const createOrGetUserDoc = async (
       inviteCode,
       coupleId: data.coupleId ?? null,
       photoUrl: data.photoUrl ?? null,
+      approved: data.approved,
     }
 
     const updates: Record<string, unknown> = {}
@@ -109,11 +118,16 @@ export const createOrGetUserDoc = async (
 
   await setDoc(userRef, {
     ...profile,
+    email: email?.trim().toLowerCase() ?? null,
+    approved: isAdminEmail(email),
+    approvedAt: isAdminEmail(email) ? serverTimestamp() : null,
+    role: isAdminEmail(email) ? 'admin' : 'member',
     fcmToken: null,
     notificationSettings: {
       message: true,
       status: true,
       diary: true,
+      sound: 'waterDrop',
     },
     createdAt: serverTimestamp(),
   })
@@ -202,6 +216,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     inviteCode: data.inviteCode ?? '',
     coupleId: data.coupleId ?? null,
     photoUrl: data.photoUrl ?? null,
+    approved: data.approved,
   }
 }
 

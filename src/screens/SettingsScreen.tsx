@@ -18,13 +18,14 @@ import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { PushTokenHealthBanner } from '../components/PushTokenHealthBanner'
-import { disconnectCouple, updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
+import { disconnectCouple, isAdminEmail, updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
 
 interface SettingsScreenProps {
   onBack: () => void
   onChangePin?: () => void
   onDisconnect?: () => void
   onOpenAnniversary?: () => void
+  onOpenAdmin?: () => void
 }
 
 const PREVIEW_SIZES: Record<FontScale, string> = {
@@ -83,7 +84,7 @@ function DisconnectConfirmDialog({ onConfirm, onCancel, loading, error }: Confir
   )
 }
 
-export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnniversary }: SettingsScreenProps) {
+export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnniversary, onOpenAdmin }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
   const { scale, setScale, fontFamily, setFontFamily } = useFontScale()
   const bio = useBiometric()
@@ -449,6 +450,23 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
             Account
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
+            {isAdminEmail(user?.email) && (
+              <button
+                onClick={onOpenAdmin}
+                className="w-full flex items-center justify-between gap-md p-md border-b border-outline-variant/20 hover:bg-surface-container-highest transition-colors text-left"
+              >
+                <div className="flex items-center gap-md">
+                  <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
+                  <div>
+                    <p className="font-body-md text-body-md text-on-surface">Admin</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant">
+                      회원 승인, 토큰, 로그, 상태 옵션 관리
+                    </p>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-outline-variant">chevron_right</span>
+              </button>
+            )}
             {isGoogleLinked ? (
               <div className="flex items-center justify-between p-md">
                 <div className="flex items-center gap-md">
@@ -710,6 +728,45 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                 </div>
               )
             })}
+            <div className="p-md border-t border-outline-variant/20">
+              <div className="mb-sm flex items-center gap-md">
+                <span className="material-symbols-outlined text-secondary">music_note</span>
+                <div>
+                  <p className="font-body-md text-body-md text-on-surface">알림소리 설정</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    앱이 열린 상태의 알림음에 적용돼요.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-sm">
+                {([
+                  ['waterDrop', '물방울'],
+                  ['chime', '차임'],
+                  ['silent', '무음'],
+                ] as const).map(([sound, label]) => {
+                  const selected = (notifSettings.sound ?? 'waterDrop') === sound
+                  return (
+                    <button
+                      key={sound}
+                      type="button"
+                      onClick={() => {
+                        const next = { ...notifSettings, sound }
+                        setNotifSettings(next)
+                        void push.saveSettings(next)
+                      }}
+                      aria-pressed={selected}
+                      className={`hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border px-sm font-label-sm text-label-sm ${
+                        selected
+                          ? 'border-primary bg-primary text-on-primary'
+                          : 'border-outline-variant bg-surface-container-low text-on-surface'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </section>
 
