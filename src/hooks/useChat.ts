@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   collection, addDoc, onSnapshot,
   query, orderBy, limit, startAfter,
-  Timestamp, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs, writeBatch,
+  Timestamp, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs, writeBatch, setDoc,
   QueryDocumentSnapshot, DocumentData,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -311,7 +311,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       })
       const fileUrl = await getDownloadURL(storageRef)
       const createdAt = Timestamp.now()
-      await addDoc(collection(db, 'couples', coupleId, 'messages'), {
+      const messageRef = await addDoc(collection(db, 'couples', coupleId, 'messages'), {
         clientId,
         senderUid: myUid,
         type: 'file',
@@ -321,6 +321,16 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         fileSize: file.size,
         createdAt,
         readBy: [myUid],
+      })
+      await setDoc(doc(db, 'couples', coupleId, 'files', messageRef.id), {
+        messageId: messageRef.id,
+        clientId,
+        senderUid: myUid,
+        fileUrl,
+        fileName: file.name || 'file',
+        fileType: contentType,
+        fileSize: file.size,
+        createdAt,
       })
     } catch (err) {
       console.warn('[useChat] sendFile failed', err)

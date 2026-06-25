@@ -68,12 +68,50 @@ function safeFileName(name: string): string {
 
 export function useLibrary(coupleId: string | null, myUid: string | null) {
   const [files, setFiles] = useState<LibraryFileItem[]>([])
+  const [fileDocs, setFileDocs] = useState<LibraryFileItem[]>([])
+  const [messageFiles, setMessageFiles] = useState<LibraryFileItem[]>([])
   const [links, setLinks] = useState<SharedLinkItem[]>([])
   const [recipes, setRecipes] = useState<DateRecipeItem[]>([])
 
   useEffect(() => {
+    const byId = new Map<string, LibraryFileItem>()
+    messageFiles.forEach((item) => byId.set(item.id, item))
+    fileDocs.forEach((item) => byId.set(item.id, item))
+    setFiles([...byId.values()].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)))
+  }, [fileDocs, messageFiles])
+
+  useEffect(() => {
     if (!coupleId) {
-      setFiles([])
+      setFileDocs([])
+      return
+    }
+    const q = query(
+      collection(db, 'couples', coupleId, 'files'),
+      orderBy('createdAt', 'desc'),
+      limit(300),
+    )
+    return onSnapshot(q, (snap) => {
+      setFileDocs(snap.docs
+        .map((docSnap) => {
+          const data = docSnap.data() as Record<string, unknown>
+          if (typeof data.fileUrl !== 'string') return null
+          return {
+            id: docSnap.id,
+            senderUid: typeof data.senderUid === 'string' ? data.senderUid : '',
+            fileUrl: data.fileUrl,
+            fileName: typeof data.fileName === 'string' ? data.fileName : 'file',
+            fileType: typeof data.fileType === 'string' ? data.fileType : 'application/octet-stream',
+            fileSize: typeof data.fileSize === 'number' ? data.fileSize : null,
+            createdAt: toMillis(data.createdAt),
+          }
+        })
+        .filter((item): item is LibraryFileItem => item !== null))
+    })
+  }, [coupleId])
+
+  useEffect(() => {
+    if (!coupleId) {
+      setMessageFiles([])
       return
     }
     const q = query(
@@ -82,7 +120,7 @@ export function useLibrary(coupleId: string | null, myUid: string | null) {
       limit(120),
     )
     return onSnapshot(q, (snap) => {
-      setFiles(snap.docs
+      setMessageFiles(snap.docs
         .map((docSnap) => {
           const data = docSnap.data() as Record<string, unknown>
           if (data.type !== 'file' || typeof data.fileUrl !== 'string') return null
@@ -183,8 +221,11 @@ export function useLibrary(coupleId: string | null, myUid: string | null) {
   const deleteFile = useCallback(async (messageId: string) => {
     if (!coupleId || !myUid || !messageId) return false
     try {
-      await deleteDoc(doc(db, 'couples', coupleId, 'messages', messageId))
-      return true
+      const results = await Promise.allSettled([
+        deleteDoc(doc(db, 'couples', coupleId, 'messages', messageId)),
+        deleteDoc(doc(db, 'couples', coupleId, 'files', messageId)),
+      ])
+      return results.some((result) => result.status === 'fulfilled')
     } catch (err) {
       console.warn('[useLibrary] deleteFile failed', err)
       return false

@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-3-library-file-index-listen-picker',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.3 핫픽스.',
+    detail: '파일 자료실이 채팅 메시지 목록에만 의존하지 않도록 전용 files 인덱스를 추가했습니다. 같이듣기에는 업로드된 음악 전체 목록과 내 플레이리스트를 분리해, 음악 목록에서 직접 3곡을 추가/해제할 수 있게 정리했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-2-library-listen-split',
     date: '2026.06.26',
     type: 'hotfix',

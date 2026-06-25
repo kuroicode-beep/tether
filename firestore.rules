@@ -224,6 +224,23 @@ service cloud.firestore {
                       && resource.data.senderUid == request.auth.uid;
       }
 
+      // Files: durable library index copied from chat file messages.
+      match /files/{fileId} {
+        function validFileCreate() {
+          return request.resource.data.senderUid == request.auth.uid
+                 && request.resource.data.fileUrl is string
+                 && request.resource.data.fileName is string
+                 && request.resource.data.fileType is string
+                 && request.resource.data.createdAt is timestamp;
+        }
+
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember() && validFileCreate();
+        allow update: if false;
+        allow delete: if isCoupleMember()
+                      && resource.data.senderUid == request.auth.uid;
+      }
+
       // Diary: author owns entries; partner may mark read or write one reply.
       match /diary/{diaryId} {
         function hasNoReply() {

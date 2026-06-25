@@ -70,16 +70,18 @@ export function ListenTogetherScreen({ onBack, onNavigate, onShowPlayer }: Liste
         <section className="hc-readable-box rounded-xl bg-surface p-md">
           <p className="font-label-md text-label-md font-semibold text-on-surface">플레이리스트</p>
           <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
-            각자 3곡씩 고르고, 내 화면에서는 상대 곡 중 1곡만 제외할 수 있어요. 현재 재생 후보 {activeTracks.length}곡.
+            업로드된 음악에서 각자 3곡씩 고르고, 내 화면에서는 상대 곡 중 1곡만 제외할 수 있어요. 현재 재생 후보 {activeTracks.length}곡.
           </p>
         </section>
 
         <section className="hc-readable-box rounded-xl bg-surface p-md">
-          <h2 className="mb-sm font-label-md text-label-md font-semibold text-on-surface">{myName}의 3곡</h2>
-          <p className="mb-sm font-label-sm text-label-sm text-on-surface-variant">{myTracks.length}/3 선택됨</p>
+          <h2 className="mb-sm font-label-md text-label-md font-semibold text-on-surface">업로드된 음악</h2>
+          <p className="mb-sm font-label-sm text-label-sm text-on-surface-variant">
+            채팅에 올라온 음악 전체 목록이에요. 여기서 {myName}의 3곡에 추가하거나 해제할 수 있어요. {myTracks.length}/3 선택됨.
+          </p>
           <div className="space-y-sm">
             {audioFiles.length === 0 ? (
-              <p className="font-body-md text-body-md text-on-surface-variant">자료실에 음악 파일이 없어요.</p>
+              <p className="font-body-md text-body-md text-on-surface-variant">아직 업로드된 음악 파일이 없어요.</p>
             ) : audioFiles.map((item) => {
               const selected = mySelectedIds.has(item.id)
               const disabled = !selected && myTracks.length >= 3
@@ -94,10 +96,32 @@ export function ListenTogetherScreen({ onBack, onNavigate, onShowPlayer }: Liste
                 >
                   <span className="material-symbols-outlined text-primary">{selected ? 'check_circle' : 'radio_button_unchecked'}</span>
                   <span className="min-w-0 flex-1 truncate text-left">{item.fileName}</span>
-                  <span className="text-[11px] opacity-70">{item.senderUid === uid ? myName : partnerName}</span>
+                  <span className="text-[11px] opacity-70">{selected ? '선택됨' : item.senderUid === uid ? myName : partnerName}</span>
                 </button>
               )
             })}
+          </div>
+        </section>
+
+        <section className="hc-readable-box rounded-xl bg-surface p-md">
+          <h2 className="mb-sm font-label-md text-label-md font-semibold text-on-surface">{myName}의 플레이리스트</h2>
+          <p className="mb-sm font-label-sm text-label-sm text-on-surface-variant">{myTracks.length}/3 선택됨</p>
+          <div className="space-y-sm">
+            {myTracks.length === 0 ? (
+              <p className="font-body-md text-body-md text-on-surface-variant">위 음악 목록에서 곡을 골라주세요.</p>
+            ) : myTracks.map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                onClick={() => void setMyTrackSelected(track, false)}
+                className="listen-track-row listen-track-row--active"
+                aria-label={`${track.title} 플레이리스트에서 제거`}
+              >
+                <span className="material-symbols-outlined text-primary">playlist_remove</span>
+                <span className="min-w-0 flex-1 truncate text-left">{track.title}</span>
+                <span className="text-[11px] opacity-70">제거</span>
+              </button>
+            ))}
           </div>
         </section>
 
