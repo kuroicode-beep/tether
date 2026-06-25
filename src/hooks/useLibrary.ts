@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   limit,
   onSnapshot,
   orderBy,
@@ -178,5 +180,16 @@ export function useLibrary(coupleId: string | null, myUid: string | null) {
     })
   }, [coupleId, myUid])
 
-  return { files, links, recipes, addLink, addRecipe }
+  const deleteFile = useCallback(async (messageId: string) => {
+    if (!coupleId || !myUid || !messageId) return false
+    try {
+      await deleteDoc(doc(db, 'couples', coupleId, 'messages', messageId))
+      return true
+    } catch (err) {
+      console.warn('[useLibrary] deleteFile failed', err)
+      return false
+    }
+  }, [coupleId, myUid])
+
+  return { files, links, recipes, addLink, addRecipe, deleteFile }
 }

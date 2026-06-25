@@ -19,6 +19,7 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { PushTokenHealthBanner } from '../components/PushTokenHealthBanner'
 import { disconnectCouple, isAdminEmail, updateUserNickname, updateUserProfilePhoto } from '../lib/coupleAuth'
+import { playNotificationSound } from '../lib/notificationAlert'
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -729,6 +730,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
                         const next = { ...notifSettings, sound }
                         setNotifSettings(next)
                         void push.saveSettings(next)
+                        playNotificationSound(sound)
                       }}
                       aria-pressed={selected}
                       className={`hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border px-sm font-label-sm text-label-sm ${

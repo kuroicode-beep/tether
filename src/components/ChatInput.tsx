@@ -50,8 +50,8 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
 
   useEffect(() => {
     if (!autoFocus || disabled) return
-    const timer = window.setTimeout(keepInputFocus, 250)
-    return () => window.clearTimeout(timer)
+    const timers = [60, 250, 650].map((delay) => window.setTimeout(keepInputFocus, delay))
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
   }, [autoFocus, disabled])
 
   const appendFiles = (files: File[]) => {

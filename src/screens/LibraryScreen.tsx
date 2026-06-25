@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
@@ -37,6 +37,11 @@ function normalizeUrl(url: string): string {
   const trimmed = url.trim()
   if (!trimmed) return ''
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
+
+// MIME이 비어 있는 모바일 파일도 확장자로 오디오 여부를 판별한다.
+function isAudioFile(fileName: string, fileType: string): boolean {
+  return fileType.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(fileName)
 }
 
 function LinkSheet({
@@ -166,7 +171,10 @@ function RecipeSheet({
 export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
-  const { files } = useLibrary(coupleId, uid)
+  const { files, deleteFile } = useLibrary(coupleId, uid)
+  const [search, setSearch] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
 
   const nameOf = (senderUid: string) => {
     if (senderUid === uid) return myNickname || '나'
@@ -174,37 +182,97 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
     return '우리'
   }
 
+  const filteredFiles = useMemo(() => {
+    const keyword = search.trim().toLowerCase()
+    if (!keyword) return files
+    return files.filter((item) => {
+      const haystack = [
+        item.fileName,
+        item.fileType,
+        nameOf(item.senderUid),
+        formatTime(item.createdAt),
+      ].join(' ').toLowerCase()
+      return haystack.includes(keyword)
+    })
+  }, [files, search, myNickname, partnerNickname, partnerUid, uid])
+
+  const handleDeleteFile = async (id: string) => {
+    if (deletingId) return
+    if (!window.confirm('이 파일을 자료실과 채팅에서 삭제할까요?')) return
+    setDeletingId(id)
+    setDeleteError('')
+    const ok = await deleteFile(id)
+    if (!ok) setDeleteError('삭제하지 못했어요. 내가 보낸 파일만 삭제할 수 있어요.')
+    setDeletingId(null)
+  }
+
   return (
     <SubScreen>
       <ScreenHeader title="자료실" onBack={onBack} />
 
       <main className="sub-screen-body space-y-sm px-margin-mobile pb-32 pt-sm">
+        <label className="hc-readable-box flex min-h-[50px] items-center gap-sm rounded-xl bg-surface px-md py-sm">
+          <span className="material-symbols-outlined text-primary">search</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="파일명, 보낸 사람, 형식 검색"
+            className="min-w-0 flex-1 bg-transparent font-body-md text-body-md text-on-surface outline-none placeholder-on-surface-variant/50"
+          />
+        </label>
+        {deleteError && (
+          <p className="hc-readable-box rounded-xl bg-surface p-sm font-label-sm text-label-sm text-error">
+            {deleteError}
+          </p>
+        )}
         {files.length === 0 ? (
           <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
             채팅에서 파일이나 음악을 올리면 여기에 모여요.
           </p>
-        ) : files.map((item) => (
+        ) : filteredFiles.length === 0 ? (
+          <p className="hc-readable-box rounded-xl bg-surface p-lg text-center font-body-md text-body-md text-on-surface-variant">
+            검색 결과가 없어요.
+          </p>
+        ) : filteredFiles.map((item) => {
+          const audio = isAudioFile(item.fileName, item.fileType)
+          const canDelete = item.senderUid === uid
+          return (
           <article key={item.id} className="hc-readable-box rounded-xl bg-surface p-md">
             <div className="flex items-start gap-sm">
               <span className="material-symbols-outlined text-primary">
-                {item.fileType.startsWith('audio/') ? 'audio_file' : 'draft'}
+                {audio ? 'audio_file' : 'draft'}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="break-words font-label-md text-label-md font-semibold text-on-surface">{item.fileName}</p>
                 <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
                   {nameOf(item.senderUid)} 님 · {formatFileSize(item.fileSize)} · {formatTime(item.createdAt)}
                 </p>
-                {item.fileType.startsWith('audio/') ? (
-                  <audio controls src={item.fileUrl} className="mt-sm w-full" />
-                ) : (
-                  <a href={item.fileUrl} target="_blank" rel="noreferrer" className="mt-sm inline-flex min-h-[44px] items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
-                    열기
-                  </a>
-                )}
+                <div className="mt-sm flex flex-col gap-sm">
+                  {audio ? (
+                    <audio controls src={item.fileUrl} preload="metadata" className="w-full">
+                      <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName}>음악 파일 열기</a>
+                    </audio>
+                  ) : (
+                    <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName} className="inline-flex min-h-[44px] w-fit items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
+                      열기 / 다운로드
+                    </a>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteFile(item.id)}
+                      disabled={deletingId === item.id}
+                      className="inline-flex min-h-[44px] w-fit items-center rounded-full border border-error px-md font-label-sm text-label-sm text-error disabled:opacity-40"
+                    >
+                      {deletingId === item.id ? '삭제 중...' : '삭제'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </article>
-        ))}
+          )
+        })}
       </main>
 
       <BottomNav active="more" onNavigate={onNavigate} />

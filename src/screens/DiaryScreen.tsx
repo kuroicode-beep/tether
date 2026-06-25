@@ -254,11 +254,12 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   const handleReplySubmit = async (data: { title: string; content: string; imageFile?: File }) => {
     if (!selected) return
     setReplyError('')
-    const ok = await writeReply(selected.id, { content: data.content, imageFile: data.imageFile })
-    if (!ok) {
+    const reply = await writeReply(selected.id, { content: data.content, imageFile: data.imageFile })
+    if (!reply) {
       setReplyError('답장을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
       return
     }
+    setSelected((prev) => prev ? { ...prev, reply } : prev)
     setView('read')
   }
 

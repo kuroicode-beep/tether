@@ -45,6 +45,7 @@ export function MessageBubble({
     : (text || '빈 메시지')
   const accessibilityLabel = `${accessibleSender} 메시지${timeText ? `, ${timeText}` : ''}, ${accessibleContent}`
   const isAudio = type === 'file' && (fileType?.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg)$/i.test(fileName ?? ''))
+  const showUnreadMarker = isMe && !isRead
 
   useEffect(() => {
     setImgError(false)
@@ -118,12 +119,12 @@ export function MessageBubble({
         )
       ) : null}
 
-      {showTime && (
+      {(showTime || showUnreadMarker) && (
         <div className="message-time" aria-hidden="true">
-          <span>{timeText}</span>
-          {isMe && !isRead && (
+          {showTime && <span>{timeText}</span>}
+          {showUnreadMarker && (
             <span
-              className="material-symbols-outlined text-[12px] opacity-50"
+              className="message-unread-icon material-symbols-outlined"
               style={{ fontVariationSettings: "'FILL' 0" }}
               title="상대가 아직 읽지 않음"
             >

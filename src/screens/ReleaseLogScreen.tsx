@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-6-chat-library-diary-fixes',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.6 핫픽스.',
+    detail: '채팅 읽음 전 표시가 묶인 메시지에서도 보이도록 수정하고, 채팅 진입 시 입력창 포커스를 보강했습니다. 설정 알림소리는 선택 즉시 미리듣기 되며, 자료실에는 검색과 내 파일 삭제 기능을 추가했습니다. m4a/mp3 등 오디오 파일 재생 판별과 md/txt 계열 파일 인코딩 메타데이터도 보강했고, 교환일기 댓글 저장 후 화면에 즉시 반영되게 했습니다.',
+  },
+  {
     id: '2026-06-25-hotfix-v0-4-5-chat-multi-file-paste',
     date: '2026.06.25',
     type: 'hotfix',

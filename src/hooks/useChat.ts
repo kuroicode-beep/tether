@@ -72,6 +72,22 @@ function safeFileName(name: string): string {
   return name.replace(/[^\w.\-가-힣]/g, '_') || 'file'
 }
 
+// 파일 확장자 기반으로 누락된 MIME과 텍스트 인코딩을 보강한다.
+function inferFileContentType(file: File): string {
+  if (file.type) return file.type
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.md') || name.endsWith('.markdown')) return 'text/markdown; charset=utf-8'
+  if (name.endsWith('.txt')) return 'text/plain; charset=utf-8'
+  if (name.endsWith('.csv')) return 'text/csv; charset=utf-8'
+  if (name.endsWith('.json')) return 'application/json; charset=utf-8'
+  if (name.endsWith('.mp3')) return 'audio/mpeg'
+  if (name.endsWith('.m4a')) return 'audio/mp4'
+  if (name.endsWith('.aac')) return 'audio/aac'
+  if (name.endsWith('.wav')) return 'audio/wav'
+  if (name.endsWith('.ogg')) return 'audio/ogg'
+  return 'application/octet-stream'
+}
+
 export function useChat(coupleId: string | null, myUid: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [hasMore, setHasMore] = useState(false)
@@ -268,6 +284,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
 
     const clientId = createClientId('file')
     const localUrl = URL.createObjectURL(file)
+    const contentType = inferFileContentType(file)
     const optimistic: ChatMessage = {
       id: createOptimisticId(clientId),
       clientId,
@@ -275,7 +292,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       type: 'file',
       fileUrl: localUrl,
       fileName: file.name || 'file',
-      fileType: file.type || 'application/octet-stream',
+      fileType: contentType,
       fileSize: file.size,
       createdAt: Date.now(),
       readBy: [myUid],
@@ -287,7 +304,10 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       const path = `couples/${coupleId}/files/${myUid}/${clientId}_${safeFileName(file.name)}`
       const storageRef = ref(storage, path)
       await uploadBytes(storageRef, file, {
-        contentType: file.type || 'application/octet-stream',
+        contentType,
+        customMetadata: {
+          originalName: file.name || 'file',
+        },
       })
       const fileUrl = await getDownloadURL(storageRef)
       const createdAt = Timestamp.now()
@@ -297,7 +317,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         type: 'file',
         fileUrl,
         fileName: file.name || 'file',
-        fileType: file.type || 'application/octet-stream',
+        fileType: contentType,
         fileSize: file.size,
         createdAt,
         readBy: [myUid],

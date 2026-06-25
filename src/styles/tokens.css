@@ -680,6 +680,22 @@ body {
   justify-content: flex-end;
 }
 
+.message-unread-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  font-size: 14px;
+  color: var(--color-primary);
+  opacity: 0.9;
+}
+
+[data-theme="high-contrast"] .message-unread-icon {
+  color: var(--color-primary) !important;
+  opacity: 1;
+}
+
 .message-image-btn {
   max-width: 68%;
   padding: 0;
