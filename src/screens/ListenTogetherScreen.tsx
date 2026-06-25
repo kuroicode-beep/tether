@@ -12,13 +12,14 @@ interface ListenTogetherScreenProps {
   onBack: () => void
   onNavigate: (screen: 'home' | 'chat' | 'diary' | 'more') => void
   onShowPlayer: () => void
+  onRefreshPlaylist: () => void
 }
 
 function isAudioFile(fileName: string, fileType: string): boolean {
   return fileType.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(fileName)
 }
 
-export function ListenTogetherScreen({ onBack, onNavigate, onShowPlayer }: ListenTogetherScreenProps) {
+export function ListenTogetherScreen({ onBack, onNavigate, onShowPlayer, onRefreshPlaylist }: ListenTogetherScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
   const { files } = useLibrary(coupleId, uid)
@@ -72,6 +73,15 @@ export function ListenTogetherScreen({ onBack, onNavigate, onShowPlayer }: Liste
           <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
             업로드된 음악에서 각자 3곡씩 고르고, 내 화면에서는 상대 곡 중 1곡만 제외할 수 있어요. 현재 재생 후보 {activeTracks.length}곡.
           </p>
+          <button
+            type="button"
+            onClick={onRefreshPlaylist}
+            disabled={activeTracks.length === 0}
+            className="mt-md inline-flex min-h-[50px] w-full items-center justify-center gap-xs rounded-full bg-primary px-lg font-label-md text-label-md text-on-primary disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">refresh</span>
+            플레이리스트 갱신
+          </button>
         </section>
 
         <section className="hc-readable-box rounded-xl bg-surface p-md">

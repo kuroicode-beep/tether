@@ -37,7 +37,7 @@ export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !track) return
-    audio.loop = true
+    audio.loop = false
     audio.currentTime = 0
     void audio.play()
       .then(() => setPlaying(true))

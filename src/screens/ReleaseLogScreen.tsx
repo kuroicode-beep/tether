@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-4-listen-refresh-player',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.4 핫픽스.',
+    detail: '같이듣기 메뉴에 플레이리스트 갱신 버튼을 추가했습니다. 선택한 곡 목록을 상단 플레이어에 즉시 다시 적용할 수 있고, 랜덤 반복 재생이 같은 곡만 반복되지 않도록 플레이어 반복 처리도 정리했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-3-library-file-index-listen-picker',
     date: '2026.06.26',
     type: 'hotfix',

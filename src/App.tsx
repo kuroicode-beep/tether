@@ -91,6 +91,7 @@ function AppContent() {
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadCachedThemeTrack())
   const [playerHidden, setPlayerHidden] = useState(false)
+  const [playerRefreshKey, setPlayerRefreshKey] = useState(0)
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
@@ -206,6 +207,11 @@ function AppContent() {
 
   const showPlayer = useCallback(() => {
     setPlayerHidden(false)
+  }, [])
+
+  const refreshPlayer = useCallback(() => {
+    setPlayerHidden(false)
+    setPlayerRefreshKey((current) => current + 1)
   }, [])
 
   useEffect(() => {
@@ -351,13 +357,18 @@ function AppContent() {
   const toHome = () => setScreen('home')
   const activePlaylist = listeningTogether.activeTracks.length > 0 ? listeningTogether.activeTracks : (themeTrack ? [themeTrack] : [])
   const showThemePlayer = activePlaylist.length > 0 && session.status === 'connected' && !playerHidden
+  const playlistSignature = activePlaylist.map((track) => `${track.id ?? track.url}:${track.title}`).join('|')
 
   return (
     <>
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
       {showThemePlayer && (
-        <ThemeMusicPlayer tracks={activePlaylist} onHide={() => setPlayerHidden(true)} />
+        <ThemeMusicPlayer
+          key={`${playerRefreshKey}:${playlistSignature}`}
+          tracks={activePlaylist}
+          onHide={() => setPlayerHidden(true)}
+        />
       )}
 
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
@@ -367,7 +378,7 @@ function AppContent() {
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
         {screen === 'library'     && <LibraryScreen onBack={toHome} onNavigate={navigate} />}
-        {screen === 'listenTogether' && <ListenTogetherScreen onBack={toHome} onNavigate={navigate} onShowPlayer={showPlayer} />}
+        {screen === 'listenTogether' && <ListenTogetherScreen onBack={toHome} onNavigate={navigate} onShowPlayer={showPlayer} onRefreshPlaylist={refreshPlayer} />}
         {screen === 'links'       && <LinkShareScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'dateRecipe'  && <DateRecipeScreen onBack={toHome} onNavigate={navigate} />}
         {screen === 'history'     && <StatusHistoryScreen onBack={toHome} />}
