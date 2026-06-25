@@ -68,5 +68,5 @@
 - 주의사항: `.cursor/rules/docs-completion-reports.mdc` 등 기존 dirty 파일은 이번 작업 범위에서 제외했다.
 
 ## 08. Git 커밋
-- 커밋 해시: `ed8baae`
+- 커밋 해시: `e650542`
 - 배포 여부: `npm run build` 통과, Firebase Hosting 배포 완료
