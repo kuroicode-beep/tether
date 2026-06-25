@@ -41,5 +41,5 @@
 - 주의사항: 관리자 화면 접근 제어는 UI 표시와 Firestore rules 양쪽을 함께 유지해야 한다.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `bfb2a6a`
 - 배포 여부: Firebase Hosting 배포 완료 (`https://tether-d1dab.web.app`)
