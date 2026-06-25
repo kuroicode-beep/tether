@@ -59,6 +59,26 @@ const NAVIGATION_SCREENS = new Set<string>([
   'admin',
 ])
 
+const THEME_TRACK_CACHE_KEY = 'tether_theme_track_v1'
+
+// Reads the cached theme track only to avoid an empty first paint before Firestore arrives.
+function loadCachedThemeTrack(): ThemeTrack | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(THEME_TRACK_CACHE_KEY) ?? 'null') as Partial<ThemeTrack> | null
+    if (!parsed || typeof parsed.title !== 'string' || typeof parsed.url !== 'string') return null
+    return { title: parsed.title, url: parsed.url }
+  } catch {
+    return null
+  }
+}
+
+function cacheThemeTrack(track: ThemeTrack | null) {
+  try {
+    if (track) localStorage.setItem(THEME_TRACK_CACHE_KEY, JSON.stringify(track))
+    else localStorage.removeItem(THEME_TRACK_CACHE_KEY)
+  } catch { /* ignore */ }
+}
+
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
@@ -66,7 +86,7 @@ function AppContent() {
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
-  const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(null)
+  const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadCachedThemeTrack())
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
@@ -136,9 +156,12 @@ function AppContent() {
         const track = data?.mainThemeTrack
         if (!track || typeof track.title !== 'string' || typeof track.url !== 'string') {
           setThemeTrack(null)
+          cacheThemeTrack(null)
           return
         }
-        setThemeTrack({ title: track.title, url: track.url })
+        const next = { title: track.title, url: track.url }
+        setThemeTrack(next)
+        cacheThemeTrack(next)
       },
       (err) => console.warn('[App] theme track listener failed', err),
     )
@@ -147,6 +170,7 @@ function AppContent() {
   const handleSetThemeTrack = useCallback(async (track: ThemeTrack) => {
     if (!session.coupleId || !session.uid) return
     setThemeTrack(track)
+    cacheThemeTrack(track)
     try {
       await setDoc(doc(db, 'couples', session.coupleId), {
         mainThemeTrack: {

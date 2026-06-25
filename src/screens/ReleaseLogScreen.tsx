@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-11-theme-music-initial-load',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.11 핫픽스.',
+    detail: '메인테마 음악이 첫 접속 직후 비어 보일 수 있는 문제를 보강했습니다. Firestore 공용 설정이 도착하기 전에는 마지막 테마곡 캐시로 즉시 표시하고, 공용 설정이 도착하면 두 사람 모두 같은 마지막 곡으로 동기화됩니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-10-shared-theme-music',
     date: '2026.06.26',
     type: 'hotfix',
