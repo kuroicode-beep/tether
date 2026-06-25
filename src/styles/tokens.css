@@ -387,10 +387,16 @@ body {
 }
 
 .status-edit-grid button.active {
-  background: var(--color-primary);
+  background: var(--color-text);
   border-color: var(--color-primary);
+  color: var(--color-bg);
   opacity: 1;
-  transform: scale(1.04);
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 3px var(--color-bg),
+    0 0 0 6px var(--color-primary),
+    0 8px 18px rgb(0 0 0 / 0.22);
+  filter: saturate(1.2);
 }
 
 [data-theme="high-contrast"] .status-card-inner,
@@ -420,12 +426,15 @@ body {
 }
 
 [data-theme="high-contrast"] .status-edit-grid button.active {
-  background: var(--hc-box-bg) !important;
-  border-color: var(--hc-box-border) !important;
-  color: var(--hc-box-text) !important;
+  background: var(--hc-box-text) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--hc-box-bg) !important;
   opacity: 1 !important;
-  transform: scale(1.04);
+  transform: scale(1.12);
   font-weight: 700 !important;
+  box-shadow:
+    0 0 0 3px var(--hc-box-bg),
+    0 0 0 7px var(--color-primary) !important;
 }
 
 [data-theme="high-contrast"] .home-status-card .mood-chip,

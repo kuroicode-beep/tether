@@ -249,6 +249,8 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                     <button
                       key={condition}
                       onClick={() => toggleCondition(condition)}
+                      aria-pressed={draftStatus.condition === condition}
+                      aria-label={`상태 ${CONDITION_EMOJI[condition]}${draftStatus.condition === condition ? ' 선택됨' : ''}`}
                       className={`flex min-h-[50px] items-center justify-center rounded-xl text-2xl transition-all duration-200 ${
                         draftStatus.condition === condition ? 'active' : ''
                       }`}

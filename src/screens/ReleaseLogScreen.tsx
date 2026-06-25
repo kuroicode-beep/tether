@@ -359,6 +359,7 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
   const [page, setPage] = useState(0)
   const [memoType, setMemoType] = useState<FeedbackReportType>('improvement')
   const [memoText, setMemoText] = useState('')
+  const [copyMessage, setCopyMessage] = useState('')
   const [migrationMessage, setMigrationMessage] = useState<string | null>(null)
   const migrationStartedRef = useRef(false)
   const { uid, coupleId } = useCoupleSession()
@@ -380,6 +381,10 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
   )
   const rangeStart = safePage * PAGE_SIZE + 1
   const rangeEnd = Math.min(RELEASE_LOGS.length, (safePage + 1) * PAGE_SIZE)
+  const openReports = useMemo(
+    () => reports.filter((report) => report.status !== 'done'),
+    [reports],
+  )
 
   useEffect(() => {
     if (!coupleId || !uid || reportsLoading || migrationStartedRef.current) return
@@ -425,6 +430,30 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
     if (!text) return
     const ok = await addReport(memoType, text)
     if (ok) setMemoText('')
+  }
+
+  const handleCopyOpenReports = async () => {
+    const copyText = openReports
+      .map((report, index) => {
+        const typeLabel = MEMO_TYPE_LABEL[report.type]
+        const dateText = formatReportDate(report.createdAt)
+        const meta = [typeLabel, report.authorNickname, dateText].filter(Boolean).join(' · ')
+        return `${index + 1}. ${meta}\n${report.text.trim()}`
+      })
+      .join('\n\n')
+
+    if (!copyText) {
+      setCopyMessage('복사할 미완료 리포트가 없어요.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(copyText)
+      setCopyMessage(`미완료 리포트 ${openReports.length}개를 복사했어요.`)
+    } catch (error) {
+      console.warn('[ReleaseLogScreen] copy feedback reports failed', error)
+      setCopyMessage('복사하지 못했어요. 브라우저 권한을 확인해주세요.')
+    }
   }
 
   return (
@@ -493,6 +522,26 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
               떠오른 개선점이나 버그를 댓글처럼 남겨둘 수 있어요. 같은 커플의 기기에 실시간으로 동기화됩니다.
             </p>
           </div>
+
+          <div className="mb-md flex flex-wrap items-center justify-between gap-sm">
+            <p className="font-label-sm text-label-sm text-on-surface-variant">
+              완료되지 않은 리포트 {openReports.length}개가 복사 대상이에요.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCopyOpenReports()}
+              disabled={openReports.length === 0}
+              className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border border-outline-variant px-md py-sm font-label-md text-label-md text-on-surface disabled:opacity-40"
+            >
+              전체 내용 복사
+            </button>
+          </div>
+
+          {copyMessage && (
+            <p className="mb-md hc-readable-box rounded-xl border border-outline-variant/50 bg-surface-container-low p-md font-label-sm text-label-sm text-on-surface">
+              {copyMessage}
+            </p>
+          )}
 
           {!coupleId && (
             <p className="mb-md hc-readable-box rounded-xl border border-outline-variant/50 p-md font-label-sm text-label-sm text-on-surface-variant">
@@ -600,7 +649,7 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
                         disabled={memo.pending}
                         className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border border-outline-variant px-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
                       >
-                        {memo.status === 'done' ? '다시 열기' : '완료'}
+                        {memo.status === 'done' ? '다시 열기' : '완료 처리'}
                       </button>
                       {memo.authorUid === uid && (
                         <button
