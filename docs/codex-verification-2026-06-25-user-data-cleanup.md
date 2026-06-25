@@ -52,5 +52,5 @@
 - 주의사항: 운영 데이터 정리 시 실제 coupleId `23uQLvKxuVe1mmtwxwTzSDfXEDI2_6xcREXYFS2WqP1pavVEaYxEm7bi1`는 삭제 금지.
 
 ## 08. Git 커밋
-- 커밋 해시: 커밋 후 확인
+- 커밋 해시: `164fadc`
 - 배포 여부: 코드 변경 없음
