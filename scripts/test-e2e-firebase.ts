@@ -150,6 +150,8 @@ async function main() {
   const contentIds: string[] = []
   const photoIds: string[] = []
   const feedbackReportIds: string[] = []
+  const linkIds: string[] = []
+  const dateRecipeIds: string[] = []
   const storagePaths: string[] = []
 
   try {
@@ -328,6 +330,89 @@ async function main() {
 
     await deleteDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', feedbackRef.id))
     feedbackReportIds.pop()
+
+    // ── v0.4.0 shared library: links / date recipes / link files ──────────
+    const linkFilePath = `couples/${coupleId}/links/${userA.uid}/e2e-${Date.now()}.url`
+    const linkFileStorageRef = ref(getStorage(appA), linkFilePath)
+    await uploadBytes(linkFileStorageRef, new Blob(['[InternetShortcut]\nURL=https://example.com']), {
+      contentType: 'text/plain',
+    })
+    storagePaths.push(linkFilePath)
+    const linkFileUrl = await getDownloadURL(linkFileStorageRef)
+
+    const linkRef = await addDoc(collection(dbA, 'couples', coupleId, 'links'), {
+      title: 'e2e-link',
+      url: 'https://example.com',
+      summary: 'e2e shared link',
+      fileUrl: linkFileUrl,
+      fileName: 'e2e.url',
+      createdBy: userA.uid,
+      createdAt: serverTimestamp(),
+    })
+    linkIds.push(linkRef.id)
+
+    const partnerLinkSnap = await getDoc(doc(dbB, 'couples', coupleId, 'links', linkRef.id))
+    if (partnerLinkSnap.data()?.title !== 'e2e-link') {
+      throw new Error('Partner shared link read failed')
+    }
+
+    await expectDenied('non-member shared link read', () =>
+      getDoc(doc(dbC, 'couples', coupleId, 'links', linkRef.id)),
+    )
+
+    await expectDenied('partner shared link delete', () =>
+      deleteDoc(doc(dbB, 'couples', coupleId, 'links', linkRef.id)),
+    )
+
+    await expectDenied('shared link createdBy spoof', () =>
+      addDoc(collection(dbA, 'couples', coupleId, 'links'), {
+        title: 'spoof',
+        url: 'https://example.com/spoof',
+        summary: null,
+        createdBy: userB.uid,
+        createdAt: serverTimestamp(),
+      }),
+    )
+
+    await expectStorageDenied('non-member shared link file upload to member folder', () =>
+      uploadBytes(
+        ref(getStorage(appC!), `couples/${coupleId}/links/${userA.uid}/e2e-denied-${Date.now()}.url`),
+        new Blob(['denied']),
+        { contentType: 'text/plain' },
+      ),
+    )
+
+    const recipeRef = await addDoc(collection(dbA, 'couples', coupleId, 'dateRecipes'), {
+      date: '2026-06-25',
+      food: 'e2e-food',
+      memo: 'e2e date recipe',
+      createdBy: userA.uid,
+      createdAt: serverTimestamp(),
+    })
+    dateRecipeIds.push(recipeRef.id)
+
+    const partnerRecipeSnap = await getDoc(doc(dbB, 'couples', coupleId, 'dateRecipes', recipeRef.id))
+    if (partnerRecipeSnap.data()?.food !== 'e2e-food') {
+      throw new Error('Partner date recipe read failed')
+    }
+
+    await expectDenied('non-member date recipe read', () =>
+      getDoc(doc(dbC, 'couples', coupleId, 'dateRecipes', recipeRef.id)),
+    )
+
+    await expectDenied('partner date recipe delete', () =>
+      deleteDoc(doc(dbB, 'couples', coupleId, 'dateRecipes', recipeRef.id)),
+    )
+
+    await expectDenied('date recipe createdBy spoof', () =>
+      addDoc(collection(dbA, 'couples', coupleId, 'dateRecipes'), {
+        date: '2026-06-25',
+        food: 'spoof',
+        memo: null,
+        createdBy: userB.uid,
+        createdAt: serverTimestamp(),
+      }),
+    )
 
     // ── status / statusHistory 무결성 (#18 Codex Critical) ─────────────────
     await setDoc(doc(dbA, 'couples', coupleId, 'status', userA.uid), {
@@ -572,6 +657,12 @@ async function main() {
         }
         for (const id of feedbackReportIds) {
           await deleteDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', id))
+        }
+        for (const id of linkIds) {
+          await deleteDoc(doc(dbA, 'couples', coupleId, 'links', id))
+        }
+        for (const id of dateRecipeIds) {
+          await deleteDoc(doc(dbA, 'couples', coupleId, 'dateRecipes', id))
         }
         for (const path of storagePaths) {
           await deleteObject(ref(getStorage(appA), path))
