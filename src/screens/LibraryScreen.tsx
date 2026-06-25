@@ -11,6 +11,7 @@ import { useLibrary } from '../hooks/useLibrary'
 interface LibraryScreenProps {
   onBack: () => void
   onNavigate: (screen: 'home' | 'chat' | 'diary' | 'more') => void
+  onSetThemeTrack?: (track: { title: string; url: string }) => void
 }
 
 interface StandaloneScreenProps {
@@ -168,7 +169,7 @@ function RecipeSheet({
   )
 }
 
-export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
+export function LibraryScreen({ onBack, onNavigate, onSetThemeTrack }: LibraryScreenProps) {
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
   const { files, deleteFile } = useLibrary(coupleId, uid)
@@ -249,9 +250,20 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
                 </p>
                 <div className="mt-sm flex flex-col gap-sm">
                   {audio ? (
-                    <audio controls src={item.fileUrl} preload="metadata" className="w-full">
-                      <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName}>음악 파일 열기</a>
-                    </audio>
+                    <>
+                      <audio controls src={item.fileUrl} preload="metadata" className="w-full">
+                        <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName}>음악 파일 열기</a>
+                      </audio>
+                      {onSetThemeTrack && (
+                        <button
+                          type="button"
+                          onClick={() => onSetThemeTrack({ title: item.fileName, url: item.fileUrl })}
+                          className="message-theme-button w-fit px-md"
+                        >
+                          메인테마로 지정
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <a href={item.fileUrl} target="_blank" rel="noreferrer" download={item.fileName} className="inline-flex min-h-[44px] w-fit items-center rounded-full border border-primary px-md font-label-sm text-label-sm text-primary">
                       열기 / 다운로드

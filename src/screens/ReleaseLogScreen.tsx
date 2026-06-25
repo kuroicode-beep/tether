@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-4-12-library-theme-music-button',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.4.12 핫픽스.',
+    detail: '자료실의 오디오 파일에도 메인테마로 지정 버튼을 추가했습니다. 채팅창과 동일하게 자료실에서 지정한 음악도 커플 공용 메인테마로 저장되어 두 사람에게 같은 곡이 표시됩니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-4-11-theme-music-initial-load',
     date: '2026.06.26',
     type: 'hotfix',
