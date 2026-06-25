@@ -1,9 +1,16 @@
 // src/screens/ReleaseLogScreen.tsx
 // Shows release, update, and hotfix notes for the app.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { APP_VERSION_LABEL } from '../lib/appVersion'
+import { useApp } from '../context/AppContext'
+import { useCoupleSession } from '../hooks/useCoupleSession'
+import {
+  useFeedbackReports,
+  type FeedbackReport,
+  type FeedbackReportType,
+} from '../hooks/useFeedbackReports'
 
 interface ReleaseLogScreenProps {
   onBack: () => void
@@ -19,15 +26,17 @@ interface ReleaseLogEntry {
   detail?: string
 }
 
-interface FeedbackMemo {
+interface LegacyFeedbackMemo {
   id: string
-  type: 'improvement' | 'bug'
+  type: FeedbackReportType
   text: string
   createdAt: string
 }
 
 const PAGE_SIZE = 8
 const FEEDBACK_MEMO_KEY = 'tether_release_log_feedback_memos'
+const FEEDBACK_MEMO_BACKUP_KEY = 'tether_release_log_feedback_memos_backup_v030'
+const FEEDBACK_MEMO_MIGRATED_KEY = 'tether_release_log_feedback_memos_migrated_v030'
 
 const TYPE_LABEL: Record<LogType, string> = {
   release: '릴리즈',
@@ -41,12 +50,18 @@ const TYPE_CLASS: Record<LogType, string> = {
   hotfix: 'bg-error-container text-on-error-container',
 }
 
-const MEMO_TYPE_LABEL: Record<FeedbackMemo['type'], string> = {
+const MEMO_TYPE_LABEL: Record<FeedbackReportType, string> = {
   improvement: '기능개선',
   bug: '버그',
 }
 
-function formatMemoDate(value: string): string {
+const REPORT_STATUS_LABEL: Record<FeedbackReport['status'], string> = {
+  open: '열림',
+  done: '완료',
+}
+
+function formatReportDate(value: number | null): string {
+  if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return new Intl.DateTimeFormat('ko-KR', {
@@ -57,11 +72,11 @@ function formatMemoDate(value: string): string {
   }).format(date)
 }
 
-function loadFeedbackMemos(): FeedbackMemo[] {
+function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(FEEDBACK_MEMO_KEY) ?? '[]')
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((item): item is FeedbackMemo => (
+    return parsed.filter((item): item is LegacyFeedbackMemo => (
       typeof item?.id === 'string'
       && (item.type === 'improvement' || item.type === 'bug')
       && typeof item.text === 'string'
@@ -73,6 +88,20 @@ function loadFeedbackMemos(): FeedbackMemo[] {
 }
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
+  {
+    id: '2026-06-25-release-v0-3-0-feedback-sync-accessibility',
+    date: '2026.06.25',
+    type: 'release',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트.`,
+    detail: 'Log 하단 기능개선/버그 리포트를 커플 간 실시간 동기화로 전환하고, 표시 상태·고대비 가독성·스크린 리더 레이블·Firestore 오프라인 캐시 기반을 보강했습니다.',
+  },
+  {
+    id: '2026-06-22-hotfix-diary-reply-firestore-rules',
+    date: '2026.06.22',
+    type: 'hotfix',
+    title: '교환일기 답장(댓글) 저장 불가 수정.',
+    detail: 'Firestore 규칙이 상대방 reply 작성을 막고 있던 문제를 수정했습니다. 답장 실패 시 화면에 오류 문구를 표시합니다.',
+  },
   {
     id: '2026-06-22-update-release-log-feedback-memos',
     date: '2026.06.22',
@@ -328,9 +357,21 @@ const RELEASE_LOGS: ReleaseLogEntry[] = [
 
 export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
   const [page, setPage] = useState(0)
-  const [memoType, setMemoType] = useState<FeedbackMemo['type']>('improvement')
+  const [memoType, setMemoType] = useState<FeedbackReportType>('improvement')
   const [memoText, setMemoText] = useState('')
-  const [memos, setMemos] = useState<FeedbackMemo[]>(() => loadFeedbackMemos())
+  const [migrationMessage, setMigrationMessage] = useState<string | null>(null)
+  const migrationStartedRef = useRef(false)
+  const { uid, coupleId } = useCoupleSession()
+  const { myNickname } = useApp()
+  const {
+    reports,
+    loading: reportsLoading,
+    saving: reportSaving,
+    error: reportsError,
+    addReport,
+    deleteReport,
+    toggleReportStatus,
+  } = useFeedbackReports(coupleId, uid, myNickname)
   const totalPages = Math.max(1, Math.ceil(RELEASE_LOGS.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages - 1)
   const pageItems = useMemo(
@@ -341,26 +382,49 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
   const rangeEnd = Math.min(RELEASE_LOGS.length, (safePage + 1) * PAGE_SIZE)
 
   useEffect(() => {
-    localStorage.setItem(FEEDBACK_MEMO_KEY, JSON.stringify(memos))
-  }, [memos])
+    if (!coupleId || !uid || reportsLoading || migrationStartedRef.current) return
+    const markerKey = `${FEEDBACK_MEMO_MIGRATED_KEY}_${coupleId}`
+    if (localStorage.getItem(markerKey) === 'true') return
 
-  const handleAddMemo = () => {
+    const legacyMemos = loadLegacyFeedbackMemos()
+    if (legacyMemos.length === 0) {
+      localStorage.setItem(markerKey, 'true')
+      return
+    }
+
+    migrationStartedRef.current = true
+    const existingClientIds = new Set(reports.map((report) => report.clientId).filter(Boolean))
+    const targets = legacyMemos.filter((memo) => !existingClientIds.has(`legacy_feedback_${memo.id}`))
+
+    if (targets.length === 0) {
+      localStorage.setItem(FEEDBACK_MEMO_BACKUP_KEY, JSON.stringify(legacyMemos))
+      localStorage.setItem(markerKey, 'true')
+      localStorage.removeItem(FEEDBACK_MEMO_KEY)
+      setMigrationMessage('이전 로컬 메모를 이미 커플 공유 리포트로 옮겼어요.')
+      return
+    }
+
+    void Promise.all(targets.map((memo) => addReport(memo.type, memo.text, {
+      clientId: `legacy_feedback_${memo.id}`,
+      createdAt: new Date(memo.createdAt).getTime() || Date.now(),
+    }))).then((results) => {
+      if (results.every(Boolean)) {
+        localStorage.setItem(FEEDBACK_MEMO_BACKUP_KEY, JSON.stringify(legacyMemos))
+        localStorage.setItem(markerKey, 'true')
+        localStorage.removeItem(FEEDBACK_MEMO_KEY)
+        setMigrationMessage('이전 로컬 메모를 커플 공유 리포트로 옮겼어요.')
+      } else {
+        migrationStartedRef.current = false
+        setMigrationMessage('이전 로컬 메모 일부를 옮기지 못했어요. 원본은 삭제하지 않았습니다.')
+      }
+    })
+  }, [addReport, coupleId, reports, reportsLoading, uid])
+
+  const handleAddMemo = async () => {
     const text = memoText.trim()
     if (!text) return
-    setMemos((current) => [
-      {
-        id: crypto.randomUUID(),
-        type: memoType,
-        text,
-        createdAt: new Date().toISOString(),
-      },
-      ...current,
-    ])
-    setMemoText('')
-  }
-
-  const handleDeleteMemo = (id: string) => {
-    setMemos((current) => current.filter((memo) => memo.id !== id))
+    const ok = await addReport(memoType, text)
+    if (ok) setMemoText('')
   }
 
   return (
@@ -420,15 +484,33 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
           </button>
         </nav>
 
-        <section className="mt-xl rounded-xl bg-surface-container p-md shadow-sm">
+        <section className="mt-xl hc-readable-box rounded-xl bg-surface-container p-md shadow-sm">
           <div className="mb-md">
             <h2 className="font-label-md text-label-md font-semibold text-on-surface">
               기능개선 / 버그 리포트 메모
             </h2>
             <p className="mt-xs font-label-sm text-label-sm leading-relaxed text-on-surface-variant">
-              떠오른 개선점이나 버그를 댓글처럼 남겨둘 수 있어요. 이 메모는 현재 기기에 저장됩니다.
+              떠오른 개선점이나 버그를 댓글처럼 남겨둘 수 있어요. 같은 커플의 기기에 실시간으로 동기화됩니다.
             </p>
           </div>
+
+          {!coupleId && (
+            <p className="mb-md hc-readable-box rounded-xl border border-outline-variant/50 p-md font-label-sm text-label-sm text-on-surface-variant">
+              커플 연결 후 리포트를 남길 수 있어요.
+            </p>
+          )}
+
+          {migrationMessage && (
+            <p className="mb-md hc-readable-box rounded-xl border border-outline-variant/50 bg-surface-container-low p-md font-label-sm text-label-sm text-on-surface">
+              {migrationMessage}
+            </p>
+          )}
+
+          {reportsError && (
+            <p className="mb-md hc-readable-box rounded-xl border border-error/60 bg-error-container p-md font-label-sm text-label-sm text-on-error-container">
+              {reportsError}
+            </p>
+          )}
 
           <div className="mb-sm grid grid-cols-2 gap-sm">
             {(['improvement', 'bug'] as const).map((type) => (
@@ -437,7 +519,7 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
                 type="button"
                 onClick={() => setMemoType(type)}
                 aria-pressed={memoType === type}
-                className={`min-h-[50px] rounded-full border px-md py-sm font-label-sm text-label-sm transition-colors ${
+                className={`hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border px-md py-sm font-label-sm text-label-sm transition-colors ${
                   memoType === type
                     ? 'border-primary bg-primary text-on-primary'
                     : 'border-outline-variant bg-surface-container-low text-on-surface'
@@ -454,13 +536,14 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
             onKeyDown={(event) => {
               if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
                 event.preventDefault()
-                handleAddMemo()
+                void handleAddMemo()
               }
             }}
             placeholder="예: 알림 테스트 버튼을 더 잘 보이게 / 채팅에서 사진 전송 후 스크롤 확인 필요"
             rows={4}
             maxLength={500}
-            className="w-full resize-none rounded-xl border border-outline-variant/40 bg-surface-container-low p-md font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+            disabled={!coupleId || reportSaving}
+            className="hc-readable-box w-full resize-none rounded-xl border border-outline-variant/40 bg-surface-container-low p-md font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
           />
 
           <div className="mt-sm flex items-center justify-between gap-sm">
@@ -469,42 +552,72 @@ export function ReleaseLogScreen({ onBack }: ReleaseLogScreenProps) {
             </p>
             <button
               type="button"
-              onClick={handleAddMemo}
-              disabled={!memoText.trim()}
-              className="min-h-[50px] rounded-full bg-primary px-lg py-sm font-label-md text-label-md text-on-primary disabled:opacity-40"
+              onClick={() => void handleAddMemo()}
+              disabled={!coupleId || !memoText.trim() || reportSaving}
+              className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full bg-primary px-lg py-sm font-label-md text-label-md text-on-primary disabled:opacity-40"
             >
-              메모 추가
+              {reportSaving ? '저장 중...' : '메모 추가'}
             </button>
           </div>
 
           <div className="mt-lg space-y-sm">
-            {memos.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-outline-variant/50 p-md text-center font-label-sm text-label-sm text-on-surface-variant">
-                아직 남긴 메모가 없어요.
+            {reportsLoading ? (
+              <p className="hc-readable-box rounded-xl border border-outline-variant/50 p-md text-center font-label-sm text-label-sm text-on-surface-variant">
+                리포트를 불러오는 중...
+              </p>
+            ) : reports.length === 0 ? (
+              <p className="hc-readable-box rounded-xl border border-dashed border-outline-variant/50 p-md text-center font-label-sm text-label-sm text-on-surface-variant">
+                아직 남긴 리포트가 없어요.
               </p>
             ) : (
-              memos.map((memo) => (
-                <article key={memo.id} className="rounded-xl border border-outline-variant/30 bg-surface-container-low p-md">
+              reports.map((memo) => (
+                <article key={memo.id} className="hc-readable-box rounded-xl border border-outline-variant/30 bg-surface-container-low p-md">
                   <div className="mb-xs flex items-center justify-between gap-sm">
-                    <div className="flex items-center gap-xs">
-                      <span className={`rounded-full px-sm py-xs font-label-sm text-label-sm ${
+                    <div className="flex flex-wrap items-center gap-xs">
+                      <span className={`hc-readable-box hc-readable-box--pill rounded-full px-sm py-xs font-label-sm text-label-sm ${
                         memo.type === 'bug' ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-surface'
                       }`}>
                         {MEMO_TYPE_LABEL[memo.type]}
                       </span>
+                      <span className={`hc-readable-box hc-readable-box--pill rounded-full px-sm py-xs font-label-sm text-label-sm ${
+                        memo.status === 'done' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface'
+                      }`}>
+                        {REPORT_STATUS_LABEL[memo.status]}
+                      </span>
                       <time className="font-label-sm text-label-sm text-on-surface-variant">
-                        {formatMemoDate(memo.createdAt)}
+                        {formatReportDate(memo.createdAt)}
                       </time>
+                      {memo.pending && (
+                        <span className="font-label-sm text-label-sm text-on-surface-variant">
+                          동기화 중
+                        </span>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteMemo(memo.id)}
-                      className="min-h-[50px] min-w-[50px] rounded-full text-on-surface-variant"
-                      aria-label="메모 삭제"
-                    >
-                      <span className="material-symbols-outlined text-base">delete</span>
-                    </button>
+                    <div className="flex items-center gap-xs">
+                      <button
+                        type="button"
+                        onClick={() => void toggleReportStatus(memo)}
+                        disabled={memo.pending}
+                        className="hc-readable-box hc-readable-box--pill min-h-[50px] rounded-full border border-outline-variant px-sm font-label-sm text-label-sm text-on-surface disabled:opacity-40"
+                      >
+                        {memo.status === 'done' ? '다시 열기' : '완료'}
+                      </button>
+                      {memo.authorUid === uid && (
+                        <button
+                          type="button"
+                          onClick={() => void deleteReport(memo.id)}
+                          disabled={memo.pending}
+                          className="hc-readable-box hc-readable-box--circle min-h-[50px] min-w-[50px] rounded-full text-on-surface-variant disabled:opacity-40"
+                          aria-label="리포트 삭제"
+                        >
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  <p className="mb-xs font-label-sm text-label-sm text-on-surface-variant">
+                    {memo.authorNickname}
+                  </p>
                   <p className="whitespace-pre-wrap break-words font-body-sm text-body-sm leading-relaxed text-on-surface">
                     {memo.text}
                   </p>

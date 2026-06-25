@@ -232,6 +232,7 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
   const [view, setView] = useState<View>('list')
   const [selected, setSelected] = useState<DiaryEntry | null>(null)
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+  const [replyError, setReplyError] = useState('')
 
   const myName = myNickname || '나'
   const partnerName = partnerNickname || '자기'
@@ -252,9 +253,13 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
 
   const handleReplySubmit = async (data: { title: string; content: string; imageFile?: File }) => {
     if (!selected) return
-    await writeReply(selected.id, { content: data.content, imageFile: data.imageFile })
-    setView('list')
-    setSelected(null)
+    setReplyError('')
+    const ok = await writeReply(selected.id, { content: data.content, imageFile: data.imageFile })
+    if (!ok) {
+      setReplyError('답장을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+      return
+    }
+    setView('read')
   }
 
   const handleEditSubmit = async (data: { title: string; content: string; imageFile?: File; imageUrl?: string | null }) => {
@@ -277,7 +282,16 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
     return <WriteForm onSubmit={handleWriteSubmit} onCancel={() => setView('list')} />
   }
   if (view === 'reply') {
-    return <WriteForm isReply onSubmit={handleReplySubmit} onCancel={() => setView('read')} />
+    return (
+      <>
+        <WriteForm isReply onSubmit={handleReplySubmit} onCancel={() => { setReplyError(''); setView('read') }} />
+        {replyError && (
+          <p className="fixed bottom-24 left-0 right-0 mx-margin-mobile rounded-xl bg-error-container px-md py-sm text-center font-label-sm text-label-sm text-error">
+            {replyError}
+          </p>
+        )}
+      </>
+    )
   }
   if (view === 'edit' && selected) {
     return (
@@ -291,17 +305,18 @@ export function DiaryScreen({ onNavigate }: DiaryScreenProps) {
     )
   }
   if (view === 'read' && selected) {
+    const liveEntry = entries.find((entry) => entry.id === selected.id) ?? selected
     return (
       <>
         <ReadView
-          entry={selected}
+          entry={liveEntry}
           myUid={uid ?? ''}
           myNickname={myName}
           partnerNickname={partnerName}
           myPhotoUrl={myPhotoUrl}
           partnerPhotoUrl={partnerPhotoUrl}
           onBack={() => { setView('list'); setSelected(null) }}
-          onReply={() => setView('reply')}
+          onReply={() => { setReplyError(''); setView('reply') }}
           onImageTap={setViewerUrl}
           onEdit={() => setView('edit')}
           onDelete={() => {

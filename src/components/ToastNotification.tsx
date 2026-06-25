@@ -39,6 +39,11 @@ export function ToastNotification({ toast, onNavigate, onDismiss }: ToastNotific
 
   const icon = TYPE_ICON[toast.type ?? ''] ?? 'notifications'
 
+  const handleDismiss = () => {
+    setVisible(false)
+    setTimeout(onDismiss, 300)
+  }
+
   const handleTap = () => {
     setVisible(false)
     setTimeout(() => {
@@ -51,32 +56,40 @@ export function ToastNotification({ toast, onNavigate, onDismiss }: ToastNotific
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={`app-fixed-x fixed top-0 z-[100] flex justify-center px-margin-mobile pt-safe-top transition-transform duration-300 ${
         visible ? 'translate-y-0' : '-translate-y-full'
       }`}
       style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
     >
-      <button
-        onClick={handleTap}
-        className="toast-panel hc-readable-box w-full max-w-sm bg-surface/95 backdrop-blur-md rounded-2xl shadow-lg border border-outline-variant/20 px-lg py-md flex items-center gap-md text-left active:scale-95 transition-transform"
+      <div
+        className="toast-panel hc-readable-box w-full max-w-sm bg-surface/95 backdrop-blur-md rounded-2xl shadow-lg border border-outline-variant/20 px-lg py-md flex items-center gap-md text-left transition-transform"
       >
         {/* 아이콘 */}
         <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
           <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
         </div>
         {/* 텍스트 */}
-        <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={handleTap}
+          className="flex-1 min-w-0 text-left active:scale-[0.99] transition-transform"
+          aria-label={`${toast.title}, ${toast.body}`}
+        >
           <p className="font-label-md text-label-md text-on-surface font-semibold truncate">{toast.title}</p>
           <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{toast.body}</p>
-        </div>
+        </button>
         {/* 닫기 */}
         <button
-          onClick={(e) => { e.stopPropagation(); setVisible(false); setTimeout(onDismiss, 300) }}
-          className="p-xs text-outline-variant hover:text-on-surface transition-colors"
+          type="button"
+          onClick={handleDismiss}
+          className="min-h-[50px] min-w-[50px] rounded-full p-xs text-outline-variant hover:text-on-surface transition-colors"
+          aria-label="알림 닫기"
         >
           <span className="material-symbols-outlined text-sm">close</span>
         </button>
-      </button>
+      </div>
     </div>
   )
 }

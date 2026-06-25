@@ -1,7 +1,12 @@
 // src/lib/firebase.ts
 // Firebase 초기화 + Auth Persistence 명시 설정
 import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
@@ -52,7 +57,21 @@ if (missingKeys.length > 0) {
 const app = initializeApp(firebaseConfig)
 
 export { app }
-export const db = getFirestore(app)
+
+function createFirestoreDb() {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    })
+  } catch (error) {
+    console.warn('[firebase] persistent Firestore cache unavailable, falling back to memory cache', error)
+    return getFirestore(app)
+  }
+}
+
+export const db = createFirestoreDb()
 export const storage = getStorage(app)
 
 // Android Chrome / iOS Safari의 cross-site storage 제한 환경에서도 redirect 토큰이

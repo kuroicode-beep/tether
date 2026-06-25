@@ -8,6 +8,8 @@ interface MoodChipProps {
 export function MoodChip({ label, active }: MoodChipProps) {
   return (
     <span
+      role="text"
+      aria-label={`기분 태그 ${label}${active ? ' 선택됨' : ' 선택 안 됨'}`}
       className="mood-chip hc-readable-box hc-readable-box--pill inline-flex items-center justify-center rounded-full font-label-sm text-[10px] transition-all duration-200"
       style={
         active

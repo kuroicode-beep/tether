@@ -152,8 +152,8 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
   const writeReply = async (
     diaryId: string,
     data: { content: string; imageFile?: File },
-  ) => {
-    if (!coupleId || !myUid) return
+  ): Promise<boolean> => {
+    if (!coupleId || !myUid) return false
     let imageUrl: string | null = null
     if (data.imageFile) {
       try {
@@ -182,7 +182,7 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
       return prev.map((e) => e.id === diaryId ? { ...e, reply } : e)
     })
 
-    if (isOptimisticId(diaryId)) return
+    if (isOptimisticId(diaryId)) return false
     try {
       await updateDoc(doc(db, 'couples', coupleId, 'diary', diaryId), {
         reply: {
@@ -193,10 +193,12 @@ export function useDiary(coupleId: string | null, myUid: string | null) {
           clientId,
         },
       })
+      return true
     } catch (err) {
       console.warn('[useDiary] writeReply failed', err)
       const rollback = previousReply
       setEntries((prev) => prev.map((e) => e.id === diaryId ? { ...e, reply: rollback } : e))
+      return false
     }
   }
 

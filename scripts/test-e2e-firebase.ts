@@ -149,6 +149,7 @@ async function main() {
   const statusHistoryIds: string[] = []
   const contentIds: string[] = []
   const photoIds: string[] = []
+  const feedbackReportIds: string[] = []
   const storagePaths: string[] = []
 
   try {
@@ -263,6 +264,70 @@ async function main() {
     if (coupleSnap.data()?.anniversaries?.[0]?.id !== 'e2e-first-met') {
       throw new Error('Couple document shared update failed')
     }
+
+    // ── v0.3.0 feedbackReports 커플 동기화 / ownership ───────────────────
+    const feedbackRef = await addDoc(collection(dbA, 'couples', coupleId, 'feedbackReports'), {
+      clientId: `e2e-feedback-${Date.now()}`,
+      type: 'bug',
+      text: 'e2e-feedback-report',
+      status: 'open',
+      authorUid: userA.uid,
+      authorNickname: 'E2E A',
+      createdAt: serverTimestamp(),
+    })
+    feedbackReportIds.push(feedbackRef.id)
+
+    const partnerFeedbackSnap = await getDoc(doc(dbB, 'couples', coupleId, 'feedbackReports', feedbackRef.id))
+    if (partnerFeedbackSnap.data()?.text !== 'e2e-feedback-report') {
+      throw new Error('Partner feedback report read failed')
+    }
+
+    await expectDenied('non-member feedback report read', () =>
+      getDoc(doc(dbC, 'couples', coupleId, 'feedbackReports', feedbackRef.id)),
+    )
+
+    await expectDenied('non-member feedback report create', () =>
+      addDoc(collection(dbC, 'couples', coupleId, 'feedbackReports'), {
+        clientId: `e2e-feedback-denied-${Date.now()}`,
+        type: 'bug',
+        text: 'denied',
+        status: 'open',
+        authorUid: userC!.uid,
+        authorNickname: 'E2E C',
+        createdAt: serverTimestamp(),
+      }),
+    )
+
+    await updateDoc(doc(dbB, 'couples', coupleId, 'feedbackReports', feedbackRef.id), {
+      status: 'done',
+      updatedAt: serverTimestamp(),
+      doneAt: serverTimestamp(),
+      doneBy: userB.uid,
+    })
+
+    const doneFeedbackSnap = await getDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', feedbackRef.id))
+    if (doneFeedbackSnap.data()?.status !== 'done') {
+      throw new Error('Partner feedback status update failed')
+    }
+
+    await expectDenied('partner feedback text tamper', () =>
+      updateDoc(doc(dbB, 'couples', coupleId, 'feedbackReports', feedbackRef.id), {
+        text: 'hacked',
+      }),
+    )
+
+    await expectDenied('feedback authorUid tamper', () =>
+      updateDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', feedbackRef.id), {
+        authorUid: userB.uid,
+      }),
+    )
+
+    await expectDenied('partner feedback delete', () =>
+      deleteDoc(doc(dbB, 'couples', coupleId, 'feedbackReports', feedbackRef.id)),
+    )
+
+    await deleteDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', feedbackRef.id))
+    feedbackReportIds.pop()
 
     // ── status / statusHistory 무결성 (#18 Codex Critical) ─────────────────
     await setDoc(doc(dbA, 'couples', coupleId, 'status', userA.uid), {
@@ -504,6 +569,9 @@ async function main() {
         }
         for (const id of photoIds) {
           await deleteDoc(doc(dbA, 'couples', coupleId, 'photos', id))
+        }
+        for (const id of feedbackReportIds) {
+          await deleteDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', id))
         }
         for (const path of storagePaths) {
           await deleteObject(ref(getStorage(appA), path))

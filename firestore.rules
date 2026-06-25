@@ -170,11 +170,36 @@ service cloud.firestore {
                       && resource.data.senderUid == request.auth.uid;
       }
 
-      // Diary: author owns entries; partner may only mark as read.
+      // Diary: author owns entries; partner may mark read or write one reply.
       match /diary/{diaryId} {
+        function hasNoReply() {
+          return !resource.data.keys().hasAny(['reply']) || resource.data.reply == null;
+        }
+
         function isDiaryReadOnlyUpdate() {
           return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
                  && request.resource.data.isRead == true;
+        }
+
+        function isDiaryReplyCreate() {
+          return resource.data.authorUid != request.auth.uid
+                 && hasNoReply()
+                 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply'])
+                 && request.resource.data.reply is map
+                 && request.resource.data.reply.keys().hasAll(['authorUid', 'content', 'createdAt'])
+                 && request.resource.data.reply.authorUid == request.auth.uid
+                 && request.resource.data.reply.content is string
+                 && request.resource.data.reply.content.size() > 0
+                 && request.resource.data.reply.content.size() <= 4000
+                 && (
+                   !request.resource.data.reply.keys().hasAny(['imageUrl'])
+                   || request.resource.data.reply.imageUrl == null
+                   || request.resource.data.reply.imageUrl is string
+                 )
+                 && (
+                   !request.resource.data.reply.keys().hasAny(['clientId'])
+                   || request.resource.data.reply.clientId is string
+                 );
         }
 
         allow read: if isCoupleMember();
@@ -184,6 +209,7 @@ service cloud.firestore {
                       && (
                         resource.data.authorUid == request.auth.uid
                         || isDiaryReadOnlyUpdate()
+                        || isDiaryReplyCreate()
                       );
         allow delete: if isCoupleMember()
                       && resource.data.authorUid == request.auth.uid;
@@ -246,6 +272,69 @@ service cloud.firestore {
                       && request.resource.data.authorUid == request.auth.uid;
         allow update, delete: if isCoupleMember()
                               && resource.data.authorUid == request.auth.uid;
+      }
+
+      // Feedback reports: couple-shared Log memos with author-owned deletion.
+      match /feedbackReports/{reportId} {
+        function validFeedbackType() {
+          return request.resource.data.type in ['improvement', 'bug'];
+        }
+
+        function validFeedbackStatus() {
+          return request.resource.data.status in ['open', 'done'];
+        }
+
+        function validFeedbackText() {
+          return request.resource.data.text is string
+                 && request.resource.data.text.size() > 0
+                 && request.resource.data.text.size() <= 500;
+        }
+
+        function validFeedbackCreate() {
+          return request.resource.data.keys().hasOnly([
+                   'clientId',
+                   'type',
+                   'text',
+                   'status',
+                   'authorUid',
+                   'authorNickname',
+                   'createdAt',
+                 ])
+                 && request.resource.data.clientId is string
+                 && request.resource.data.clientId.size() > 0
+                 && request.resource.data.authorUid == request.auth.uid
+                 && request.resource.data.authorNickname is string
+                 && request.resource.data.authorNickname.size() > 0
+                 && request.resource.data.authorNickname.size() <= 40
+                 && validFeedbackType()
+                 && validFeedbackText()
+                 && request.resource.data.status == 'open'
+                 && request.resource.data.createdAt is timestamp;
+        }
+
+        function validFeedbackUpdate() {
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                   'status',
+                   'updatedAt',
+                   'doneAt',
+                   'doneBy',
+                 ])
+                 && validFeedbackStatus()
+                 && (!request.resource.data.keys().hasAny(['updatedAt'])
+                     || request.resource.data.updatedAt is timestamp)
+                 && (!request.resource.data.keys().hasAny(['doneAt'])
+                     || request.resource.data.doneAt == null
+                     || request.resource.data.doneAt is timestamp)
+                 && (!request.resource.data.keys().hasAny(['doneBy'])
+                     || request.resource.data.doneBy == null
+                     || request.resource.data.doneBy == request.auth.uid);
+        }
+
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember() && validFeedbackCreate();
+        allow update: if isCoupleMember() && validFeedbackUpdate();
+        allow delete: if isCoupleMember()
+                      && resource.data.authorUid == request.auth.uid;
       }
     }
   }
