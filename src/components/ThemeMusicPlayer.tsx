@@ -1,6 +1,6 @@
 // src/components/ThemeMusicPlayer.tsx
-// Shows the smallest global loop player for the selected Tether theme track.
-import { useEffect, useRef, useState } from 'react'
+// Shows the smallest global random-repeat player for the selected Tether playlist.
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface ThemeTrack {
   id?: string
@@ -26,23 +26,42 @@ function pickRandomIndex(length: number, currentIndex: number): number {
 // Renders a compact top player that random-repeats the active couple playlist.
 export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const advancingRef = useRef(false)
   const [playing, setPlaying] = useState(false)
   const [trackIndex, setTrackIndex] = useState(0)
   const track = tracks[trackIndex] ?? tracks[0]
+  const playlistKey = tracks.map((item) => `${item.id ?? item.url}:${item.url}`).join('|')
 
   useEffect(() => {
-    setTrackIndex((current) => current < tracks.length ? current : 0)
-  }, [tracks.length])
+    setTrackIndex(tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0)
+  }, [playlistKey, tracks.length])
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !track) return
     audio.loop = false
     audio.currentTime = 0
+    audio.load()
     void audio.play()
       .then(() => setPlaying(true))
       .catch(() => setPlaying(false))
   }, [track?.url])
+
+  const advanceRandom = useCallback(() => {
+    if (tracks.length === 0) return
+    advancingRef.current = true
+    setTrackIndex((current) => pickRandomIndex(tracks.length, current))
+    window.setTimeout(() => {
+      advancingRef.current = false
+    }, 500)
+  }, [tracks.length])
+
+  const handleTimeUpdate = () => {
+    const audio = audioRef.current
+    if (!audio || tracks.length === 0 || advancingRef.current) return
+    if (!Number.isFinite(audio.duration) || audio.duration <= 0) return
+    if (audio.duration - audio.currentTime <= 0.05) advanceRandom()
+  }
 
   const togglePlayback = () => {
     const audio = audioRef.current
@@ -57,11 +76,6 @@ export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
     setPlaying(false)
   }
 
-  const playRandomNext = () => {
-    if (tracks.length === 0) return
-    setTrackIndex((current) => pickRandomIndex(tracks.length, current))
-  }
-
   if (!track) return null
 
   return (
@@ -72,7 +86,8 @@ export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
         preload="metadata"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={playRandomNext}
+        onEnded={advanceRandom}
+        onTimeUpdate={handleTimeUpdate}
       />
       <span className="material-symbols-outlined theme-music-icon" aria-hidden="true">
         graphic_eq
@@ -83,7 +98,7 @@ export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
       <button
         type="button"
         className="theme-music-button theme-music-button--ghost"
-        onClick={playRandomNext}
+        onClick={advanceRandom}
         aria-label="랜덤 다음 곡"
       >
         <span className="material-symbols-outlined" aria-hidden="true">shuffle</span>

@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-5-random-repeat-player',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.5 핫픽스.',
+    detail: '같이듣기 플레이어가 첫 곡만 반복되는 문제를 수정했습니다. 플레이리스트 적용 시 첫 곡부터 랜덤으로 시작하고, 곡 종료 또는 끝 구간 감지 시 전체 후보 중 다음 곡을 랜덤으로 골라 반복 재생합니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-4-listen-refresh-player',
     date: '2026.06.26',
     type: 'hotfix',
