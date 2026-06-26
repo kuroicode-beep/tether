@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-26-hotfix-v0-5-6-player-random-start-hidden-audio',
+    date: '2026.06.26',
+    type: 'hotfix',
+    title: 'Tether v0.5.6 핫픽스.',
+    detail: '같이듣기 플레이어가 갱신 직후 첫 곡에 고정될 수 있는 흐름을 수정했습니다. 플레이어 첫 렌더부터 랜덤 곡으로 시작하며, 플레이어를 숨겨도 음악은 계속 재생됩니다. 홈 Log 옆 Player 버튼은 보이기/숨기기 토글로 동작합니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-5-random-repeat-player',
     date: '2026.06.26',
     type: 'hotfix',

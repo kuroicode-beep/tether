@@ -180,6 +180,13 @@ body {
   color: var(--color-text);
   padding: 2px 10px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.theme-music-player--hidden {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -120%);
 }
 
 .theme-music-icon {

@@ -21,8 +21,9 @@ import { isAdminEmail } from '../lib/coupleAuth'
 
 interface HomeScreenProps {
   onNavigate: (screen: string) => void
-  onShowPlayer?: () => void
+  onTogglePlayer?: () => void
   hasPlayer?: boolean
+  isPlayerVisible?: boolean
 }
 
 const CONDITIONS: Condition[] = [
@@ -59,7 +60,7 @@ function timeAgo(ts: number | null): string {
   }
 }
 
-export function HomeScreen({ onNavigate, onShowPlayer, hasPlayer }: HomeScreenProps) {
+export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisible }: HomeScreenProps) {
   const { user } = useSession()
   const { uid, coupleId } = useCoupleSession()
   const { myNickname, partnerNickname, partnerUid } = useApp()
@@ -156,9 +157,9 @@ export function HomeScreen({ onNavigate, onShowPlayer, hasPlayer }: HomeScreenPr
           </button>
           <button
             className="min-h-[50px] rounded-full px-md font-label-md text-label-md text-primary transition-colors duration-200 hover:bg-surface-container disabled:opacity-40"
-            onClick={onShowPlayer}
+            onClick={onTogglePlayer}
             disabled={!hasPlayer}
-            aria-label="같이듣기 플레이어 보이기"
+            aria-label={isPlayerVisible ? '같이듣기 플레이어 숨기기' : '같이듣기 플레이어 보이기'}
           >
             Player
           </button>

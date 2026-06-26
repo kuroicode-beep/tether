@@ -11,7 +11,12 @@ export interface ThemeTrack {
 
 interface ThemeMusicPlayerProps {
   tracks: ThemeTrack[]
+  hidden?: boolean
   onHide?: () => void
+}
+
+function pickInitialRandomIndex(length: number): number {
+  return length > 0 ? Math.floor(Math.random() * length) : 0
 }
 
 function pickRandomIndex(length: number, currentIndex: number): number {
@@ -24,16 +29,16 @@ function pickRandomIndex(length: number, currentIndex: number): number {
 }
 
 // Renders a compact top player that random-repeats the active couple playlist.
-export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
+export function ThemeMusicPlayer({ tracks, hidden = false, onHide }: ThemeMusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const advancingRef = useRef(false)
   const [playing, setPlaying] = useState(false)
-  const [trackIndex, setTrackIndex] = useState(0)
+  const [trackIndex, setTrackIndex] = useState(() => pickInitialRandomIndex(tracks.length))
   const track = tracks[trackIndex] ?? tracks[0]
   const playlistKey = tracks.map((item) => `${item.id ?? item.url}:${item.url}`).join('|')
 
   useEffect(() => {
-    setTrackIndex(tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0)
+    setTrackIndex(pickInitialRandomIndex(tracks.length))
   }, [playlistKey, tracks.length])
 
   useEffect(() => {
@@ -79,7 +84,7 @@ export function ThemeMusicPlayer({ tracks, onHide }: ThemeMusicPlayerProps) {
   if (!track) return null
 
   return (
-    <div className="theme-music-player" role="region" aria-label="같이듣기 플레이어">
+    <div className={`theme-music-player${hidden ? ' theme-music-player--hidden' : ''}`} role="region" aria-label="같이듣기 플레이어" aria-hidden={hidden}>
       <audio
         ref={audioRef}
         src={track.url}

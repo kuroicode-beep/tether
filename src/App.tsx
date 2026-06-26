@@ -214,6 +214,10 @@ function AppContent() {
     setPlayerRefreshKey((current) => current + 1)
   }, [])
 
+  const togglePlayer = useCallback(() => {
+    setPlayerHidden((hidden) => !hidden)
+  }, [])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const target = params.get('screen')
@@ -356,17 +360,19 @@ function AppContent() {
 
   const toHome = () => setScreen('home')
   const activePlaylist = listeningTogether.activeTracks.length > 0 ? listeningTogether.activeTracks : (themeTrack ? [themeTrack] : [])
-  const showThemePlayer = activePlaylist.length > 0 && session.status === 'connected' && !playerHidden
+  const hasThemePlayer = activePlaylist.length > 0 && session.status === 'connected'
+  const showThemePlayer = hasThemePlayer && !playerHidden
   const playlistSignature = activePlaylist.map((track) => `${track.id ?? track.url}:${track.title}`).join('|')
 
   return (
     <>
       <ToastNotification toast={toast} onNavigate={navigate} onDismiss={() => setToast(null)} />
       <IOSInstallBanner />
-      {showThemePlayer && (
+      {hasThemePlayer && (
         <ThemeMusicPlayer
           key={`${playerRefreshKey}:${playlistSignature}`}
           tracks={activePlaylist}
+          hidden={playerHidden}
           onHide={() => setPlayerHidden(true)}
         />
       )}
@@ -395,7 +401,7 @@ function AppContent() {
             onOpenAdmin={() => setScreen('admin')}
           />
         )}
-        {screen === 'home' && <HomeScreen onNavigate={navigate} onShowPlayer={showPlayer} hasPlayer={activePlaylist.length > 0} />}
+        {screen === 'home' && <HomeScreen onNavigate={navigate} onTogglePlayer={togglePlayer} hasPlayer={activePlaylist.length > 0} isPlayerVisible={showThemePlayer} />}
       </div>
     </>
   )
