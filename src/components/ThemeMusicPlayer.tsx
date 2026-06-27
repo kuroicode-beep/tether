@@ -12,7 +12,10 @@ export interface ThemeTrack {
 interface ThemeMusicPlayerProps {
   tracks: ThemeTrack[]
   hidden?: boolean
+  shouldPlay?: boolean
   onHide?: () => void
+  onPlayingChange?: (playing: boolean) => void
+  onTrackChange?: (track: ThemeTrack | null) => void
 }
 
 function pickInitialRandomIndex(length: number): number {
@@ -29,9 +32,17 @@ function pickRandomIndex(length: number, currentIndex: number): number {
 }
 
 // Renders a compact top player that random-repeats the active couple playlist.
-export function ThemeMusicPlayer({ tracks, hidden = false, onHide }: ThemeMusicPlayerProps) {
+export function ThemeMusicPlayer({
+  tracks,
+  hidden = false,
+  shouldPlay = false,
+  onHide,
+  onPlayingChange,
+  onTrackChange,
+}: ThemeMusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const advancingRef = useRef(false)
+  const suppressPauseReportRef = useRef(false)
   const [playing, setPlaying] = useState(false)
   const [trackIndex, setTrackIndex] = useState(() => pickInitialRandomIndex(tracks.length))
   const track = tracks[trackIndex] ?? tracks[0]
@@ -46,11 +57,27 @@ export function ThemeMusicPlayer({ tracks, hidden = false, onHide }: ThemeMusicP
     if (!audio || !track) return
     audio.loop = false
     audio.currentTime = 0
+    suppressPauseReportRef.current = true
     audio.load()
+    onTrackChange?.(track)
+    if (!shouldPlay) {
+      audio.pause()
+      setPlaying(false)
+      suppressPauseReportRef.current = false
+      return
+    }
     void audio.play()
-      .then(() => setPlaying(true))
-      .catch(() => setPlaying(false))
-  }, [track?.url])
+      .then(() => {
+        suppressPauseReportRef.current = false
+        setPlaying(true)
+        onPlayingChange?.(true)
+      })
+      .catch(() => {
+        suppressPauseReportRef.current = false
+        setPlaying(false)
+        onPlayingChange?.(false)
+      })
+  }, [track?.url, shouldPlay, onPlayingChange, onTrackChange])
 
   const advanceRandom = useCallback(() => {
     if (tracks.length === 0) return
@@ -73,12 +100,20 @@ export function ThemeMusicPlayer({ tracks, hidden = false, onHide }: ThemeMusicP
     if (!audio) return
     if (audio.paused) {
       void audio.play()
-        .then(() => setPlaying(true))
-        .catch(() => setPlaying(false))
+        .then(() => {
+          setPlaying(true)
+          onPlayingChange?.(true)
+        })
+        .catch(() => {
+          setPlaying(false)
+          onPlayingChange?.(false)
+        })
       return
     }
+    suppressPauseReportRef.current = false
     audio.pause()
     setPlaying(false)
+    onPlayingChange?.(false)
   }
 
   if (!track) return null
@@ -89,8 +124,15 @@ export function ThemeMusicPlayer({ tracks, hidden = false, onHide }: ThemeMusicP
         ref={audioRef}
         src={track.url}
         preload="metadata"
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPlay={() => {
+          setPlaying(true)
+          onPlayingChange?.(true)
+        }}
+        onPause={() => {
+          setPlaying(false)
+          if (suppressPauseReportRef.current || advancingRef.current) return
+          onPlayingChange?.(false)
+        }}
         onEnded={advanceRandom}
         onTimeUpdate={handleTimeUpdate}
       />

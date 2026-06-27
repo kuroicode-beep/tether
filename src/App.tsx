@@ -63,6 +63,13 @@ const NAVIGATION_SCREENS = new Set<string>([
 ])
 
 const THEME_TRACK_CACHE_KEY = 'tether_theme_track_v1'
+const THEME_PLAYER_STATE_CACHE_KEY = 'tether_theme_player_state_v1'
+
+interface CachedPlayerState {
+  hidden: boolean
+  playing: boolean
+  trackKey: string | null
+}
 
 // Reads the cached theme track only to avoid an empty first paint before Firestore arrives.
 function loadCachedThemeTrack(): ThemeTrack | null {
@@ -82,6 +89,32 @@ function cacheThemeTrack(track: ThemeTrack | null) {
   } catch { /* ignore */ }
 }
 
+// Restores the compact player visibility/playback state for the current device.
+function loadCachedPlayerState(): CachedPlayerState {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(THEME_PLAYER_STATE_CACHE_KEY) ?? 'null') as Partial<CachedPlayerState> | null
+    return {
+      hidden: parsed?.hidden === true,
+      playing: parsed?.playing === true,
+      trackKey: typeof parsed?.trackKey === 'string' ? parsed.trackKey : null,
+    }
+  } catch {
+    return { hidden: false, playing: false, trackKey: null }
+  }
+}
+
+// Persists only local player preferences; the couple playlist itself stays in Firestore.
+function cachePlayerState(state: CachedPlayerState) {
+  try {
+    localStorage.setItem(THEME_PLAYER_STATE_CACHE_KEY, JSON.stringify(state))
+  } catch { /* ignore */ }
+}
+
+function toTrackKey(track: ThemeTrack | null): string | null {
+  if (!track) return null
+  return `${track.id ?? track.url}:${track.url}`
+}
+
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
@@ -90,7 +123,7 @@ function AppContent() {
   const [unlocked, setUnlocked] = useState(false)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   const [themeTrack, setThemeTrack] = useState<ThemeTrack | null>(() => loadCachedThemeTrack())
-  const [playerHidden, setPlayerHidden] = useState(false)
+  const [playerState, setPlayerState] = useState<CachedPlayerState>(() => loadCachedPlayerState())
   const [playerRefreshKey, setPlayerRefreshKey] = useState(0)
   const push = usePushNotification(session.uid)
   const pendingNavRef = useRef<string | null>(null)
@@ -99,6 +132,12 @@ function AppContent() {
   screenRef.current = screen
   const partnerUid = session.connection?.partnerUid ?? null
   const listeningTogether = useListeningTogether(session.coupleId, session.uid, partnerUid)
+  const playerHidden = playerState.hidden
+  const playerShouldPlay = playerState.playing
+
+  useEffect(() => {
+    cachePlayerState(playerState)
+  }, [playerState])
 
   useEffect(() => {
     return installPushTokenAutoSync({
@@ -206,16 +245,31 @@ function AppContent() {
   }, [session.coupleId, session.uid])
 
   const showPlayer = useCallback(() => {
-    setPlayerHidden(false)
+    setPlayerState((current) => ({ ...current, hidden: false }))
   }, [])
 
   const refreshPlayer = useCallback(() => {
-    setPlayerHidden(false)
+    setPlayerState((current) => ({ ...current, hidden: false, playing: true }))
     setPlayerRefreshKey((current) => current + 1)
   }, [])
 
   const togglePlayer = useCallback(() => {
-    setPlayerHidden((hidden) => !hidden)
+    setPlayerState((current) => ({ ...current, hidden: !current.hidden }))
+  }, [])
+
+  const updatePlayerPlaying = useCallback((playing: boolean) => {
+    setPlayerState((current) => {
+      if (current.playing === playing) return current
+      return { ...current, playing }
+    })
+  }, [])
+
+  const updatePlayerTrack = useCallback((track: ThemeTrack | null) => {
+    const trackKey = toTrackKey(track)
+    setPlayerState((current) => {
+      if (current.trackKey === trackKey) return current
+      return { ...current, trackKey }
+    })
   }, [])
 
   useEffect(() => {
@@ -247,7 +301,7 @@ function AppContent() {
 
     navigator.serviceWorker.addEventListener('message', onSwMessage)
     return () => navigator.serviceWorker.removeEventListener('message', onSwMessage)
-  }, [push, requestNavigation])
+  }, [push, requestNavigation, shouldHandleNotification])
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
@@ -373,7 +427,10 @@ function AppContent() {
           key={`${playerRefreshKey}:${playlistSignature}`}
           tracks={activePlaylist}
           hidden={playerHidden}
-          onHide={() => setPlayerHidden(true)}
+          shouldPlay={playerShouldPlay}
+          onHide={() => setPlayerState((current) => ({ ...current, hidden: true }))}
+          onPlayingChange={updatePlayerPlaying}
+          onTrackChange={updatePlayerTrack}
         />
       )}
 

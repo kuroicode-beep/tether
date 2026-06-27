@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-27-hotfix-v0-5-7-status-tags-player-state',
+    date: '2026.06.27',
+    type: 'hotfix',
+    title: 'Tether v0.5.7 핫픽스.',
+    detail: '상태 편집창에서 빠른 상태 메시지 4개가 태그 목록과 중복 표시되던 문제를 정리했습니다. 같이듣기 상단 플레이어는 숨김/표시와 재생/중지 상태를 기기별로 저장해, 다시 접속해도 마지막 사용 상태를 유지합니다. 알림 중복 방지를 위한 서비스워커 메시지 처리 의존성도 보강했습니다.',
+  },
+  {
     id: '2026-06-26-hotfix-v0-5-6-player-random-start-hidden-audio',
     date: '2026.06.26',
     type: 'hotfix',
