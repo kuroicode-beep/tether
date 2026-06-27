@@ -1,6 +1,6 @@
 // src/components/PushTokenHealthBanner.tsx
 // 알림 권한은 허용됐지만 Firestore에 현재 기기 토큰이 없을 때 안내
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { usePushTokenHealth } from '../hooks/usePushTokenHealth'
 
 export function PushTokenHealthBanner() {

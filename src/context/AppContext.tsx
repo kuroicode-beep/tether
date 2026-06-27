@@ -1,39 +1,7 @@
 // src/context/AppContext.tsx
 // 앱 전역 상태 (uid, coupleId, 닉네임 등) — Auth 변경 시 stale 상태를 자동 정리한다
-import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react'
-
-interface AppState {
-  uid: string | null
-  coupleId: string | null
-  myNickname: string
-  partnerNickname: string
-  partnerUid: string | null
-  myPhotoUrl: string | null
-  partnerPhotoUrl: string | null
-  isConnected: boolean
-  startDate: string | null   // ISO 날짜 문자열 (처음 만난 날, YYYY-MM-DD)
-}
-
-interface ConnectInput {
-  uid: string
-  coupleId: string
-  myNickname: string
-  partnerNickname: string
-  partnerUid: string
-  startDate?: string
-  myPhotoUrl?: string | null
-  partnerPhotoUrl?: string | null
-}
-
-interface AppContextType extends AppState {
-  connect: (data: ConnectInput) => void
-  disconnect: () => void
-  syncWithAuthUid: (currentAuthUid: string | null) => void
-  setStartDate: (date: string) => void
-  setMyNickname: (name: string) => void
-  setPartnerNickname: (name: string) => void
-  setMyPhotoUrl: (url: string | null) => void
-}
+import { useCallback, useEffect, useState, ReactNode } from 'react'
+import { AppContext, type AppState, type ConnectInput } from './AppContextCore'
 
 const LS_KEY = 'tether_app_state'
 
@@ -91,8 +59,6 @@ function persistState(next: AppState) {
     localStorage.setItem(LS_KEY, JSON.stringify(next))
   } catch { /* ignore */ }
 }
-
-const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadState)
@@ -212,10 +178,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   )
-}
-
-export function useApp() {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp must be used within AppProvider')
-  return ctx
 }

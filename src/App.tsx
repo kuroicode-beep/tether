@@ -1,9 +1,11 @@
-// src/App.tsx
+﻿// src/App.tsx
 // 앱 루트: Session/AppContext 제공 + status 기반 라우팅
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
-import { AppProvider, useApp } from './context/AppContext'
-import { SessionProvider, useSession } from './context/SessionContext'
+import { AppProvider } from './context/AppContext'
+import { useApp } from './context/useApp'
+import { SessionProvider } from './context/SessionContext'
+import { useSession } from './context/useSession'
 import { LockScreen } from './screens/LockScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 import { RestoreFailedScreen } from './screens/RestoreFailedScreen'

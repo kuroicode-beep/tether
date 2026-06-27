@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { isSameDay } from 'date-fns'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useChat, ChatMessage } from '../hooks/useChat'
 import { usePhotos } from '../hooks/usePhotos'

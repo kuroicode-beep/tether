@@ -1,7 +1,7 @@
 // src/screens/OnboardingScreen.tsx
 // Google 시작 → 초대 코드 생성·입력 → 커플 연결 흐름
 import { useEffect, useRef, useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import {
   createInvite,
   createOrGetUserDoc,
@@ -12,7 +12,7 @@ import {
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
 import { canRequestPushPermission, resetAndSyncPushTokenForUid, usePushNotification } from '../hooks/usePushNotification'
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 
 type Step = 'login' | 'choice' | 'create' | 'join' | 'recover'
 

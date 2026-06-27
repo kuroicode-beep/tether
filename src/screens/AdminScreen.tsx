@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { ADMIN_EMAIL, isAdminEmail } from '../lib/coupleAuth'
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { DEFAULT_STATUS_TAGS } from '../hooks/useStatusOptions'

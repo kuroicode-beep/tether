@@ -1,7 +1,6 @@
 // src/hooks/useAuth.tsx
 // 하위 호환 — SessionContext thin wrapper
-import { ReactNode } from 'react'
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 import type { RestoredConnection } from '../lib/coupleAuth'
 import type { User } from 'firebase/auth'
 
@@ -18,10 +17,6 @@ type AuthContextValue = {
   signInWithGoogle: () => Promise<User | null>
   isGoogleLinked: boolean
   clearAuthError: () => void
-}
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  return <>{children}</>
 }
 
 export function useAuth(): AuthContextValue {

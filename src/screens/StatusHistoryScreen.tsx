@@ -2,7 +2,7 @@
 // Shows both partners' status changes as a read-only timeline.
 import { format, isSameDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { useCoupleSession } from '../hooks/useCoupleSession'

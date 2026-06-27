@@ -1,6 +1,6 @@
 // src/screens/ApprovalPendingScreen.tsx
 // 관리자 승인 전 신규 사용자를 대기 상태로 안내한다.
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 
 export function ApprovalPendingScreen() {
   const { user, signOut } = useSession()

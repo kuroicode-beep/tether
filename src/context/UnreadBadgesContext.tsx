@@ -1,6 +1,6 @@
 // src/context/UnreadBadgesContext.tsx
 // 하단 네비 미읽음 배지 — chat: readBy, diary: isRead, contents: lastRead.contents
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import {
   collection,
   doc,
@@ -13,18 +13,13 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { debugLog } from '../lib/debugLog'
-
-export type NavTab = 'chat' | 'diary' | 'contents'
-export type UnreadBadges = Record<NavTab, number>
+import {
+  UnreadBadgesContext,
+  type NavTab,
+  type UnreadBadges,
+} from './UnreadBadgesContextCore'
 
 const EMPTY_BADGES: UnreadBadges = { chat: 0, diary: 0, contents: 0 }
-
-type UnreadBadgesContextValue = {
-  badges: UnreadBadges
-  markTabRead: (tab: NavTab) => Promise<void>
-}
-
-const UnreadBadgesContext = createContext<UnreadBadgesContextValue | null>(null)
 
 const toMillis = (value: unknown): number => {
   if (value instanceof Timestamp) return value.toMillis()
@@ -136,10 +131,4 @@ export function UnreadBadgesProvider({
       {children}
     </UnreadBadgesContext.Provider>
   )
-}
-
-export function useUnreadBadges() {
-  const ctx = useContext(UnreadBadgesContext)
-  if (!ctx) throw new Error('useUnreadBadges must be used within UnreadBadgesProvider')
-  return ctx
 }

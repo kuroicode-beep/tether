@@ -1,6 +1,6 @@
 // src/hooks/useCoupleSession.ts
 // SessionContext thin wrapper — Firestore coupleId는 connected 상태에서만 노출
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 
 export function useCoupleSession() {
   const session = useSession()

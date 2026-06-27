@@ -4,7 +4,7 @@ import { FONT_FAMILY_OPTIONS, FONT_SCALE_OPTIONS, type FontScale, useFontScale }
 import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { useBiometric } from '../hooks/useBiometric'
 import { usePinAuth } from '../hooks/usePinAuth'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import {
   canRequestPushPermission,
   getPushPermissionBlockReason,
@@ -13,7 +13,7 @@ import {
 } from '../hooks/usePushNotification'
 import { usePushTokenHealth } from '../hooks/usePushTokenHealth'
 import { debugPushPing, type PushPingTarget } from '../lib/pushDiagnostics'
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ProfileAvatar } from '../components/ProfileAvatar'

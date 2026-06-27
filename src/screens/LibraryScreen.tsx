@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { SubScreen } from '../components/SubScreen'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useLibrary } from '../hooks/useLibrary'
 

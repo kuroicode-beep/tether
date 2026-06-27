@@ -6,7 +6,7 @@ import {
   AnniversaryType,
   useAnniversaries,
 } from '../hooks/useAnniversaries'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 
 interface AnniversaryScreenProps {

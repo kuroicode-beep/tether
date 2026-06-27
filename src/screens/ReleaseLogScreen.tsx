@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { APP_VERSION_LABEL } from '../lib/appVersion'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import {
   useFeedbackReports,
@@ -88,6 +88,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 }
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
+  {
+    id: '2026-06-27-hotfix-v0-5-9-fast-refresh-cleanup',
+    date: '2026.06.27',
+    type: 'hotfix',
+    title: 'Tether v0.5.9 핫픽스.',
+    detail: 'Provider와 hook export를 분리해 Fast Refresh 구조 경고를 제거했습니다. App/Session/UnreadBadges/useAuth 주변 import 구조를 정리했고, npm run lint가 경고 없이 통과하도록 검증 게이트를 더 단단하게 만들었습니다.',
+  },
   {
     id: '2026-06-27-hotfix-v0-5-8-lint-audit-gate',
     date: '2026.06.27',

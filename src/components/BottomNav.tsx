@@ -1,6 +1,6 @@
 // src/components/BottomNav.tsx
 // 하단 네비게이션 + 미읽음 배지 (more 탭 = contents 배지, Settings 진입 시 읽음 처리 안 함)
-import { NavTab, useUnreadBadges } from '../context/UnreadBadgesContext'
+import { type NavTab, useUnreadBadges } from '../context/useUnreadBadges'
 
 type Screen = 'home' | 'chat' | 'diary' | 'more'
 

@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
 import { ImageViewer } from '../components/ImageViewer'
 import { useDiary, DiaryEntry } from '../hooks/useDiary'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 

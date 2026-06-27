@@ -1,10 +1,8 @@
 // src/context/SessionContext.tsx
 // 단일 세션 source of truth — Auth + users/{uid} + couple 복원
 import {
-  createContext,
   ReactNode,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -25,43 +23,9 @@ import {
   createOrGetUserDoc,
   isAdminEmail,
   restoreConnectionFromProfile,
-  RestoredConnection,
 } from '../lib/coupleAuth'
 import { debugLog } from '../lib/debugLog'
-
-export type SessionStatus =
-  | 'loading'
-  | 'signed_out'
-  | 'no_couple'
-  | 'approval_pending'
-  | 'restoring'
-  | 'connected'
-  | 'restore_failed'
-
-export type SessionState = {
-  status: SessionStatus
-  user: User | null
-  uid: string | null
-  coupleId: string | null
-  connection: RestoredConnection | null
-  error: string | null
-}
-
-type SessionContextValue = SessionState & {
-  redirecting: boolean
-  authError: string | null
-  isLoading: boolean
-  isGoogleLinked: boolean
-  retryRestore: () => Promise<void>
-  refreshSession: () => Promise<void>
-  signInWithGoogle: () => Promise<User | null>
-  linkGoogle: () => Promise<void>
-  signOut: () => Promise<void>
-  notifyCoupleLinked: () => Promise<boolean>
-  clearAuthError: () => void
-}
-
-const SessionContext = createContext<SessionContextValue | null>(null)
+import { SessionContext, type SessionState } from './SessionContextCore'
 const REDIRECTING_KEY = 'tether_auth_redirecting'
 
 const INITIAL: SessionState = {
@@ -522,10 +486,4 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       {children}
     </SessionContext.Provider>
   )
-}
-
-export function useSession() {
-  const ctx = useContext(SessionContext)
-  if (!ctx) throw new Error('useSession must be used within SessionProvider')
-  return ctx
 }

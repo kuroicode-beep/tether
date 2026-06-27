@@ -1,7 +1,7 @@
 // src/screens/RestoreFailedScreen.tsx
 // coupleId는 있으나 couples/partner 복원 실패 시 표시
 import { useState } from 'react'
-import { useSession } from '../context/SessionContext'
+import { useSession } from '../context/useSession'
 
 export function RestoreFailedScreen() {
   const { uid, coupleId, error, retryRestore, signOut, redirecting } = useSession()

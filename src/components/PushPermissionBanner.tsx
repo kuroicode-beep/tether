@@ -2,7 +2,7 @@
 // PC/모바일 Web Push 권한 유도 배너 (한 번 닫으면 재표시 안 함)
 import { useState } from 'react'
 import { canRequestPushPermission, usePushNotification } from '../hooks/usePushNotification'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 
 const LS_DISMISSED = 'pushDismissed'
 
