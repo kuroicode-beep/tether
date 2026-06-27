@@ -126,6 +126,7 @@ function AppContent() {
   const [playerState, setPlayerState] = useState<CachedPlayerState>(() => loadCachedPlayerState())
   const [playerRefreshKey, setPlayerRefreshKey] = useState(0)
   const push = usePushNotification(session.uid)
+  const { loadSettings, onForegroundMessage, syncToken } = push
   const pendingNavRef = useRef<string | null>(null)
   const screenRef = useRef<Screen>('lock')
   const recentNotificationIdsRef = useRef<Map<string, number>>(new Map())
@@ -145,15 +146,15 @@ function AppContent() {
       coupleId: session.coupleId,
       status: session.status,
       isLoading: session.isLoading,
-      sync: push.syncToken,
+      sync: syncToken,
     })
-  }, [session.uid, session.coupleId, session.status, session.isLoading, push.syncToken])
+  }, [session.uid, session.coupleId, session.status, session.isLoading, syncToken])
 
   useEffect(() => {
     if (session.status !== 'connected' || !session.uid) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
-    void push.syncToken()
-  }, [session.status, session.uid, unlocked, push.syncToken])
+    void syncToken()
+  }, [session.status, session.uid, unlocked, syncToken])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
@@ -291,7 +292,7 @@ function AppContent() {
       if (document.visibilityState !== 'visible') return
       if (!shouldHandleNotification(data.notificationId as string | undefined)) return
       const type = (data.alertType as string) ?? undefined
-      const settings = push.loadSettings()
+      const settings = loadSettings()
       if (!shouldAlertForType(type, settings)) return
       playNotificationSound(settings.sound)
       const title = (data.title as string | undefined) ?? 'Tether'
@@ -301,16 +302,16 @@ function AppContent() {
 
     navigator.serviceWorker.addEventListener('message', onSwMessage)
     return () => navigator.serviceWorker.removeEventListener('message', onSwMessage)
-  }, [push, requestNavigation, shouldHandleNotification])
+  }, [loadSettings, requestNavigation, shouldHandleNotification])
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
-    push.onForegroundMessage((payload) => {
+    onForegroundMessage((payload) => {
       const data = payload.data ?? {}
       const title = payload.notification?.title ?? data.title ?? 'Tether'
       const body = payload.notification?.body ?? data.body ?? ''
       const type = (data.type as string) ?? undefined
-      const settings = push.loadSettings()
+      const settings = loadSettings()
       const notificationId = (data.notificationId as string | undefined) ?? `${type ?? 'notification'}-${title}-${body}`
       if (!shouldHandleNotification(notificationId)) return
 
@@ -327,7 +328,7 @@ function AppContent() {
       if (isVisible) setToast({ title, body, type })
     }).then((unsub) => { unsubscribe = unsub })
     return () => unsubscribe?.()
-  }, [session.uid, push, requestNavigation, shouldHandleNotification])
+  }, [session.uid, loadSettings, onForegroundMessage, requestNavigation, shouldHandleNotification])
 
   // 세션이 앱 진입 가능 상태를 벗어나면 잠금 상태와 AppContext 캐시를 정리한다.
   useEffect(() => {

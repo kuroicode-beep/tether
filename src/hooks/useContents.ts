@@ -52,7 +52,7 @@ export function useContents(coupleId: string | null, myUid: string | null) {
 
   const uploadContentImage = async (file: File, clientId: string) => {
     if (!coupleId || !myUid) return { imageUrl: null, imagePath: null }
-    const safeName = file.name.replace(/[^\w.\-]/g, '_') || 'content.jpg'
+    const safeName = file.name.replace(/[^\w.-]/g, '_') || 'content.jpg'
     const imagePath = `couples/${coupleId}/contents/${myUid}/${clientId}_${safeName}`
     const storageRef = ref(storage, imagePath)
     await uploadBytes(storageRef, file, { contentType: file.type || 'image/jpeg' })

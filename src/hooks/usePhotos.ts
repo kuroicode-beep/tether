@@ -146,7 +146,7 @@ export function usePhotos(coupleId: string | null, myUid: string | null, partner
     setPhotos((prev) => mergeByCreatedAtDesc(prev.filter((p) => p.id !== optimistic.id), [optimistic]))
 
     try {
-      const safeName = file.name.replace(/[^\w.\-]/g, '_') || 'photo.jpg'
+      const safeName = file.name.replace(/[^\w.-]/g, '_') || 'photo.jpg'
       const storageRef = ref(storage, `couples/${coupleId}/photos/${myUid}/${clientId}_${safeName}`)
       await uploadBytes(storageRef, file, {
         contentType: file.type || 'image/jpeg',

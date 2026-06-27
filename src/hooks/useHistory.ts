@@ -136,7 +136,7 @@ export function useHistory(coupleId: string | null, myUid: string | null, partne
     let imageUrl: string | null = null
     if (data.imageFile) {
       try {
-        const safeName = data.imageFile.name.replace(/[^\w.\-]/g, '_')
+        const safeName = data.imageFile.name.replace(/[^\w.-]/g, '_')
         const path = `couples/${coupleId}/history/${Date.now()}_${safeName}`
         await uploadBytes(ref(storage, path), data.imageFile, {
           contentType: data.imageFile.type || 'image/jpeg',
@@ -191,7 +191,7 @@ export function useHistory(coupleId: string | null, myUid: string | null, partne
     let imageUrl: string | undefined
     if (data.imageFile) {
       try {
-        const safeName = data.imageFile.name.replace(/[^\w.\-]/g, '_')
+        const safeName = data.imageFile.name.replace(/[^\w.-]/g, '_')
         const path = `couples/${coupleId}/history/${Date.now()}_${safeName}`
         await uploadBytes(ref(storage, path), data.imageFile, {
           contentType: data.imageFile.type || 'image/jpeg',

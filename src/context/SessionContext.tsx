@@ -343,7 +343,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     )
 
     return () => unsub()
-  }, [session.user?.uid, applyProfileCoupleId])
+  }, [session.user, applyProfileCoupleId])
 
   useEffect(() => {
     if (!session.user) return

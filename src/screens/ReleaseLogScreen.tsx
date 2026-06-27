@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-27-hotfix-v0-5-8-lint-audit-gate',
+    date: '2026.06.27',
+    type: 'hotfix',
+    title: 'Tether v0.5.8 핫픽스.',
+    detail: '죽어 있던 lint 검증 게이트를 ESLint flat config로 복구했습니다. 파일 업로드 이름 정리 정규식의 lint 오류를 제거하고, 알림/플레이어 관련 hook 의존성을 정리했습니다. npm audit도 0 vulnerabilities 상태로 맞췄습니다.',
+  },
+  {
     id: '2026-06-27-hotfix-v0-5-7-status-tags-player-state',
     date: '2026.06.27',
     type: 'hotfix',

@@ -253,7 +253,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     applyMerge()
 
     try {
-      const safeName = file.name.replace(/[^\w.\-]/g, '_')
+      const safeName = file.name.replace(/[^\w.-]/g, '_')
       const path = `couples/${coupleId}/images/${myUid}/${clientId}_${safeName}`
       const storageRef = ref(storage, path)
       await uploadBytes(storageRef, file, {

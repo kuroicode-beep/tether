@@ -77,7 +77,7 @@ export function ThemeMusicPlayer({
         setPlaying(false)
         onPlayingChange?.(false)
       })
-  }, [track?.url, shouldPlay, onPlayingChange, onTrackChange])
+  }, [track, track?.url, shouldPlay, onPlayingChange, onTrackChange])
 
   const advanceRandom = useCallback(() => {
     if (tracks.length === 0) return

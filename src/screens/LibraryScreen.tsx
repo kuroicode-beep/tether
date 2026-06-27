@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { BottomNav } from '../components/BottomNav'
@@ -176,11 +176,11 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
-  const nameOf = (senderUid: string) => {
+  const nameOf = useCallback((senderUid: string) => {
     if (senderUid === uid) return myNickname || '나'
     if (senderUid === partnerUid) return partnerNickname || '자기'
     return '우리'
-  }
+  }, [myNickname, partnerNickname, partnerUid, uid])
 
   const filteredFiles = useMemo(() => {
     const libraryFiles = files.filter((item) => !isAudioFile(item.fileName, item.fileType))
@@ -195,7 +195,7 @@ export function LibraryScreen({ onBack, onNavigate }: LibraryScreenProps) {
       ].join(' ').toLowerCase()
       return haystack.includes(keyword)
     })
-  }, [files, search, myNickname, partnerNickname, partnerUid, uid])
+  }, [files, search, nameOf])
 
   const libraryFileCount = useMemo(
     () => files.filter((item) => !isAudioFile(item.fileName, item.fileType)).length,
