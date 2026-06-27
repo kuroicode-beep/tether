@@ -1,7 +1,7 @@
 # Tether 아키텍처
 
-작성일: 2026-06-26  
-기준 버전: v0.5.6
+작성일: 2026-06-28  
+기준 버전: v0.5.10
 
 ## 01. 개요
 
@@ -27,9 +27,12 @@ flowchart TD
 주요 구조:
 
 - `src/App.tsx`: 세션 기반 화면 라우팅, 전역 플레이어, 토스트
-- `src/context/SessionContext.tsx`: 로그인/커플 연결/복구 상태
-- `src/context/AppContext.tsx`: 앱 캐시와 연결 정보
-- `src/context/UnreadBadgesContext.tsx`: 배지 계산
+- `src/context/SessionContext.tsx`: 로그인/커플 연결/복구 Provider
+- `src/context/useSession.ts`: 세션 hook
+- `src/context/AppContext.tsx`: 앱 캐시와 연결 정보 Provider
+- `src/context/useApp.ts`: 앱 context hook
+- `src/context/UnreadBadgesContext.tsx`: 배지 계산 Provider
+- `src/context/useUnreadBadges.ts`: 배지 hook
 - `src/screens/*`: 화면 단위 UI
 - `src/hooks/*`: Firestore 구독과 쓰기 로직
 - `src/lib/*`: Firebase, 알림, 버전, sync helper
@@ -124,7 +127,7 @@ Service Worker:
 
 - 검증보고서와 완료보고서는 Notion이 아니라 `docs/` Markdown에 저장
 - 릴리즈/핫픽스는 앱 Log에 기록
-- 배포 전 `npm run build` 필수
+- 배포 전 `npm run lint`, `npm run build`, Functions build 확인
 - Rules 변경 시 dry-run 후 실제 배포
 - 운영 데이터 백필은 별도 검증보고서로 남김
-
+- Google-only live E2E는 Admin SDK seed로 테스트 데이터를 만들고 custom token으로 클라이언트 권한을 검증한다.

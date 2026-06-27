@@ -1,13 +1,13 @@
 # Tether 구현 스펙
 
-작성일: 2026-06-26  
-기준 버전: v0.5.6
+작성일: 2026-06-28  
+기준 버전: v0.5.10
 
 ## 01. 버전 관리
 
 - 단일 표시 소스: `src/lib/appVersion.ts`
 - 패키지 버전: `package.json`, `package-lock.json`
-- 현재 기준: `0.5.6`
+- 현재 기준: `0.5.10`
 - 앱 내 표기: `APP_VERSION_LABEL`
 - Log 페이지는 릴리즈/업데이트/핫픽스를 역순으로 표시한다.
 
@@ -123,6 +123,7 @@
 - `useUnreadBadges`: 채팅/일기/콘텐츠 배지 계산
 - `usePushNotification`: FCM 토큰, 권한, 알림 설정
 - `useFeedbackReports`: Log 하단 기능개선/버그 리포트 동기화
+- `scripts/test-e2e-firebase.ts`: Google-only 정책 이후 Admin SDK seed + custom token 기반 live E2E
 
 ## 06. 알림
 
@@ -174,7 +175,9 @@
 기본:
 
 ```bash
+npm run lint
 npm run build
+npm --prefix functions run build
 ```
 
 Rules 변경:
@@ -190,3 +193,20 @@ Hosting:
 firebase deploy --only hosting
 ```
 
+Live Firebase E2E:
+
+```bash
+npm run test:e2e:firebase
+```
+
+필수 자격증명 중 하나:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `FIREBASE_SERVICE_ACCOUNT_BASE64`
+- `FIREBASE_SERVICE_ACCOUNT_PATH`
+- `GOOGLE_APPLICATION_CREDENTIALS`
+
+주의:
+
+- `npm audit --audit-level=high`는 자동 게이트로 사용한다.
+- `firebase-admin` 하위 의존성 moderate audit 경고는 `npm audit fix --force`가 breaking downgrade를 요구하면 보류한다.

@@ -1,7 +1,7 @@
 # Tether 완료보고서 인덱스
 
-작성일: 2026-06-26  
-기준 버전: v0.5.6
+작성일: 2026-06-28  
+기준 버전: v0.5.10
 
 ## 01. 문서 위치
 
@@ -58,6 +58,10 @@ Notion에는 기록하지 않는다.
 - `codex-verification-2026-06-26-v0-5-4-listen-refresh-player.md`
 - `codex-verification-2026-06-26-v0-5-5-random-repeat-player.md`
 - `codex-verification-2026-06-26-v0-5-6-player-random-start-hidden-audio.md`
+- `codex-verification-2026-06-27-v0-5-7-stability-audit.md`
+- `codex-verification-2026-06-27-v0-5-8-lint-audit-gate.md`
+- `codex-verification-2026-06-27-v0-5-9-fast-refresh-cleanup.md`
+- `codex-verification-2026-06-27-v0-5-10-google-e2e-admin-seed.md`
 
 ## 04. 검색 키워드
 
@@ -67,4 +71,5 @@ Notion에는 기록하지 않는다.
 - 자료실: `useLibrary`, `files index`, `backfill`
 - 같이듣기: `useListeningTogether`, `ThemeMusicPlayer`, `random repeat`
 - Log 리포트: `feedbackReports`, `ReleaseLogScreen`
-
+- 검증 게이트: `eslint.config.js`, `npm run lint`, `test:e2e:firebase`
+- Google-only E2E: `firebase-admin`, `custom token`, `FIREBASE_SERVICE_ACCOUNT_PATH`

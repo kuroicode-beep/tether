@@ -1,7 +1,7 @@
 # Tether 개발진행 히스토리
 
-작성일: 2026-06-26  
-기준 버전: v0.5.6
+작성일: 2026-06-28  
+기준 버전: v0.5.10
 
 ## 01. 요약
 
@@ -112,11 +112,28 @@ Tether는 초기 커플 커뮤니케이션 PWA에서 시작해, 세션 안정화
 - `docs/codex-verification-2026-06-26-v0-5-3-library-live-backfill.md`
 - `docs/codex-verification-2026-06-26-v0-5-6-player-random-start-hidden-audio.md`
 
+### v0.5.7-v0.5.10
+
+주제:
+
+- 안정성/알림/UI 자동 검증 재점검
+- ESLint 게이트 복구 및 audit 기준 정리
+- Fast Refresh 경고 제거를 위한 context Provider/hook 분리
+- Google-only 가입 정책 이후 live Firebase E2E를 Admin SDK seed + custom token 구조로 재정비
+- 서비스 계정 미설정 시 명확한 E2E 실행 안내 추가
+
+관련 문서:
+
+- `docs/codex-verification-2026-06-27-v0-5-7-stability-audit.md`
+- `docs/codex-verification-2026-06-27-v0-5-8-lint-audit-gate.md`
+- `docs/codex-verification-2026-06-27-v0-5-9-fast-refresh-cleanup.md`
+- `docs/codex-verification-2026-06-27-v0-5-10-google-e2e-admin-seed.md`
+
 ## 03. 현재 운영 상태
 
-- 현재 앱 버전: v0.5.6
+- 현재 앱 버전: v0.5.10
 - 최신 배포: Firebase Hosting
-- 최신 주요 기능: 같이듣기 플레이어 랜덤 반복 및 숨김 재생 유지
+- 최신 주요 기능: 같이듣기 플레이어 랜덤 반복 및 숨김 재생 유지, lint/build 검증 게이트 복구, Google-only E2E 재정비
 - 운영 데이터 백필: 기존 파일 메시지 5개를 `files` 인덱스로 백필 완료
 
 ## 04. 남은 확인 포인트
@@ -124,5 +141,4 @@ Tether는 초기 커플 커뮤니케이션 PWA에서 시작해, 세션 안정화
 - iPhone PWA 푸시 장기 안정성
 - 같이듣기 장시간 랜덤 반복 QA
 - 고대비 화면 회귀 점검
-- E2E 테스트와 Google-only 정책 충돌 정리
-
+- Firebase Admin credential 설정 후 live E2E 실제 통과 확인
