@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-27-hotfix-v0-5-10-google-e2e-admin-seed',
+    date: '2026.06.27',
+    type: 'hotfix',
+    title: 'Tether v0.5.10 핫픽스.',
+    detail: 'Google 전용 가입 정책 이후 깨졌던 Firebase live E2E를 Admin SDK 시드 방식으로 재정리했습니다. 익명 가입 의존성을 제거하고, 비-Google user doc create 차단을 검증하며, 서비스 계정 환경변수 안내와 npm test:e2e:firebase 명령을 추가했습니다.',
+  },
+  {
     id: '2026-06-27-hotfix-v0-5-9-fast-refresh-cleanup',
     date: '2026.06.27',
     type: 'hotfix',

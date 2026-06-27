@@ -6,8 +6,7 @@ import {
   getAuth,
   initializeAuth,
   inMemoryPersistence,
-  signInAnonymously,
-  deleteUser,
+  signInWithCustomToken,
   User,
 } from 'firebase/auth'
 import {
@@ -30,6 +29,19 @@ import {
   ref,
   uploadBytes,
 } from 'firebase/storage'
+import {
+  initializeApp as initializeAdminApp,
+  applicationDefault,
+  cert,
+  getApps as getAdminApps,
+  deleteApp as deleteAdminApp,
+  App as AdminApp,
+} from 'firebase-admin/app'
+import { getAuth as getAdminAuth } from 'firebase-admin/auth'
+import {
+  FieldValue,
+  getFirestore as getAdminFirestore,
+} from 'firebase-admin/firestore'
 
 function loadEnv() {
   const env = readFileSync('.env', 'utf8')
@@ -63,12 +75,91 @@ function makeApp(name: string) {
   return { app, auth, db: getFirestore(app) }
 }
 
-async function deleteAuthUser(user: User) {
-  try {
-    await deleteUser(user)
-  } catch {
-    // best-effort
+function makeUid(label: string) {
+  return `e2e-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function getAdmin() {
+  const projectId = requireEnv('VITE_FIREBASE_PROJECT_ID')
+  const app = getAdminApps()[0] ?? initializeAdminApp({
+    projectId,
+    credential: getAdminCredential(),
+  })
+  return {
+    app,
+    auth: getAdminAuth(app),
+    db: getAdminFirestore(app),
   }
+}
+
+function getAdminCredential() {
+  const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+  const rawBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
+  const path = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS
+
+  try {
+    if (rawJson) return cert(JSON.parse(rawJson))
+    if (rawBase64) return cert(JSON.parse(Buffer.from(rawBase64, 'base64').toString('utf8')))
+    if (path) return cert(JSON.parse(readFileSync(path, 'utf8')))
+  } catch (error) {
+    throw new Error(`Invalid Firebase Admin credential: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  throw new Error(
+    [
+      'Firebase Admin credential is required for live E2E.',
+      'Set one of:',
+      '- FIREBASE_SERVICE_ACCOUNT_JSON={...service-account-json...}',
+      '- FIREBASE_SERVICE_ACCOUNT_BASE64=<base64-json>',
+      '- FIREBASE_SERVICE_ACCOUNT_PATH=C:\\path\\service-account.json',
+      '- GOOGLE_APPLICATION_CREDENTIALS=C:\\path\\service-account.json',
+    ].join('\n'),
+  )
+}
+
+async function createSeededUser(uid: string, nickname: string) {
+  const { auth, db } = getAdmin()
+  const email = `${uid}@e2e.tether.local`
+  try {
+    await auth.createUser({
+      uid,
+      email,
+      emailVerified: true,
+      displayName: nickname,
+    })
+  } catch (error) {
+    const code = (error as { code?: string })?.code
+    if (code !== 'auth/uid-already-exists') throw error
+  }
+  await db.doc(`users/${uid}`).set({
+    uid,
+    nickname,
+    email,
+    inviteCode: '',
+    coupleId: null,
+    role: 'member',
+    approved: true,
+    createdAt: FieldValue.serverTimestamp(),
+  }, { merge: true })
+  await db.doc(`publicProfiles/${uid}`).set({ nickname }, { merge: true })
+}
+
+async function signInSeededUser(auth: ReturnType<typeof getAuth>, uid: string): Promise<User> {
+  const token = await getAdmin().auth.createCustomToken(uid)
+  return (await signInWithCustomToken(auth, token)).user
+}
+
+async function cleanupSeededUser(uid: string) {
+  const { auth, db } = getAdmin()
+  try { await db.doc(`publicProfiles/${uid}`).delete() } catch { /* ignore */ }
+  try { await db.doc(`users/${uid}`).delete() } catch { /* ignore */ }
+  try { await auth.deleteUser(uid) } catch { /* ignore */ }
+}
+
+async function deleteAdminAppIfAny() {
+  const app = getAdminApps()[0] as AdminApp | undefined
+  if (!app) return
+  try { await deleteAdminApp(app) } catch { /* ignore */ }
 }
 
 async function expectDenied(label: string, fn: () => Promise<unknown>) {
@@ -142,7 +233,9 @@ async function main() {
   let userA: User | null = null
   let userB: User | null = null
   let userC: User | null = null
+  let userD: User | null = null
   let appC: FirebaseApp | null = null
+  let appD: FirebaseApp | null = null
   let coupleId = ''
   let inviteCode = ''
   const messageIds: string[] = []
@@ -153,27 +246,16 @@ async function main() {
   const linkIds: string[] = []
   const dateRecipeIds: string[] = []
   const storagePaths: string[] = []
+  const uidA = makeUid('a')
+  const uidB = makeUid('b')
+  const uidC = makeUid('c')
+  const uidD = makeUid('d')
 
   try {
-    userA = (await signInAnonymously(authA)).user
-    userB = (await signInAnonymously(authB)).user
-
-    await setDoc(doc(dbA, 'users', userA.uid), {
-      uid: userA.uid,
-      nickname: 'E2E A',
-      inviteCode: '',
-      coupleId: null,
-      createdAt: serverTimestamp(),
-    })
-    await setDoc(doc(dbA, 'publicProfiles', userA.uid), { nickname: 'E2E A' })
-    await setDoc(doc(dbB, 'users', userB.uid), {
-      uid: userB.uid,
-      nickname: 'E2E B',
-      inviteCode: '',
-      coupleId: null,
-      createdAt: serverTimestamp(),
-    })
-    await setDoc(doc(dbB, 'publicProfiles', userB.uid), { nickname: 'E2E B' })
+    await createSeededUser(uidA, 'E2E A')
+    await createSeededUser(uidB, 'E2E B')
+    userA = await signInSeededUser(authA, uidA)
+    userB = await signInSeededUser(authB, uidB)
 
     // ── 정상 invite claim 커플 연결 ─────────────────────────────────────────
     inviteCode = await createInvite(dbA, userA.uid)
@@ -206,16 +288,24 @@ async function main() {
     appC = appCBundle.app
     const authC = appCBundle.auth
     const dbC = appCBundle.db
-    userC = (await signInAnonymously(authC)).user
+    await createSeededUser(uidC, 'E2E C intruder')
+    userC = await signInSeededUser(authC, uidC)
 
-    await setDoc(doc(dbC, 'users', userC.uid), {
-      uid: userC.uid,
-      nickname: 'E2E C intruder',
-      inviteCode: '',
-      coupleId: null,
-      createdAt: serverTimestamp(),
-    })
-    await setDoc(doc(dbC, 'publicProfiles', userC.uid), { nickname: 'E2E C intruder' })
+    const appDBundle = makeApp(`e2e-d-${Date.now()}`)
+    appD = appDBundle.app
+    const authD = appDBundle.auth
+    const dbD = appDBundle.db
+    userD = await signInSeededUser(authD, uidD)
+
+    await expectDenied('non-google user doc create', () =>
+      setDoc(doc(dbD, 'users', userD!.uid), {
+        uid: userD!.uid,
+        nickname: 'E2E D custom auth',
+        inviteCode: '',
+        coupleId: null,
+        createdAt: serverTimestamp(),
+      }),
+    )
 
     await expectCallableError(
       'already used invite code',
@@ -647,55 +737,56 @@ async function main() {
       'Firebase E2E passed: invite claim, bidirectional share, status integrity, Step 3 ownership rules, security regression',
     )
   } finally {
-    if (userA && userB && coupleId) {
+    if (coupleId) {
       try {
+        const adminDb = getAdmin().db
         for (const id of messageIds) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'messages', id))
+          await adminDb.doc(`couples/${coupleId}/messages/${id}`).delete()
+        }
+        for (const id of statusHistoryIds) {
+          await adminDb.doc(`couples/${coupleId}/statusHistory/${id}`).delete()
+        }
+        for (const id of contentIds) {
+          await adminDb.doc(`couples/${coupleId}/contents/${id}`).delete()
         }
         for (const id of photoIds) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'photos', id))
+          await adminDb.doc(`couples/${coupleId}/photos/${id}`).delete()
         }
         for (const id of feedbackReportIds) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'feedbackReports', id))
+          await adminDb.doc(`couples/${coupleId}/feedbackReports/${id}`).delete()
         }
         for (const id of linkIds) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'links', id))
+          await adminDb.doc(`couples/${coupleId}/links/${id}`).delete()
         }
         for (const id of dateRecipeIds) {
-          await deleteDoc(doc(dbA, 'couples', coupleId, 'dateRecipes', id))
+          await adminDb.doc(`couples/${coupleId}/dateRecipes/${id}`).delete()
         }
         for (const path of storagePaths) {
           await deleteObject(ref(getStorage(appA), path))
         }
-        await updateDoc(doc(dbA, 'couples', coupleId), { anniversaries: [] })
-        await deleteDoc(doc(dbA, 'couples', coupleId))
+        if (userA) await adminDb.doc(`couples/${coupleId}/status/${userA.uid}`).delete()
+        if (userB) await adminDb.doc(`couples/${coupleId}/status/${userB.uid}`).delete()
+        await adminDb.doc(`couples/${coupleId}`).delete()
       } catch { /* ignore */ }
     }
 
     if (inviteCode) {
-      try { await deleteDoc(doc(dbA, 'invites', inviteCode)) } catch { /* ignore */ }
+      try { await getAdmin().db.doc(`invites/${inviteCode}`).delete() } catch { /* ignore */ }
     }
 
-    if (userC && appC) {
-      const dbC = getFirestore(appC)
-      try { await deleteDoc(doc(dbC, 'publicProfiles', userC.uid)) } catch { /* ignore */ }
-      try { await deleteDoc(doc(dbC, 'users', userC.uid)) } catch { /* ignore */ }
-      await deleteAuthUser(userC)
+    if (userD) await cleanupSeededUser(userD.uid)
+    if (userC) await cleanupSeededUser(userC.uid)
+    if (userA) await cleanupSeededUser(userA.uid)
+    if (userB) await cleanupSeededUser(userB.uid)
+
+    if (appC) {
       try { await deleteApp(appC) } catch { /* ignore */ }
     }
-
-    if (userA) {
-      try { await deleteDoc(doc(dbA, 'publicProfiles', userA.uid)) } catch { /* ignore */ }
-      try { await deleteDoc(doc(dbA, 'users', userA.uid)) } catch { /* ignore */ }
-      await deleteAuthUser(userA)
+    if (appD) {
+      try { await deleteApp(appD) } catch { /* ignore */ }
     }
-    if (userB) {
-      try { await deleteDoc(doc(dbB, 'publicProfiles', userB.uid)) } catch { /* ignore */ }
-      try { await deleteDoc(doc(dbB, 'users', userB.uid)) } catch { /* ignore */ }
-      await deleteAuthUser(userB)
-    }
-
     await Promise.all([deleteApp(appA), deleteApp(appB)])
+    await deleteAdminAppIfAny()
   }
 }
 
