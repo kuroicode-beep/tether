@@ -14,7 +14,7 @@ import { useAnniversaries } from '../hooks/useAnniversaries'
 import { useCoupleSession } from '../hooks/useCoupleSession'
 import { useRecentFeed } from '../hooks/useRecentFeed'
 import { CONDITION_EMOJI, Condition, useStatus } from '../hooks/useStatus'
-import { useStatusOptions } from '../hooks/useStatusOptions'
+import { normalizeStatusTag, useStatusOptions } from '../hooks/useStatusOptions'
 
 import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { isAdminEmail } from '../lib/coupleAuth'
@@ -50,6 +50,11 @@ type StatusDraft = {
   message: string
 }
 
+// Returns a de-duplicated tag list after applying the shared tag normalizer.
+function normalizeMoodList(tags: string[]): string[] {
+  return [...new Set(tags.map(normalizeStatusTag).filter(Boolean))]
+}
+
 // Formats a relative timestamp for status cards.
 function timeAgo(ts: number | null): string {
   if (!ts) return '방금 전'
@@ -81,8 +86,8 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
   const isStatusDirty =
     draftStatus.condition !== myStatus.condition ||
     draftMessage !== myStatus.message ||
-    draftStatus.mood.length !== myStatus.mood.length ||
-    draftStatus.mood.some((tag) => !myStatus.mood.includes(tag))
+    normalizeMoodList(draftStatus.mood).length !== normalizeMoodList(myStatus.mood).length ||
+    normalizeMoodList(draftStatus.mood).some((tag) => !normalizeMoodList(myStatus.mood).includes(tag))
 
   // Closes the one-line status editor and keeps the text as a local draft.
   const handleMsgBlur = () => {
@@ -97,9 +102,12 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
 
   // Toggles one draft mood tag without writing history.
   const toggleMood = (tag: string) => {
+    const normalizedTag = normalizeStatusTag(tag)
+    if (!normalizedTag) return
     setDraftStatus((prev) => {
-      const has = prev.mood.includes(tag)
-      const next = has ? prev.mood.filter((item) => item !== tag) : [...prev.mood, tag]
+      const current = normalizeMoodList(prev.mood)
+      const has = current.includes(normalizedTag)
+      const next = has ? current.filter((item) => item !== normalizedTag) : [...current, normalizedTag]
       return { ...prev, mood: next }
     })
   }
@@ -108,7 +116,7 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
   const confirmStatus = () => {
     handleMsgBlur()
     if (isStatusDirty) {
-      updateMyStatus({ ...draftStatus, message: draftMessage })
+      updateMyStatus({ ...draftStatus, mood: normalizeMoodList(draftStatus.mood), message: draftMessage })
     }
     setIsEditingStatus(false)
   }
@@ -117,7 +125,7 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
   const beginStatusEdit = () => {
     setDraftStatus({
       condition: myStatus.condition,
-      mood: myStatus.mood,
+      mood: normalizeMoodList(myStatus.mood),
       message: myStatus.message,
     })
     setEditMsg(myStatus.message)
@@ -127,7 +135,7 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
   useEffect(() => {
     const next = {
       condition: myStatus.condition,
-      mood: myStatus.mood,
+      mood: normalizeMoodList(myStatus.mood),
       message: myStatus.message,
     }
     if (!isEditingStatus) setDraftStatus(next)
@@ -291,7 +299,7 @@ export function HomeScreen({ onNavigate, onTogglePlayer, hasPlayer, isPlayerVisi
                 <div className="status-edit-tag-panel flex max-h-36 flex-wrap justify-center gap-xs overflow-y-auto rounded-2xl p-sm">
                   {statusOptions.tags.map((tag) => (
                     <button key={tag} onClick={() => toggleMood(tag)} className="min-h-[34px]">
-                      <MoodChip label={tag} active={draftStatus.mood.includes(tag)} variant="edit" />
+                      <MoodChip label={tag} active={normalizeMoodList(draftStatus.mood).includes(normalizeStatusTag(tag))} variant="edit" />
                     </button>
                   ))}
                 </div>

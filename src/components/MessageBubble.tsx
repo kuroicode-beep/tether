@@ -26,6 +26,39 @@ function formatFileSize(size?: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
+// Splits chat text into plain text and clickable http(s) URL segments.
+function renderTextWithLinks(text: string) {
+  const urlPattern = /https?:\/\/[^\s<>"']+/gi
+  const parts: Array<string | JSX.Element> = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = urlPattern.exec(text)) !== null) {
+    const rawUrl = match[0]
+    const trailing = rawUrl.match(/[),.!?;:]+$/)?.[0] ?? ''
+    const cleanUrl = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl
+    const start = match.index
+
+    if (start > lastIndex) parts.push(text.slice(lastIndex, start))
+    parts.push(
+      <a
+        key={`${cleanUrl}-${start}`}
+        href={cleanUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="message-text-link"
+      >
+        {cleanUrl}
+      </a>,
+    )
+    if (trailing) parts.push(trailing)
+    lastIndex = start + rawUrl.length
+  }
+
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+  return parts.length > 0 ? parts : text
+}
+
 export function MessageBubble({
   message,
   isMe,
@@ -60,7 +93,7 @@ export function MessageBubble({
       )}
 
       {type === 'text' ? (
-        <div className="bubble" role="text">{text}</div>
+        <div className="bubble" role="text">{renderTextWithLinks(text ?? '')}</div>
       ) : type === 'image' ? (
         imageUrl && !imgError ? (
           <button

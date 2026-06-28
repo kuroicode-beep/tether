@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { addDoc, collection, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { normalizeStatusTag } from './useStatusOptions'
 
 export type Condition =
   | 'very_bad' | 'bad' | 'normal' | 'good' | 'very_good'
@@ -63,7 +64,9 @@ const toCondition = (value: unknown): Condition => {
 // Converts a Firestore status document into the local status shape.
 const toStatus = (data: Record<string, unknown>): UserStatus => ({
   condition: toCondition(data.condition),
-  mood: Array.isArray(data.mood) ? (data.mood as string[]) : [],
+  mood: Array.isArray(data.mood)
+    ? [...new Set((data.mood as string[]).map(normalizeStatusTag).filter(Boolean))]
+    : [],
   message: (data.message as string) ?? '',
   updatedAt:
     typeof data.updatedAt === 'object' && data.updatedAt !== null && 'toMillis' in data.updatedAt
@@ -129,7 +132,7 @@ export function useStatus(
         {
           uid: myUid,
           condition: data.condition,
-          mood: data.mood,
+          mood: [...new Set(data.mood.map(normalizeStatusTag).filter(Boolean))],
           message: data.message,
           updatedAt: now,
         },
@@ -138,7 +141,7 @@ export function useStatus(
       await addDoc(collection(db, 'couples', coupleId, 'statusHistory'), {
         uid: myUid,
         condition: data.condition,
-        mood: data.mood,
+        mood: [...new Set(data.mood.map(normalizeStatusTag).filter(Boolean))],
         message: data.message,
         createdAt: now,
       })

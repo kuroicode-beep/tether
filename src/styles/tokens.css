@@ -756,6 +756,27 @@ body {
   color: var(--color-text-muted) !important;
 }
 
+.message-text-link {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.message-partner .message-text-link {
+  color: var(--color-primary);
+}
+
+.message-mine .message-text-link {
+  color: #ffffff;
+}
+
+[data-theme="high-contrast"] .message-text-link {
+  color: var(--hc-box-text) !important;
+  text-decoration-color: var(--hc-box-text) !important;
+}
+
 .message-time {
   font-size: 10px;
   color: var(--color-text-muted);

@@ -21,13 +21,18 @@ function sanitizeList(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value
     .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
+    .map((item) => normalizeStatusTag(item))
     .filter(Boolean)
     .slice(0, 80)
 }
 
 function unique(items: string[]): string[] {
   return [...new Set(items)]
+}
+
+// Normalizes status tags so visually identical tags can always be toggled off.
+export function normalizeStatusTag(value: string): string {
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, ' ').trim()
 }
 
 export function useStatusOptions() {

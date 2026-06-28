@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-29-hotfix-v0-5-12-status-tag-url-link',
+    date: '2026.06.29',
+    type: 'hotfix',
+    title: 'Tether v0.5.12 핫픽스.',
+    detail: '상태 태그에 보이지 않는 공백이나 중복 값이 섞여 일부 태그가 해제되지 않던 문제를 정리했습니다. 채팅 메시지에 http/https URL이 포함되면 자동으로 새 창 링크로 열 수 있게 바꿨습니다.',
+  },
+  {
     id: '2026-06-29-hotfix-v0-5-11-webpush-notification-payload',
     date: '2026.06.29',
     type: 'hotfix',
