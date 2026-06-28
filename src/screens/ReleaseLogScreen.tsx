@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-06-29-hotfix-v0-5-11-webpush-notification-payload',
+    date: '2026.06.29',
+    type: 'hotfix',
+    title: 'Tether v0.5.11 핫픽스.',
+    detail: '앱이 완전히 닫혀 있거나 브라우저가 Service Worker를 즉시 깨우지 못하는 상황에서도 알림 표시 경로가 살아 있도록 Functions 푸시 payload에 webpush.notification을 추가했습니다. 열린 앱에서는 기존처럼 내부 토스트/소리 중심으로 처리하고, 백그라운드/종료 상태에서는 브라우저와 OS 알림 표시를 우선합니다.',
+  },
+  {
     id: '2026-06-27-hotfix-v0-5-10-google-e2e-admin-seed',
     date: '2026.06.27',
     type: 'hotfix',
