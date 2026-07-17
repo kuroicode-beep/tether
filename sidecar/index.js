@@ -1,0 +1,245 @@
+// sidecar/index.js
+// Tether Windows 알림 사이드카 — Firestore 실시간 리스너 → 네이티브 토스트 + 커스텀 사운드
+// FCM/크롬 경로를 우회해 알림 안정성을 보장한다.
+
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { execFile, exec } = require('child_process')
+
+const APP_VERSION = '0.1.0'
+const VERSION_HISTORY = [
+  { version: '0.1.0', date: '2026-07-17', summary: '최초 릴리스 — 메시지/상태/일기 실시간 알림, 커스텀 사운드, 알림 설정 연동' },
+]
+
+// ─── 설정 로드 ────────────────────────────────────────────────────────────
+
+const CONFIG_PATH = path.join(__dirname, 'config.json')
+if (!fs.existsSync(CONFIG_PATH)) {
+  console.error('[Sidecar] config.json이 없습니다. config.example.json을 복사해 작성하세요.')
+  process.exit(1)
+}
+const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
+const { myUid, coupleId, appUrl, projectId } = config
+
+// coupleId = 정렬된 두 uid를 '_'로 연결한 값 (uid에는 '_'가 없다)
+const partnerUid = coupleId.split('_').find((u) => u !== myUid)
+
+// ─── 단일 인스턴스 잠금 (중복 실행 시 중복 알림 방지) ─────────────────────
+
+const LOCK_PATH = path.join(__dirname, 'sidecar.lock')
+function acquireLock() {
+  try {
+    const existingPid = Number(fs.readFileSync(LOCK_PATH, 'utf8'))
+    if (existingPid) {
+      try {
+        process.kill(existingPid, 0) // 살아있는지 확인만
+        console.error(`[Sidecar] 이미 실행 중입니다 (PID ${existingPid}). 종료합니다.`)
+        process.exit(0)
+      } catch { /* 죽은 프로세스의 잔여 lock — 무시하고 진행 */ }
+    }
+  } catch { /* lock 파일 없음 — 정상 */ }
+  fs.writeFileSync(LOCK_PATH, String(process.pid))
+}
+acquireLock()
+
+// ─── 로그 (개인정보 본문은 기록하지 않는다) ──────────────────────────────
+
+const LOG_PATH = path.join(__dirname, 'sidecar.log')
+function log(event, extra = {}) {
+  const line = `${new Date().toISOString()} ${event} ${JSON.stringify(extra)}`
+  console.log(line)
+  try { fs.appendFileSync(LOG_PATH, line + '\n') } catch { /* ignore */ }
+}
+
+// ─── 인증: Firebase CLI 로그인 토큰 재사용 (별도 시크릿 저장 없음) ────────
+
+function buildAdcFile() {
+  const configstorePath = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json')
+  if (!fs.existsSync(configstorePath)) {
+    console.error('[Sidecar] firebase-tools 로그인 정보가 없습니다. `firebase login`을 먼저 실행하세요.')
+    process.exit(1)
+  }
+  const store = JSON.parse(fs.readFileSync(configstorePath, 'utf8'))
+  const refreshToken = store?.tokens?.refresh_token
+  if (!refreshToken) {
+    console.error('[Sidecar] refresh token이 없습니다. `firebase login`을 다시 실행하세요.')
+    process.exit(1)
+  }
+
+  // Firebase CLI 공개 OAuth 클라이언트 (CLI 오픈소스에 포함된 공개 값)
+  const adc = {
+    type: 'authorized_user',
+    client_id: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+    client_secret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+    refresh_token: refreshToken,
+  }
+
+  const adcDir = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'tether-sidecar')
+  fs.mkdirSync(adcDir, { recursive: true })
+  const adcPath = path.join(adcDir, 'adc.json')
+  fs.writeFileSync(adcPath, JSON.stringify(adc))
+  return adcPath
+}
+
+process.env.GOOGLE_APPLICATION_CREDENTIALS = buildAdcFile()
+
+const admin = require('firebase-admin')
+admin.initializeApp({ projectId, credential: admin.credential.applicationDefault() })
+const db = admin.firestore()
+
+// ─── 알림 설정 (Firestore users 문서와 실시간 동기화) ─────────────────────
+
+let settings = { message: true, status: true, diary: true, sound: 'waterDrop' }
+
+const SOUND_FILES = {
+  waterDrop: 'water-drop-20260621.wav',
+  chime: 'chime.wav',
+  sparkle: 'sparkle-20260625.wav',
+  softBell: 'soft-bell-20260625.wav',
+  gentleKnock: 'gentle-knock-20260625.wav',
+}
+
+function watchSettings() {
+  db.doc(`users/${myUid}`).onSnapshot(
+    (snap) => {
+      const s = snap.data()?.notificationSettings
+      if (s) {
+        settings = { ...settings, ...s }
+        log('settings_updated', { message: settings.message, status: settings.status, diary: settings.diary, sound: settings.sound })
+      }
+    },
+    (err) => log('settings_listener_error', { message: err.message }),
+  )
+}
+
+// ─── 사운드 재생 ──────────────────────────────────────────────────────────
+
+function playSound() {
+  if (settings.sound === 'silent') return
+  const file = SOUND_FILES[settings.sound] || SOUND_FILES.waterDrop
+  const wavPath = path.join(__dirname, '..', 'public', 'sounds', file)
+  if (!fs.existsSync(wavPath)) return
+  execFile('powershell.exe', [
+    '-NoProfile', '-WindowStyle', 'Hidden', '-Command',
+    `(New-Object Media.SoundPlayer '${wavPath}').PlaySync()`,
+  ], () => { /* fire-and-forget */ })
+}
+
+// ─── 토스트 알림 ──────────────────────────────────────────────────────────
+
+const notifier = require('node-notifier')
+const ICON_PATH = path.join(__dirname, '..', 'public', 'icon-192.png')
+
+function showToast(title, body, screen) {
+  playSound()
+  notifier.notify(
+    {
+      title,
+      message: body || ' ',
+      icon: fs.existsSync(ICON_PATH) ? ICON_PATH : undefined,
+      sound: false, // 커스텀 사운드를 직접 재생하므로 시스템음은 끈다
+      appID: 'Tether',
+      wait: true,
+    },
+    (err, response) => {
+      if (err) { log('toast_error', { message: err.message }); return }
+      if (response === 'activate') {
+        exec(`start "" "${appUrl}/?screen=${screen}"`)
+      }
+    },
+  )
+}
+
+// ─── Firestore 리스너 ─────────────────────────────────────────────────────
+
+const startTime = new Date()
+
+// 새 메시지: 시작 시점 이후 생성분만 구독해 초기 스냅샷 비용을 없앤다
+function watchMessages() {
+  db.collection(`couples/${coupleId}/messages`)
+    .where('createdAt', '>', startTime)
+    .onSnapshot(
+      (snap) => {
+        snap.docChanges().forEach((change) => {
+          if (change.type !== 'added') return
+          const msg = change.doc.data()
+          if (msg.senderUid === myUid) return
+          if (settings.message === false) return
+          const body = msg.type === 'image' ? '사진을 보냈어요 📸' : (msg.text ?? '')
+          showToast('Tether 💌 새 메시지', body, 'chat')
+          log('notify_message', {})
+        })
+      },
+      (err) => {
+        log('messages_listener_error', { message: err.message })
+        setTimeout(watchMessages, 5000)
+      },
+    )
+}
+
+// 파트너 상태 변경: 첫 스냅샷은 기준값으로만 쓰고, 내용 무변경 write는 건너뛴다
+function watchStatus() {
+  let lastSeen = null
+  db.doc(`couples/${coupleId}/status/${partnerUid}`).onSnapshot(
+    (snap) => {
+      if (!snap.exists) return
+      const s = snap.data()
+      const fingerprint = JSON.stringify([s.condition, s.message, s.mood ?? []])
+      if (lastSeen === null) { lastSeen = fingerprint; return }
+      if (fingerprint === lastSeen) return
+      lastSeen = fingerprint
+      if (settings.status === false) return
+      const parts = []
+      if (s.message) parts.push(s.message)
+      if (Array.isArray(s.mood) && s.mood.length > 0) parts.push(s.mood.join(' · '))
+      showToast('Tether 🌿 상태 업데이트', parts.join('\n') || '상태가 바뀌었어요', 'home')
+      log('notify_status', {})
+    },
+    (err) => {
+      log('status_listener_error', { message: err.message })
+      setTimeout(watchStatus, 5000)
+    },
+  )
+}
+
+// 새 일기: 시작 시점 이후 생성분만
+function watchDiary() {
+  db.collection(`couples/${coupleId}/diary`)
+    .where('createdAt', '>', startTime)
+    .onSnapshot(
+      (snap) => {
+        snap.docChanges().forEach((change) => {
+          if (change.type !== 'added') return
+          const diary = change.doc.data()
+          if (diary.authorUid === myUid) return
+          if (settings.diary === false) return
+          showToast('Tether 💌 새 일기', '일기가 도착했어요', 'diary')
+          log('notify_diary', {})
+        })
+      },
+      (err) => {
+        log('diary_listener_error', { message: err.message })
+        setTimeout(watchDiary, 5000)
+      },
+    )
+}
+
+// ─── 시작 ─────────────────────────────────────────────────────────────────
+
+log('sidecar_start', { version: APP_VERSION, partnerUid: `${partnerUid.slice(0, 6)}…` })
+console.log(`Tether Sidecar v${APP_VERSION} — 알림 감시 시작`)
+VERSION_HISTORY.forEach((v) => console.log(`  v${v.version} (${v.date}) ${v.summary}`))
+
+watchSettings()
+watchMessages()
+watchStatus()
+watchDiary()
+
+function cleanupAndExit() {
+  log('sidecar_stop', {})
+  try { fs.unlinkSync(LOCK_PATH) } catch { /* ignore */ }
+  process.exit(0)
+}
+process.on('SIGINT', cleanupAndExit)
+process.on('SIGTERM', cleanupAndExit)
