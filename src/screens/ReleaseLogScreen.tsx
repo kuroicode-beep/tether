@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-17-update-v0-6-0-windows-sidecar',
+    date: '2026.07.17',
+    type: 'update',
+    title: 'Tether v0.6.0 업데이트.',
+    detail: '푸시 알림 안정화: 오래된 연결 해제 기록이 알림을 막던 문제를 서버에서 자동 복구하고, FCM 토큰을 7일 주기로 강제 갱신합니다. Windows 전용 사이드카 알림 앱을 추가했습니다 — 크롬이 꺼져 있어도 알림을 받고, 설정한 알림음이 그대로 재생되며, 사이드카 실행 중에는 크롬 중복 알림이 자동으로 꺼집니다.',
+  },
+  {
     id: '2026-06-29-hotfix-v0-5-12-status-tag-url-link',
     date: '2026.06.29',
     type: 'hotfix',

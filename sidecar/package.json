@@ -1,6 +1,6 @@
 {
   "name": "tether-sidecar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tether Windows notification sidecar — Firestore direct listener + native toast",
   "main": "index.js",
   "scripts": {

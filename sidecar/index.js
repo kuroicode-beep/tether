@@ -7,10 +7,14 @@ const os = require('os')
 const path = require('path')
 const { execFile, exec } = require('child_process')
 
-const APP_VERSION = '0.1.0'
+const APP_VERSION = '0.2.0'
 const VERSION_HISTORY = [
+  { version: '0.2.0', date: '2026-07-17', summary: '로컬 ping 서버(웹앱 중복 알림 방지 연동), Tether 창 포커스 시 알림 억제' },
   { version: '0.1.0', date: '2026-07-17', summary: '최초 릴리스 — 메시지/상태/일기 실시간 알림, 커스텀 사운드, 알림 설정 연동' },
 ]
+
+// 웹앱이 사이드카 실행 여부를 감지하는 로컬 포트 (변경 시 클라이언트 pushTokenSync.ts와 맞출 것)
+const PING_PORT = 48620
 
 // ─── 설정 로드 ────────────────────────────────────────────────────────────
 
@@ -126,12 +130,80 @@ function playSound() {
   ], () => { /* fire-and-forget */ })
 }
 
+// ─── 로컬 ping 서버 (웹앱이 사이드카 감지 → 자기 FCM 토큰 해제) ───────────
+
+const http = require('http')
+
+function startPingServer() {
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    // Chrome Private Network Access preflight (https 페이지 → localhost 요청 허용)
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Private-Network': 'true',
+      })
+      res.end()
+      return
+    }
+    if (req.method === 'GET' && req.url === '/ping') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok: true, app: 'tether-sidecar', version: APP_VERSION }))
+      return
+    }
+    res.writeHead(404)
+    res.end()
+  })
+  server.on('error', (err) => log('ping_server_error', { message: err.message }))
+  server.listen(PING_PORT, '127.0.0.1', () => log('ping_server_up', { port: PING_PORT }))
+}
+
+// ─── 포커스 감지 (Tether 창이 앞에 있으면 알림 억제) ──────────────────────
+
+const FOCUS_PS_SCRIPT = `
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class FG {
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+}
+"@
+$h = [FG]::GetForegroundWindow()
+$sb = New-Object System.Text.StringBuilder 256
+[void][FG]::GetWindowText($h, $sb, 256)
+$procId = 0
+[void][FG]::GetWindowThreadProcessId($h, [ref]$procId)
+$p = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName
+Write-Output "$p|$($sb.ToString())"
+`
+
+// 전경 창이 Tether PWA(chrome/msedge + 제목 Tether…)인지 확인한다
+function isTetherFocused() {
+  return new Promise((resolve) => {
+    execFile('powershell.exe', ['-NoProfile', '-Command', FOCUS_PS_SCRIPT], { timeout: 4000 }, (err, stdout) => {
+      if (err) { resolve(false); return }
+      const [proc, ...titleParts] = String(stdout).trim().split('|')
+      const title = titleParts.join('|')
+      const isBrowser = /^(chrome|msedge)$/i.test(proc ?? '')
+      resolve(isBrowser && title.startsWith('Tether'))
+    })
+  })
+}
+
 // ─── 토스트 알림 ──────────────────────────────────────────────────────────
 
 const notifier = require('node-notifier')
 const ICON_PATH = path.join(__dirname, '..', 'public', 'icon-192.png')
 
-function showToast(title, body, screen) {
+async function showToast(title, body, screen) {
+  if (await isTetherFocused()) {
+    log('suppressed_focus', { screen })
+    return
+  }
   playSound()
   notifier.notify(
     {
@@ -231,6 +303,7 @@ log('sidecar_start', { version: APP_VERSION, partnerUid: `${partnerUid.slice(0, 
 console.log(`Tether Sidecar v${APP_VERSION} — 알림 감시 시작`)
 VERSION_HISTORY.forEach((v) => console.log(`  v${v.version} (${v.date}) ${v.summary}`))
 
+startPingServer()
 watchSettings()
 watchMessages()
 watchStatus()

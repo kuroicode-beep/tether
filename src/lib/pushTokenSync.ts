@@ -111,6 +111,10 @@ export async function syncPushTokenForUid(
   if (!uid) {
     return { ok: false, token: null, reason: 'no_uid' }
   }
+  // 사이드카가 알림을 담당 중이면 이 기기 토큰 재등록을 막는다 (수동 재등록은 허용)
+  if (sidecarSuppressed && !options.forceRefresh) {
+    return { ok: false, token: null, reason: 'sidecar_active' }
+  }
   if (!('Notification' in window)) {
     return { ok: false, token: null, reason: 'no_notification_api' }
   }
@@ -203,6 +207,48 @@ type AutoSyncOptions = {
   sync: () => Promise<PushSyncResult>
 }
 
+// ─── 사이드카 감지 (Windows 상주 알림 앱과 중복 방지) ─────────────────────
+
+const SIDECAR_PING_URL = 'http://127.0.0.1:48620/ping'
+let sidecarSuppressed = false
+
+// 로컬 사이드카가 살아있는지 확인한다 (미실행/타 플랫폼이면 빠르게 실패)
+async function detectSidecar(): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 1200)
+    const res = await fetch(SIDECAR_PING_URL, { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return false
+    const data = await res.json() as { app?: string }
+    return data.app === 'tether-sidecar'
+  } catch {
+    return false
+  }
+}
+
+// 사이드카 실행 중이면 이 기기의 FCM 토큰을 해제해 크롬 중복 알림을 막는다
+async function reconcileSidecar(uid: string, sync: () => Promise<PushSyncResult>): Promise<void> {
+  const active = await detectSidecar()
+
+  if (active) {
+    if (!sidecarSuppressed) {
+      sidecarSuppressed = true
+      console.log('[Push] sidecar detected — releasing this device FCM token')
+      debugLog('pushTokenSync.ts', 'sidecar_suppress', {}, 'H3')
+      await resetCurrentDeviceToken(uid)
+    }
+    return
+  }
+
+  if (sidecarSuppressed) {
+    sidecarSuppressed = false
+    console.log('[Push] sidecar gone — restoring FCM token')
+    debugLog('pushTokenSync.ts', 'sidecar_restore', {}, 'H3')
+  }
+  void sync()
+}
+
 // 세션/커플/SW 변경 시 FCM 토큰을 자동 재동기화한다
 export function installPushTokenAutoSync(options: AutoSyncOptions): () => void {
   const run = () => {
@@ -210,7 +256,7 @@ export function installPushTokenAutoSync(options: AutoSyncOptions): () => void {
     if (options.isLoading) return
     if (options.status !== 'connected' && options.status !== 'no_couple') return
     if (!reconcilePushPermissionFlag()) return
-    void options.sync()
+    void reconcileSidecar(options.uid, options.sync)
   }
 
   run()
