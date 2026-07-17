@@ -7,6 +7,19 @@ import { debugLog } from './debugLog'
 
 const LS_GRANTED = 'tether_fcm_granted'
 const LS_DEVICE_ID = 'tether_push_device_id'
+const LS_SYNC_TS = 'tether_fcm_sync_ts'
+
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7일 — FCM 토큰 강제 갱신 주기
+
+function isTokenStale(): boolean {
+  const ts = localStorage.getItem(LS_SYNC_TS)
+  if (!ts) return true
+  return Date.now() - Number(ts) > TOKEN_TTL_MS
+}
+
+function markTokenSynced(): void {
+  localStorage.setItem(LS_SYNC_TS, String(Date.now()))
+}
 
 export type PushSyncResult = {
   ok: boolean
@@ -125,6 +138,14 @@ export async function syncPushTokenForUid(
       return { ok: false, token: null, reason: 'sw_not_ready' }
     }
 
+    // 7일 이상 된 토큰은 FCM에서 조용히 만료될 수 있으므로 강제 재발급한다
+    if (isTokenStale()) {
+      try {
+        await deleteToken(messaging)
+        console.log('[Push] Forced token refresh (stale >', TOKEN_TTL_MS / 86400000, 'days)')
+      } catch { /* 이미 없는 토큰이면 무시 */ }
+    }
+
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
@@ -139,6 +160,7 @@ export async function syncPushTokenForUid(
     }
 
     await persistToken(uid, token)
+    markTokenSynced()
     reconcilePushPermissionFlag()
     console.log('[Push] Token saved to Firestore', {
       uid: `${uid.slice(0, 6)}…`,

@@ -136,9 +136,29 @@ async function getPartnerToken(
 ): Promise<{ tokens: string[]; partnerUid: string } | null> {
   const coupleSnap = await db.doc(`couples/${coupleId}`).get()
   const coupleData = coupleSnap.data() ?? {}
+
   if (coupleData.isDisconnected === true) {
-    console.log('[Push] couple disconnected — skip', { coupleId, senderUid })
-    return null
+    // 두 멤버의 coupleId가 여전히 이 couple을 가리키면 stale 플래그를 자동 치유한다
+    const members: string[] = coupleData.members ?? []
+    if (members.length >= 2) {
+      const memberSnaps = await Promise.all(members.map((m) => db.doc(`users/${m}`).get()))
+      const allLinked = memberSnaps.every((s) => s.data()?.coupleId === coupleId)
+      if (allLinked) {
+        console.log('[Push] self-healing stale isDisconnected', { coupleId })
+        await db.doc(`couples/${coupleId}`).update({
+          isDisconnected: admin.firestore.FieldValue.delete(),
+          disconnectedAt: admin.firestore.FieldValue.delete(),
+          disconnectedBy: admin.firestore.FieldValue.delete(),
+        })
+        // 아래 로직으로 계속 진행
+      } else {
+        console.log('[Push] couple disconnected — skip', { coupleId, senderUid })
+        return null
+      }
+    } else {
+      console.log('[Push] couple disconnected — skip', { coupleId, senderUid })
+      return null
+    }
   }
 
   const members: string[] = coupleData.members ?? []
