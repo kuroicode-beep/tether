@@ -296,7 +296,8 @@ function AppContent() {
       const type = (data.alertType as string) ?? undefined
       const settings = loadSettings()
       if (!shouldAlertForType(type, settings)) return
-      playNotificationSound(settings.sound)
+      // 창에 포커스가 있으면 무음 (토스트만) — 포커스 없을 때만 울린다
+      if (!document.hasFocus()) playNotificationSound(settings.sound)
       const title = (data.title as string | undefined) ?? 'Tether'
       const body = (data.body as string | undefined) ?? ''
       setToast({ title, body, type })
@@ -322,7 +323,8 @@ function AppContent() {
       debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert, isVisible }, 'H4')
       if (willAlert) {
         if (isVisible) {
-          playNotificationSound(settings.sound)
+          // 포커스 중이면 무음 토스트, 포커스가 없으면 소리도 함께
+          if (!document.hasFocus()) playNotificationSound(settings.sound)
           setToast({ title, body, type })
         }
         return

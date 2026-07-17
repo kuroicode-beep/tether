@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-17-update-v0-6-1-focus-aware-notifications',
+    date: '2026.07.17',
+    type: 'update',
+    title: 'Tether v0.6.1 업데이트.',
+    detail: '알림 기준을 "화면에 보임"에서 "창 포커스"로 바꿨습니다. 앱 창에 포커스가 있으면 소리 없이 조용히 표시되고, 앱이 꺼져 있거나 다른 창을 보고 있을 때만 소리와 함께 시스템 알림이 옵니다. macOS 등 사이드카가 없는 환경에서도 동일하게 동작합니다.',
+  },
+  {
     id: '2026-07-17-update-v0-6-0-windows-sidecar',
     date: '2026.07.17',
     type: 'update',

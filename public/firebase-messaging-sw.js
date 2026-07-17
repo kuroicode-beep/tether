@@ -50,15 +50,17 @@ messaging.onBackgroundMessage((payload) => {
   if (hasFcmNotification && data.forceSwDisplay !== '1') {
     return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       clients
-        .filter((client) => client.visibilityState === 'visible')
+        .filter((client) => client.focused === true)
         .forEach((client) => postInAppAlert(client, inAppMessage));
     });
   }
 
+  // 포커스 기준: 창이 포커스를 갖고 있을 때만 시스템 알림을 생략한다.
+  // 보이지만 다른 창에 포커스가 있으면(사이드 배치 등) 시스템 알림을 띄운다.
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-    const visibleClients = clients.filter((client) => client.visibilityState === 'visible');
-    if (visibleClients.length > 0) {
-      visibleClients.forEach((client) => postInAppAlert(client, inAppMessage));
+    const focusedClients = clients.filter((client) => client.focused === true);
+    if (focusedClients.length > 0) {
+      focusedClients.forEach((client) => postInAppAlert(client, inAppMessage));
       return undefined;
     }
 
