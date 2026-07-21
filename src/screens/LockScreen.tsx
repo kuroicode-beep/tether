@@ -107,6 +107,24 @@ export function LockScreen({ onUnlocked }: LockScreenProps) {
     else setPin((p) => p.slice(0, -1))
   }, [step])
 
+  // 물리 키보드 / 숫자 키패드 입력 지원
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (isLocked()) return
+      // 상단 숫자열·숫자 키패드 모두 e.key는 '0'~'9'로 들어온다
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault()
+        void handleDigit(e.key)
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault()
+        handleDelete()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isLocked, handleDigit, handleDelete])
+
   const handleBiometric = async () => {
     const ok = await bio.authenticate()
     if (ok) {
