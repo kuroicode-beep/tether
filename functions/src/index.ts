@@ -434,12 +434,16 @@ export const onNewMessage = functions.firestore
     if (!(await isNotificationEnabled(partnerUid, 'message'))) return
 
     const senderName = await getSenderName(msg.senderUid as string)
+    // 첨부에 캡션이 있으면 캡션을 본문으로 보여준다
+    const caption = ((msg.text as string | undefined) ?? '').trim()
     const body: string =
       msg.type === 'image'
-        ? '사진을 보냈어요 📸'
+        ? (caption ? `📸 ${caption}` : '사진을 보냈어요 📸')
         : msg.type === 'file'
-          ? `${(msg.fileName as string | undefined) ?? '파일'}을 보냈어요 📎`
-          : (msg.text as string) ?? ''
+          ? (caption
+            ? `📎 ${caption}`
+            : `${(msg.fileName as string | undefined) ?? '파일'}을 보냈어요 📎`)
+          : caption
 
     await sendWebPush(partnerUid, tokens, {
       type: 'message',

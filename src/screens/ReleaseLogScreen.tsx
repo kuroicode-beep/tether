@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-7-0-attachment-caption-ios-keyboard',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 첨부 캡션과 아이폰 키보드 수정.`,
+    detail: '사진이나 파일을 보낼 때 설명을 함께 남길 수 있습니다. 여러 개를 한 번에 보내면 파일마다 따로 적을 수 있고, 알림에도 적은 내용이 그대로 표시됩니다. 아이폰에서 전송 버튼을 누르면 키보드가 내려갔다 올라오던 문제와, 키보드가 입력창을 가리거나 화면이 위아래로 흔들리던 문제를 고쳤습니다.',
+  },
+  {
     id: '2026-07-17-update-v0-6-1-focus-aware-notifications',
     date: '2026.07.17',
     type: 'update',

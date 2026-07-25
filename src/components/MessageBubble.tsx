@@ -73,10 +73,11 @@ export function MessageBubble({
   const isRead = isMe && readBy.filter((uid) => uid !== senderUid).length > 0
   const timeText = formatTime(createdAt)
   const accessibleSender = isMe ? '내가 보낸' : `${senderName ?? '상대방'}이 보낸`
+  const caption = type === 'text' ? '' : (text ?? '').trim()
   const accessibleContent = type === 'image'
-    ? (imgError ? '불러올 수 없는 사진 메시지' : '사진 메시지')
+    ? (imgError ? '불러올 수 없는 사진 메시지' : `사진 메시지${caption ? `, ${caption}` : ''}`)
     : type === 'file'
-      ? `${fileName ?? '파일'} 파일 메시지`
+      ? `${fileName ?? '파일'} 파일 메시지${caption ? `, ${caption}` : ''}`
     : (text || '빈 메시지')
   const accessibilityLabel = `${accessibleSender} 메시지${timeText ? `, ${timeText}` : ''}, ${accessibleContent}`
   const isAudio = type === 'file' && (fileType?.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg)$/i.test(fileName ?? ''))
@@ -105,7 +106,7 @@ export function MessageBubble({
             <img
               key={imageUrl}
               src={imageUrl}
-              alt={`${accessibleSender} 사진 메시지`}
+              alt={caption || `${accessibleSender} 사진 메시지`}
               className="message-image block max-h-[300px] max-w-[220px] object-cover"
               loading="lazy"
               decoding="async"
@@ -164,6 +165,12 @@ export function MessageBubble({
           </div>
         )
       ) : null}
+
+      {caption && (
+        <div className="bubble message-attachment-caption" role="text">
+          {renderTextWithLinks(caption)}
+        </div>
+      )}
 
       {(showTime || showUnreadMarker) && (
         <div className="message-time" aria-hidden="true">
