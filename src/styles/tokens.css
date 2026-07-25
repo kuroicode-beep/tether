@@ -657,6 +657,12 @@ body {
   font-size: 14px;
 }
 
+/* 사진 아래 캡션 */
+.message-image-caption {
+  margin-top: 4px;
+  max-width: 68%;
+}
+
 .message-partner .message-time {
   justify-content: flex-start;
 }
@@ -833,10 +839,17 @@ body {
   text-transform: uppercase;
 }
 
+/* 채팅 메시지 목록 — 스크롤이 문서로 전파되어 화면이 튀는 것을 막는다 */
+.chat-message-list {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* 채팅 입력창 */
 .chat-input-bar {
   position: fixed;
-  bottom: 0;
+  /* iOS 키보드가 올라오면 그만큼 입력창을 띄운다 (useKeyboardInset) */
+  bottom: var(--kb-inset, 0px);
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -847,9 +860,55 @@ body {
   z-index: 40;
 }
 
+/* 키보드가 올라온 상태에서는 홈 인디케이터 여백이 필요 없다 */
+body[data-keyboard="open"] .chat-input-bar {
+  padding-bottom: 10px;
+}
+
 [data-theme="high-contrast"] .chat-input-bar {
   background: #111;
   border-top-color: #222;
+}
+
+/* 사진 첨부 시트의 캡션 입력 */
+.image-caption-input {
+  display: block;
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: 18px;
+  padding: 12px 16px;
+  color: var(--color-text);
+  font-size: 16px;
+  font-family: inherit;
+  line-height: 1.4;
+  outline: none;
+  resize: none;
+  min-height: 50px;
+  max-height: 120px;
+  overflow-y: auto;
+  caret-color: var(--color-primary);
+}
+
+.image-caption-input:focus {
+  border-color: var(--color-primary);
+}
+
+.image-caption-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+[data-theme="high-contrast"] .image-caption-input {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  border-radius: var(--hc-box-radius) !important;
+}
+
+[data-theme="high-contrast"] .image-caption-input::placeholder {
+  color: #CCCCCC !important;
+  opacity: 1 !important;
 }
 
 .chat-input-bar textarea,

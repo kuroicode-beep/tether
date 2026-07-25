@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
-  onSendImage: (file: File) => void
+  onSendImage: (file: File, caption?: string) => void
   disabled?: boolean
   onFocusChange?: (focused: boolean) => void
 }
@@ -15,21 +15,16 @@ interface ImagePreview {
 export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<ImagePreview | null>(null)
+  const [caption, setCaption] = useState('')
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const adjustHeight = () => {
-    const el = editorRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
-  }
-
+  // 전송 후 커서를 입력창 끝으로 되돌린다 (iOS 스크롤 튐 방지: preventScroll)
   const keepInputFocus = () => {
     requestAnimationFrame(() => {
       const el = editorRef.current
       if (!el) return
-      el.focus()
+      el.focus({ preventScroll: true })
       const range = document.createRange()
       range.selectNodeContents(el)
       range.collapse(false)
@@ -45,7 +40,6 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
     setText('')
     if (editorRef.current) {
       editorRef.current.textContent = ''
-      editorRef.current.style.height = 'auto'
     }
     keepInputFocus()
   }
@@ -60,7 +54,6 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
   const handleInput = () => {
     const next = editorRef.current?.innerText ?? ''
     setText(next.replace(/\u00a0/g, ' '))
-    adjustHeight()
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -73,21 +66,24 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setCaption('')
     setPreview({ file, url: URL.createObjectURL(file) })
     e.target.value = ''
   }
 
   const handleConfirmImage = () => {
     if (!preview) return
-    onSendImage(preview.file)
+    onSendImage(preview.file, caption.trim() || undefined)
     URL.revokeObjectURL(preview.url)
     setPreview(null)
+    setCaption('')
     keepInputFocus()
   }
 
   const handleCancelImage = () => {
     if (preview) URL.revokeObjectURL(preview.url)
     setPreview(null)
+    setCaption('')
   }
 
   return (
@@ -95,18 +91,41 @@ export function ChatInput({ onSendText, onSendImage, disabled, onFocusChange }: 
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelImage} />
-          <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+          <div
+            className="app-fixed-x fixed z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl"
+            style={{ bottom: 'var(--kb-inset, 0px)' }}
+          >
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
               이 사진을 보낼까요?
             </p>
-            <div className="flex justify-center mb-xl">
+            <div className="flex justify-center mb-lg">
               <img
                 src={preview.url}
                 alt="미리보기"
                 className="max-h-60 max-w-full rounded-2xl object-contain shadow-md"
               />
             </div>
+
+            <label htmlFor="image-caption" className="sr-only">
+              사진 설명
+            </label>
+            <textarea
+              id="image-caption"
+              className="image-caption-input mb-lg"
+              placeholder="사진에 남길 말 (선택)"
+              value={caption}
+              rows={1}
+              maxLength={500}
+              onChange={(e) => setCaption(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleConfirmImage()
+                }
+              }}
+            />
+
             <div className="space-y-sm">
               <button type="button" onClick={handleConfirmImage} className="btn-outline w-full active">
                 전송

@@ -31,3 +31,6 @@ Thumbs.db
 
 # Claude Code local settings (user-specific MCP permissions)
 .claude/settings.local.json
+
+# Firebase 배포 캐시
+.firebase/

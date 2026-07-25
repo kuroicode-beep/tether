@@ -180,9 +180,11 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [coupleId, myUid, applyMerge, failOptimistic])
 
-  const sendImage = useCallback(async (file: File) => {
+  // 사진 전송 — caption은 선택 입력이며 text 필드에 함께 저장한다
+  const sendImage = useCallback(async (file: File, caption?: string) => {
     if (!coupleId || !myUid) return
 
+    const trimmedCaption = caption?.trim() ?? ''
     const clientId = createClientId('img')
     const localUrl = URL.createObjectURL(file)
     const optimistic: ChatMessage = {
@@ -190,6 +192,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       clientId,
       senderUid: myUid,
       type: 'image',
+      text: trimmedCaption || undefined,
       imageUrl: localUrl,
       createdAt: Date.now(),
       readBy: [myUid],
@@ -211,6 +214,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         senderUid: myUid,
         type: 'image',
         imageUrl,
+        ...(trimmedCaption ? { text: trimmedCaption } : {}),
         createdAt,
         readBy: [myUid],
       })

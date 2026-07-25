@@ -10,6 +10,7 @@ import { DateDivider } from '../components/DateDivider'
 import { ChatInput } from '../components/ChatInput'
 import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
+import { useKeyboardInset } from '../hooks/useKeyboardInset'
 
 interface ChatScreenProps {
   onBack: () => void
@@ -42,6 +43,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     uid,
   )
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
+  const keyboardOpen = useKeyboardInset()
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -101,6 +103,12 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
     runScroll(behavior)
   }, [messages, scrollToBottom])
 
+  // 키보드가 열리고 닫히는 순간에만 마지막 메시지 위치를 맞춘다 (입력 중 재정렬 방지)
+  useEffect(() => {
+    if (!initialScrollDoneRef.current) return
+    requestAnimationFrame(() => scrollToBottom('auto'))
+  }, [keyboardOpen, scrollToBottom])
+
   // 사용자가 직접 맨 위에 닿았을 때만 이전 메시지를 불러온다 (iOS 자동 튐 방지)
   const handleListScroll = useCallback(() => {
     const list = listRef.current
@@ -150,7 +158,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
   return (
     <div
       className="screen flex flex-col overflow-hidden"
-      style={{ background: 'var(--color-bg)', height: '100dvh' }}
+      style={{ background: 'var(--color-bg)', height: 'calc(100dvh - var(--kb-inset, 0px))' }}
     >
       <header className="chat-header">
         <button type="button" onClick={onBack} className="back-btn" aria-label="뒤로">
@@ -170,7 +178,7 @@ export function ChatScreen({ onBack }: ChatScreenProps) {
 
       <main
         ref={listRef}
-        className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
+        className="chat-message-list flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '80px' }}
         onScroll={handleListScroll}
       >

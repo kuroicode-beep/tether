@@ -35,6 +35,13 @@ const TYPE_CLASS: Record<LogType, string> = {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-release-v0-3-0',
+    date: '2026.07.26',
+    type: 'release',
+    title: `Tether ${APP_VERSION_LABEL} — 사진 캡션과 iOS 채팅 입력 안정화.`,
+    detail: '사진을 보낼 때 설명을 함께 남길 수 있게 했고, 아이폰에서 키보드가 올라올 때 입력창이 가려지거나 화면이 위아래로 흔들리던 문제를 고쳤습니다.',
+  },
+  {
     id: '2026-06-12-hotfix-push-token-resync-v2',
     date: '2026.06.12',
     type: 'hotfix',

@@ -43,27 +43,30 @@ export function MessageBubble({
       {type === 'text' ? (
         <div className="bubble">{text}</div>
       ) : type === 'image' ? (
-        imageUrl && !imgError ? (
-          <button
-            type="button"
-            onClick={() => onImageTap?.(imageUrl)}
-            className="message-image-btn overflow-hidden rounded-[18px] transition-transform active:scale-95"
-          >
-            <img
-              key={imageUrl}
-              src={imageUrl}
-              alt="이미지 메시지"
-              className="message-image block max-h-[300px] max-w-[220px] object-cover"
-              loading="lazy"
-              decoding="async"
-              onError={() => setImgError(true)}
-            />
-          </button>
-        ) : (
-          <div className="bubble message-image-fallback">
-            {imgError ? '사진을 불러올 수 없어요' : '사진 전송 중...'}
-          </div>
-        )
+        <>
+          {imageUrl && !imgError ? (
+            <button
+              type="button"
+              onClick={() => onImageTap?.(imageUrl)}
+              className="message-image-btn overflow-hidden rounded-[18px] transition-transform active:scale-95"
+            >
+              <img
+                key={imageUrl}
+                src={imageUrl}
+                alt={text || '이미지 메시지'}
+                className="message-image block max-h-[300px] max-w-[220px] object-cover"
+                loading="lazy"
+                decoding="async"
+                onError={() => setImgError(true)}
+              />
+            </button>
+          ) : (
+            <div className="bubble message-image-fallback">
+              {imgError ? '사진을 불러올 수 없어요' : '사진 전송 중...'}
+            </div>
+          )}
+          {text && <div className="bubble message-image-caption">{text}</div>}
+        </>
       ) : null}
 
       {showTime && (
