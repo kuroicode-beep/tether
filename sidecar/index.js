@@ -34,23 +34,16 @@ const hotkeyConfig = config.hotkey === undefined ? DEFAULT_HOTKEY : config.hotke
 // coupleId = 정렬된 두 uid를 '_'로 연결한 값 (uid에는 '_'가 없다)
 const partnerUid = coupleId.split('_').find((u) => u !== myUid)
 
-// ─── 단일 인스턴스 잠금 (중복 실행 시 중복 알림 방지) ─────────────────────
+// ─── 단일 인스턴스 판정 ───────────────────────────────────────────────────
+// PID 파일로는 판정하지 않는다. 프로세스가 비정상 종료되면 lock이 남고,
+// Windows가 그 PID를 다른 프로세스에 재사용하면 살아있는 것으로 오판해
+// 사이드카가 영영 뜨지 않는다. 실제 판정은 PING_PORT 바인딩으로 한다.
+// lock 파일은 진단용 기록으로만 남긴다.
 
 const LOCK_PATH = path.join(__dirname, 'sidecar.lock')
-function acquireLock() {
-  try {
-    const existingPid = Number(fs.readFileSync(LOCK_PATH, 'utf8'))
-    if (existingPid) {
-      try {
-        process.kill(existingPid, 0) // 살아있는지 확인만
-        console.error(`[Sidecar] 이미 실행 중입니다 (PID ${existingPid}). 종료합니다.`)
-        process.exit(0)
-      } catch { /* 죽은 프로세스의 잔여 lock — 무시하고 진행 */ }
-    }
-  } catch { /* lock 파일 없음 — 정상 */ }
-  fs.writeFileSync(LOCK_PATH, String(process.pid))
+function writeLockFile() {
+  try { fs.writeFileSync(LOCK_PATH, String(process.pid)) } catch { /* ignore */ }
 }
-acquireLock()
 
 // ─── 로그 (개인정보 본문은 기록하지 않는다) ──────────────────────────────
 
@@ -139,7 +132,8 @@ function playSound() {
 
 const http = require('http')
 
-function startPingServer() {
+// 포트 바인딩이 곧 단일 인스턴스 판정이다. 성공하면 onReady로 나머지를 시작한다.
+function startPingServer(onReady) {
   const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     // Chrome Private Network Access preflight (https 페이지 → localhost 요청 허용)
@@ -160,8 +154,17 @@ function startPingServer() {
     res.writeHead(404)
     res.end()
   })
-  server.on('error', (err) => log('ping_server_error', { message: err.message }))
-  server.listen(PING_PORT, '127.0.0.1', () => log('ping_server_up', { port: PING_PORT }))
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[Sidecar] 이미 실행 중입니다 (포트 ${PING_PORT} 사용 중). 종료합니다.`)
+      process.exit(0)
+    }
+    log('ping_server_error', { message: err.message })
+  })
+  server.listen(PING_PORT, '127.0.0.1', () => {
+    log('ping_server_up', { port: PING_PORT })
+    onReady()
+  })
 }
 
 // ─── 포커스 감지 (Tether 창이 앞에 있으면 알림 억제) ──────────────────────
@@ -408,12 +411,15 @@ log('sidecar_start', { version: APP_VERSION, partnerUid: `${partnerUid.slice(0, 
 console.log(`Tether Sidecar v${APP_VERSION} — 알림 감시 시작`)
 VERSION_HISTORY.forEach((v) => console.log(`  v${v.version} (${v.date}) ${v.summary}`))
 
-startPingServer()
-startHotkeyListener()
-watchSettings()
-watchMessages()
-watchStatus()
-watchDiary()
+// 포트를 잡는 데 성공한 인스턴스만 실제 감시를 시작한다
+startPingServer(() => {
+  writeLockFile()
+  startHotkeyListener()
+  watchSettings()
+  watchMessages()
+  watchStatus()
+  watchDiary()
+})
 
 function cleanupAndExit() {
   shuttingDown = true
