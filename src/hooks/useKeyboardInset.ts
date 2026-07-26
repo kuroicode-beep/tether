@@ -1,12 +1,22 @@
 // src/hooks/useKeyboardInset.ts
-// iOS Safari/PWA에서 소프트 키보드가 가린 높이를 --kb-inset CSS 변수로 노출하고,
-// 키보드가 열린 동안 문서가 스크롤되어 화면이 위아래로 튀는 것을 막는다.
+// iOS Safari/PWA에서 소프트 키보드가 가린 높이를 --kb-inset CSS 변수로 노출한다.
+//
+// 설계 원칙 — 브라우저와 싸우지 않는다:
+//  - 문서 스크롤을 강제로 되돌리지 않는다. iOS는 포커스된 입력을 보이게 하려고
+//    레이아웃 뷰포트를 밀어 올리는데, 이를 되돌리면 서로 밀고 당기며 진동한다.
+//    offsetTop을 계산식에 포함하므로 iOS가 민 만큼은 그대로 반영된다.
+//  - 문서나 화면 높이를 바꾸지 않는다. 높이를 바꾸면 리플로우 → 뷰포트 변화 →
+//    다시 높이 변화로 이어지는 되먹임이 생긴다.
+//  - 입력 바는 transform으로만 띄운다 (레이아웃 영향 없음).
+//  - 값을 4px 단위로 양자화하고 8px 미만 변화는 무시해 미세 진동을 막는다.
 import { useEffect, useState } from 'react'
 
 // 키보드로 판단할 최소 높이 (주소창 축소 등과 구분)
 const KEYBOARD_THRESHOLD = 80
-// 이보다 작은 변화는 무시해 미세 떨림을 막는다
-const NOISE_TOLERANCE = 2
+// 값을 이 단위로 반올림해 1px 떨림을 없앤다
+const QUANTUM = 4
+// 이보다 작은 변화는 무시한다 (키보드 개폐는 수백 px이라 영향 없음)
+const MIN_DELTA = 8
 
 export function useKeyboardInset(): boolean {
   const [open, setOpen] = useState(false)
@@ -25,15 +35,10 @@ export function useKeyboardInset(): boolean {
     let lastInset = -1
     let isOpen = false
 
-    // 키보드가 열린 동안 iOS가 문서를 밀어 올리는 것을 되돌린다
-    const lockDocumentScroll = () => {
-      if (!isOpen) return
-      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
-    }
-
     const apply = () => {
-      const next = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
-      if (lastInset >= 0 && Math.abs(next - lastInset) < NOISE_TOLERANCE) return
+      const raw = window.innerHeight - vv.height - vv.offsetTop
+      const next = Math.max(0, Math.round(raw / QUANTUM) * QUANTUM)
+      if (lastInset >= 0 && Math.abs(next - lastInset) < MIN_DELTA) return
       lastInset = next
 
       root.style.setProperty('--kb-inset', `${next}px`)
@@ -42,17 +47,12 @@ export function useKeyboardInset(): boolean {
       if (nextOpen === isOpen) return
 
       isOpen = nextOpen
-      if (nextOpen) {
-        document.body.setAttribute('data-keyboard', 'open')
-        lockDocumentScroll()
-      } else {
-        document.body.removeAttribute('data-keyboard')
-      }
+      if (nextOpen) document.body.setAttribute('data-keyboard', 'open')
+      else document.body.removeAttribute('data-keyboard')
       setOpen(nextOpen)
     }
 
     const schedule = () => {
-      lockDocumentScroll()
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(apply)
     }
@@ -60,13 +60,11 @@ export function useKeyboardInset(): boolean {
     apply()
     vv.addEventListener('resize', schedule)
     vv.addEventListener('scroll', schedule)
-    window.addEventListener('scroll', lockDocumentScroll, { passive: true })
 
     return () => {
       cancelAnimationFrame(raf)
       vv.removeEventListener('resize', schedule)
       vv.removeEventListener('scroll', schedule)
-      window.removeEventListener('scroll', lockDocumentScroll)
       root.style.setProperty('--kb-inset', '0px')
       document.body.removeAttribute('data-keyboard')
     }

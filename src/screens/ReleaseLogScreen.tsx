@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-hotfix-v0-7-1-ios-keyboard-oscillation',
+    date: '2026.07.26',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 아이폰 키보드 흔들림 수정.`,
+    detail: 'v0.7.0에서 아이폰 채팅창이 위아래로 흔들리고 키보드가 나왔다 사라지던 문제를 고쳤습니다. 화면 높이를 강제로 줄이고 스크롤 위치를 되돌리던 처리가 브라우저 동작과 충돌해 진동을 만들고 있었습니다. 이제 입력창 위치만 조정하고 나머지는 브라우저에 맡깁니다.',
+  },
+  {
     id: '2026-07-26-update-v0-7-0-attachment-caption-ios-keyboard',
     date: '2026.07.26',
     type: 'update',

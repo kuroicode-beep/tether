@@ -154,10 +154,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelAllFiles} />
-          <div
-            className="app-fixed-x fixed z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl"
-            style={{ bottom: 'var(--kb-inset, 0px)' }}
-          >
+          <div className="attachment-sheet app-fixed-x fixed z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
               이 파일을 보낼까요? {fileQueue.length > 0 ? `(${fileQueue.length + 1}개 중 1개)` : ''}

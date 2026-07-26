@@ -1008,6 +1008,12 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 첨부 확인 시트 — 입력 바와 같은 방식으로 키보드 위에 띄운다 */
+.attachment-sheet.app-fixed-x {
+  bottom: 0;
+  transform: translateX(-50%) translateY(calc(-1 * var(--kb-inset, 0px)));
+}
+
 /* 첨부 시트의 캡션 입력 */
 .attachment-caption-input {
   display: block;
@@ -1052,8 +1058,7 @@ body {
 /* 채팅 입력창 */
 .chat-input-bar {
   position: fixed;
-  /* iOS 키보드가 올라오면 그만큼 입력창을 띄운다 (useKeyboardInset) */
-  bottom: var(--kb-inset, 0px);
+  bottom: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -1064,9 +1069,11 @@ body {
   z-index: 40;
 }
 
-/* 키보드가 올라온 상태에서는 홈 인디케이터 여백이 필요 없다 */
-body[data-keyboard="open"] .chat-input-bar {
-  padding-bottom: 10px;
+/* iOS 키보드가 올라온 만큼 입력 바를 띄운다 (useKeyboardInset).
+   .app-fixed-x의 translateX(-50%)를 유지해야 하므로 함께 지정한다.
+   레이아웃을 건드리지 않도록 bottom이 아닌 transform을 쓴다. */
+.chat-input-bar.app-fixed-x {
+  transform: translateX(-50%) translateY(calc(-1 * var(--kb-inset, 0px)));
 }
 
 [data-theme="high-contrast"] .chat-input-bar {
