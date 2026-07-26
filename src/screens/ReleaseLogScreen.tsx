@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-hotfix-v0-7-2-ios-chat-viewport',
+    date: '2026.07.26',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 전송 후 최근 메시지가 가려지던 문제.`,
+    detail: '아이폰에서 메시지를 보내면 방금 보낸 메시지가 입력창이나 키보드 뒤로 숨던 문제를 고쳤습니다. 채팅 화면 높이를 실제로 보이는 영역에 맞추고, 메시지 목록 아래 여백이 입력창의 실제 높이를 따라가도록 했습니다.',
+  },
+  {
     id: '2026-07-26-hotfix-v0-7-1-ios-keyboard-oscillation',
     date: '2026.07.26',
     type: 'hotfix',

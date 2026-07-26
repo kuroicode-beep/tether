@@ -202,7 +202,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   return (
     <div
       className="screen relative flex flex-col overflow-hidden"
-      style={{ background: 'var(--color-bg)', height: '100dvh' }}
+      style={{ background: 'var(--color-bg)', height: 'var(--vv-height, 100dvh)' }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -237,7 +237,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       <main
         ref={listRef}
         className="chat-message-list flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
-        style={{ paddingTop: '16px', paddingBottom: 'calc(80px + var(--kb-inset, 0px))' }}
+        style={{ paddingTop: '16px', paddingBottom: 'calc(var(--chat-input-h, 80px) + 12px)' }}
         onScroll={handleListScroll}
       >
         <div ref={topRef} className="h-1 shrink-0">

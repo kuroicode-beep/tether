@@ -1069,6 +1069,11 @@ body {
   z-index: 40;
 }
 
+/* 키보드가 올라오면 홈 인디케이터 여백이 필요 없다 (키보드가 가리고 있다) */
+body[data-keyboard="open"] .chat-input-bar {
+  padding-bottom: 10px;
+}
+
 /* iOS 키보드가 올라온 만큼 입력 바를 띄운다 (useKeyboardInset).
    .app-fixed-x의 translateX(-50%)를 유지해야 하므로 함께 지정한다.
    레이아웃을 건드리지 않도록 bottom이 아닌 transform을 쓴다. */
