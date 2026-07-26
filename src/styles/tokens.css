@@ -89,6 +89,24 @@
   --spacing-unit:  8px;
 }
 
+/* ── 다크 테마 오버라이드 ──
+   Sage 팔레트를 어두운 배경으로 옮긴 편안한 다크모드.
+   고대비(노랑/검정)는 저시력용 별도 모드로 그대로 둔다.
+   본문 대비 약 14:1, 보조 텍스트 약 8:1로 회색 흐린 글씨를 피한다. */
+html[data-theme="dark"] {
+  --color-bg:          #121714;
+  --color-surface:     #1A211D;
+  --color-surface-2:   #232B26;
+  --color-primary:     #7FBF98;
+  --color-primary-dim: #24382C;
+  --color-text:        #E9F0EB;
+  --color-text-muted:  #AABDB1;
+  --color-border:      #2F3A34;
+  --color-chip-bg:     #24382C;
+  --color-chip-text:   #B7E0C6;
+  --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
 /* ── 고대비 테마 오버라이드 ── */
 [data-theme="high-contrast"] {
   --color-bg:           #0D0D0D;
@@ -130,6 +148,10 @@ body {
   align-items: flex-start;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="dark"] body {
+  color: var(--color-text);
 }
 
 [data-theme="high-contrast"] body {
@@ -406,6 +428,66 @@ body {
 .app-fixed-fab {
   position: fixed;
   right: max(1.5rem, calc((100vw - var(--app-max-width)) / 2 + 1.5rem));
+}
+
+/* ── 다크 테마: Tailwind 고정 색상 클래스를 다크 팔레트로 되돌린다 ── */
+[data-theme="dark"] .text-on-surface,
+[data-theme="dark"] .text-on-background {
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .text-on-surface-variant {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme="dark"] .text-primary,
+[data-theme="dark"] .text-secondary {
+  color: var(--color-primary) !important;
+}
+
+[data-theme="dark"] .bg-background,
+[data-theme="dark"] .bg-\[\#EEE9DC\] {
+  background-color: var(--color-bg) !important;
+}
+
+[data-theme="dark"] .bg-surface,
+[data-theme="dark"] .bg-surface-container,
+[data-theme="dark"] .bg-surface-container-low,
+[data-theme="dark"] .bg-surface-container-lowest,
+[data-theme="dark"] .bg-\[\#F5F2EB\],
+[data-theme="dark"] .bg-\[\#F5F2EA\] {
+  background-color: var(--color-surface) !important;
+}
+
+[data-theme="dark"] .bg-primary-container,
+[data-theme="dark"] .bg-secondary-container {
+  background-color: var(--color-primary-dim) !important;
+}
+
+[data-theme="dark"] .text-on-primary {
+  color: #0F1512 !important;
+}
+
+[data-theme="dark"] .text-on-primary-container {
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .home-header,
+[data-theme="dark"] .bottom-nav {
+  background-color: var(--color-surface) !important;
+}
+
+/* 흰 배경을 유지해야 하는 버튼(구글 로그인 등)은 글자만 어둡게 고정한다 */
+[data-theme="dark"] .bg-white.text-on-surface {
+  color: #1A1A1A !important;
+}
+
+/* 내가 보낸 말풍선 — 밝은 sage 위 흰 글씨는 대비가 낮아 배경을 낮춘다.
+   글씨 대비 7.5:1(AAA). 배경과 덜 구분되는 만큼 테두리를 밝게 둔다. */
+[data-theme="dark"] .message-mine .bubble {
+  background: #27593E;
+  border-color: #3E8A62;
+  color: #F2F8F4;
 }
 
 [data-theme="high-contrast"] .text-primary,

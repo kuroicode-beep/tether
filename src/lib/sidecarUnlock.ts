@@ -6,9 +6,33 @@
 // 그대로 복사해도 로컬 사이드카에 닿지 못하므로 잠금이 풀리지 않는다.
 // 토큰은 30초 만료·1회용이라 주소창 기록이 남아도 재사용되지 않는다.
 
-const SIDECAR_UNLOCK_URL = 'http://127.0.0.1:48620/unlock'
+const SIDECAR_BASE_URL = 'http://127.0.0.1:48620'
+const SIDECAR_UNLOCK_URL = `${SIDECAR_BASE_URL}/unlock`
+const SIDECAR_PENDING_URL = `${SIDECAR_BASE_URL}/unlock-pending`
 const UNLOCK_PARAM = 'unlock'
 const REQUEST_TIMEOUT_MS = 1200
+
+// 공통 로컬 요청 — 실패는 모두 "잠금 유지"로 처리한다
+async function askSidecar(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return false
+    const data = await res.json() as { ok?: boolean }
+    return data.ok === true
+  } catch {
+    // 사이드카 미실행·타 플랫폼·요청 차단
+    return false
+  }
+}
+
+// 이미 열려 있는 창이 잠금 화면일 때, 단축키가 눌렸는지 사이드카에 물어본다.
+// 창을 포커스만 한 경우에는 URL이 새로 오지 않으므로 이 경로가 필요하다.
+export function pollSidecarUnlockRequest(): Promise<boolean> {
+  return askSidecar(SIDECAR_PENDING_URL)
+}
 
 // URL에서 토큰을 지운다 (뒤로가기·공유로 다시 쓰이지 않도록)
 function stripUnlockParam(): void {
@@ -33,19 +57,5 @@ export async function consumeSidecarUnlockToken(): Promise<boolean> {
   // 검증 성공 여부와 무관하게 주소에서는 토큰을 지운다
   stripUnlockParam()
 
-  try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-    const res = await fetch(
-      `${SIDECAR_UNLOCK_URL}?token=${encodeURIComponent(token)}`,
-      { signal: controller.signal },
-    )
-    clearTimeout(timer)
-    if (!res.ok) return false
-    const data = await res.json() as { ok?: boolean }
-    return data.ok === true
-  } catch {
-    // 사이드카 미실행·타 플랫폼·차단 — 잠금을 유지한다
-    return false
-  }
+  return askSidecar(`${SIDECAR_UNLOCK_URL}?token=${encodeURIComponent(token)}`)
 }

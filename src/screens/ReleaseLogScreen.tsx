@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-9-0-dark-theme',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 다크모드 추가.`,
+    detail: '설정에서 기본·다크·고대비 세 가지 테마를 고를 수 있습니다. 다크모드는 눈이 편한 어두운 초록 계열이며 본문 대비 15:1로 흐린 회색 글씨를 쓰지 않습니다. 고대비 모드는 그대로 남아 있습니다. PC에서 Win+Alt+Q로 채팅을 열면 다크모드로 뜨고, 이미 열려 있는 창이 잠금 화면이어도 단축키를 누르면 PIN 없이 채팅으로 들어갑니다.',
+  },
+  {
     id: '2026-07-26-update-v0-8-0-sidecar-hotkey-quick-unlock',
     date: '2026.07.26',
     type: 'update',

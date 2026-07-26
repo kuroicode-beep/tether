@@ -27,7 +27,10 @@ import { AdminScreen } from './screens/AdminScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
-import { consumeSidecarUnlockToken } from './lib/sidecarUnlock'
+import { consumeSidecarUnlockToken, pollSidecarUnlockRequest } from './lib/sidecarUnlock'
+
+// 잠금 화면에 있는 동안 사이드카 단축키 요청을 확인하는 주기
+const SIDECAR_UNLOCK_POLL_MS = 1000
 import {
   playNotificationSound,
   screenFromNotificationUrl,
@@ -376,14 +379,49 @@ function AppContent() {
 
   // Windows 사이드카 단축키로 열린 경우에만 PIN을 건너뛴다.
   // 토큰은 로컬 사이드카(127.0.0.1)에서만 검증되므로 다른 기기에서는 통하지 않는다.
+  //
+  // 두 경로가 필요하다:
+  //  1) 창을 새로 연 경우 — 주소의 unlock 토큰을 검증한다
+  //  2) 이미 열린 창을 포커스한 경우 — 주소가 새로 오지 않으므로,
+  //     잠금 화면에 있는 동안 사이드카에 "방금 단축키가 눌렸는지"를 물어본다
   useEffect(() => {
     if (session.status !== 'connected' || unlocked) return
-    if (sidecarUnlockTriedRef.current) return
-    sidecarUnlockTriedRef.current = true
 
-    void consumeSidecarUnlockToken().then((granted) => {
-      if (granted) handleUnlocked()
-    })
+    let cancelled = false
+    let timer = 0
+
+    const grant = () => {
+      if (cancelled) return
+      handleUnlocked()
+    }
+
+    const poll = () => {
+      void pollSidecarUnlockRequest().then((granted) => {
+        if (cancelled) return
+        if (granted) {
+          pendingNavRef.current = 'chat'
+          grant()
+          return
+        }
+        timer = window.setTimeout(poll, SIDECAR_UNLOCK_POLL_MS)
+      })
+    }
+
+    if (!sidecarUnlockTriedRef.current) {
+      sidecarUnlockTriedRef.current = true
+      void consumeSidecarUnlockToken().then((granted) => {
+        if (cancelled) return
+        if (granted) grant()
+        else poll()
+      })
+    } else {
+      poll()
+    }
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
   }, [session.status, unlocked, handleUnlocked])
 
   const handleChangePin = () => {

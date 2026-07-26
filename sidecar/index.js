@@ -7,8 +7,9 @@ const os = require('os')
 const path = require('path')
 const { execFile, exec, spawn } = require('child_process')
 
-const APP_VERSION = '0.3.1'
+const APP_VERSION = '0.3.2'
 const VERSION_HISTORY = [
+  { version: '0.3.2', date: '2026-07-26', summary: '이미 열린 잠금 화면도 단축키로 해제, 단축키로 여는 채팅창은 다크모드' },
   { version: '0.3.1', date: '2026-07-26', summary: '단축키로 열 때 PIN 건너뛰기(1회용 로컬 토큰), 포트 기반 단일 인스턴스 판정' },
   { version: '0.3.0', date: '2026-07-26', summary: '전역 단축키(기본 Win+Alt+Q)로 채팅 화면 바로 열기' },
   { version: '0.2.0', date: '2026-07-17', summary: '로컬 ping 서버(웹앱 중복 알림 방지 연동), Tether 창 포커스 시 알림 억제' },
@@ -163,6 +164,20 @@ function consumeUnlockToken(token) {
   return true
 }
 
+// 이미 열려 있는 창을 포커스한 경우 — 그 창은 URL을 새로 받지 않으므로
+// 잠금 해제 요청을 짧게 보관해두고, 잠금 화면에 있는 앱이 가져가게 한다.
+let pendingUnlockUntil = 0
+
+function markUnlockPending() {
+  pendingUnlockUntil = Date.now() + UNLOCK_TOKEN_TTL_MS
+}
+
+function consumeUnlockPending() {
+  if (Date.now() > pendingUnlockUntil) return false
+  pendingUnlockUntil = 0
+  return true
+}
+
 // ─── 로컬 ping 서버 (웹앱이 사이드카 감지 → 자기 FCM 토큰 해제) ───────────
 
 const http = require('http')
@@ -184,6 +199,14 @@ function startPingServer(onReady) {
     if (req.method === 'GET' && req.url === '/ping') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ ok: true, app: 'tether-sidecar', version: APP_VERSION }))
+      return
+    }
+    // 잠금 화면에 있는 앱이 "방금 단축키가 눌렸는지"를 가져간다
+    if (req.method === 'GET' && req.url === '/unlock-pending') {
+      const ok = consumeUnlockPending()
+      if (ok) log('unlock_pending_consumed', {})
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok }))
       return
     }
     // 단축키로 발급한 토큰 검증 — 성공 시 앱이 PIN을 건너뛴다
@@ -315,12 +338,16 @@ function openChat() {
   ], { timeout: 5000 }, (err, stdout) => {
     const focused = !err && String(stdout).includes('FOUND:1')
     if (focused) {
+      // 창은 이미 떠 있으므로 URL을 새로 줄 수 없다.
+      // 잠금 화면이라면 앱이 이 요청을 가져가 스스로 잠금을 푼다.
+      markUnlockPending()
       log('hotkey_focus_existing', {})
       return
     }
-    // 1회용 토큰을 붙여 열면 앱이 로컬 검증 후 PIN을 건너뛴다
+    // 1회용 토큰을 붙여 열면 앱이 로컬 검증 후 PIN을 건너뛴다.
+    // theme=dark — 단축키로 여는 채팅창은 다크모드로 띄운다.
     const token = issueUnlockToken()
-    exec(`start "" "${appUrl}/?screen=chat&unlock=${token}"`)
+    exec(`start "" "${appUrl}/?screen=chat&unlock=${token}&theme=dark"`)
     log('hotkey_open_new', {})
   })
 }
