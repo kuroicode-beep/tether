@@ -7,8 +7,9 @@ const os = require('os')
 const path = require('path')
 const { execFile, exec, spawn } = require('child_process')
 
-const APP_VERSION = '0.3.0'
+const APP_VERSION = '0.3.1'
 const VERSION_HISTORY = [
+  { version: '0.3.1', date: '2026-07-26', summary: '단축키로 열 때 PIN 건너뛰기(1회용 로컬 토큰), 포트 기반 단일 인스턴스 판정' },
   { version: '0.3.0', date: '2026-07-26', summary: '전역 단축키(기본 Win+Alt+Q)로 채팅 화면 바로 열기' },
   { version: '0.2.0', date: '2026-07-17', summary: '로컬 ping 서버(웹앱 중복 알림 방지 연동), Tether 창 포커스 시 알림 억제' },
   { version: '0.1.0', date: '2026-07-17', summary: '최초 릴리스 — 메시지/상태/일기 실시간 알림, 커스텀 사운드, 알림 설정 연동' },
@@ -128,6 +129,40 @@ function playSound() {
   ], () => { /* fire-and-forget */ })
 }
 
+// ─── 단축키 잠금 해제 토큰 ────────────────────────────────────────────────
+// 단축키로 채팅을 열 때 PIN을 건너뛰기 위한 1회용 토큰.
+// 이 PC에서 단축키를 실제로 누른 경우에만 발급되고, 검증은 127.0.0.1로만
+// 가능하므로 다른 기기에서는 URL을 알아도 잠금을 풀 수 없다.
+
+const crypto = require('crypto')
+
+const UNLOCK_TOKEN_TTL_MS = 30_000
+const unlockTokens = new Map() // token → 만료 시각
+
+// 만료된 토큰을 정리한다
+function pruneUnlockTokens() {
+  const now = Date.now()
+  for (const [token, expiresAt] of unlockTokens) {
+    if (expiresAt <= now) unlockTokens.delete(token)
+  }
+}
+
+// 30초간 유효한 1회용 토큰을 만든다
+function issueUnlockToken() {
+  pruneUnlockTokens()
+  const token = crypto.randomBytes(24).toString('hex')
+  unlockTokens.set(token, Date.now() + UNLOCK_TOKEN_TTL_MS)
+  return token
+}
+
+// 토큰을 검증하고 즉시 폐기한다 (재사용 불가)
+function consumeUnlockToken(token) {
+  pruneUnlockTokens()
+  if (!token || !unlockTokens.has(token)) return false
+  unlockTokens.delete(token)
+  return true
+}
+
 // ─── 로컬 ping 서버 (웹앱이 사이드카 감지 → 자기 FCM 토큰 해제) ───────────
 
 const http = require('http')
@@ -149,6 +184,15 @@ function startPingServer(onReady) {
     if (req.method === 'GET' && req.url === '/ping') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ ok: true, app: 'tether-sidecar', version: APP_VERSION }))
+      return
+    }
+    // 단축키로 발급한 토큰 검증 — 성공 시 앱이 PIN을 건너뛴다
+    if (req.method === 'GET' && req.url.startsWith('/unlock?')) {
+      const token = new URL(req.url, `http://127.0.0.1:${PING_PORT}`).searchParams.get('token')
+      const ok = consumeUnlockToken(token)
+      log('unlock_verify', { ok })
+      res.writeHead(ok ? 200 : 403, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok }))
       return
     }
     res.writeHead(404)
@@ -274,7 +318,9 @@ function openChat() {
       log('hotkey_focus_existing', {})
       return
     }
-    exec(`start "" "${appUrl}/?screen=chat"`)
+    // 1회용 토큰을 붙여 열면 앱이 로컬 검증 후 PIN을 건너뛴다
+    const token = issueUnlockToken()
+    exec(`start "" "${appUrl}/?screen=chat&unlock=${token}"`)
     log('hotkey_open_new', {})
   })
 }

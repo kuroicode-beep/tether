@@ -27,6 +27,7 @@ import { AdminScreen } from './screens/AdminScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
+import { consumeSidecarUnlockToken } from './lib/sidecarUnlock'
 import {
   playNotificationSound,
   screenFromNotificationUrl,
@@ -130,6 +131,7 @@ function AppContent() {
   const push = usePushNotification(session.uid)
   const { loadSettings, onForegroundMessage, syncToken } = push
   const pendingNavRef = useRef<string | null>(null)
+  const sidecarUnlockTriedRef = useRef(false)
   const screenRef = useRef<Screen>('lock')
   const recentNotificationIdsRef = useRef<Map<string, number>>(new Map())
   screenRef.current = screen
@@ -356,7 +358,7 @@ function AppContent() {
     connect(session.connection)
   }, [session.status, session.connection, connect])
 
-  const handleUnlocked = () => {
+  const handleUnlocked = useCallback(() => {
     setUnlocked(true)
     const pending = pendingNavRef.current
     if (pending) {
@@ -370,7 +372,19 @@ function AppContent() {
       return
     }
     setScreen(session.status === 'connected' ? 'home' : 'onboarding')
-  }
+  }, [session.status, navigate])
+
+  // Windows 사이드카 단축키로 열린 경우에만 PIN을 건너뛴다.
+  // 토큰은 로컬 사이드카(127.0.0.1)에서만 검증되므로 다른 기기에서는 통하지 않는다.
+  useEffect(() => {
+    if (session.status !== 'connected' || unlocked) return
+    if (sidecarUnlockTriedRef.current) return
+    sidecarUnlockTriedRef.current = true
+
+    void consumeSidecarUnlockToken().then((granted) => {
+      if (granted) handleUnlocked()
+    })
+  }, [session.status, unlocked, handleUnlocked])
 
   const handleChangePin = () => {
     setUnlocked(false)

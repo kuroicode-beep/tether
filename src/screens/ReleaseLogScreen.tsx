@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-8-0-sidecar-hotkey-quick-unlock',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 윈도우 단축키로 채팅 바로 열기.`,
+    detail: 'PC에서 Win+Alt+Q를 누르면 어느 화면에서든 채팅이 바로 열립니다. 이미 열려 있는 창이 있으면 그 창을 앞으로 가져오고, 없으면 새로 열면서 PIN 입력을 건너뜁니다. 건너뛰기는 그 PC에서 실제로 단축키를 누른 경우에만 동작하며, 30초만 유효한 1회용 확인값을 사이드카가 직접 검증합니다. 다른 기기에서는 주소를 그대로 복사해도 PIN을 물어봅니다.',
+  },
+  {
     id: '2026-07-26-hotfix-v0-7-2-ios-chat-viewport',
     date: '2026.07.26',
     type: 'hotfix',
