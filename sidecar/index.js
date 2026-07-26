@@ -5,10 +5,11 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { execFile, exec } = require('child_process')
+const { execFile, exec, spawn } = require('child_process')
 
-const APP_VERSION = '0.2.0'
+const APP_VERSION = '0.3.0'
 const VERSION_HISTORY = [
+  { version: '0.3.0', date: '2026-07-26', summary: '전역 단축키(기본 Win+Alt+Q)로 채팅 화면 바로 열기' },
   { version: '0.2.0', date: '2026-07-17', summary: '로컬 ping 서버(웹앱 중복 알림 방지 연동), Tether 창 포커스 시 알림 억제' },
   { version: '0.1.0', date: '2026-07-17', summary: '최초 릴리스 — 메시지/상태/일기 실시간 알림, 커스텀 사운드, 알림 설정 연동' },
 ]
@@ -25,6 +26,10 @@ if (!fs.existsSync(CONFIG_PATH)) {
 }
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
 const { myUid, coupleId, appUrl, projectId } = config
+
+// 채팅 화면을 여는 전역 단축키 (config.hotkey로 변경, false면 비활성화)
+const DEFAULT_HOTKEY = 'Win+Alt+Q'
+const hotkeyConfig = config.hotkey === undefined ? DEFAULT_HOTKEY : config.hotkey
 
 // coupleId = 정렬된 두 uid를 '_'로 연결한 값 (uid에는 '_'가 없다)
 const partnerUid = coupleId.split('_').find((u) => u !== myUid)
@@ -223,6 +228,106 @@ async function showToast(title, body, screen) {
   )
 }
 
+// ─── 전역 단축키 → 채팅 화면 열기 ─────────────────────────────────────────
+
+const HOTKEY_MODIFIERS = { alt: 1, ctrl: 2, control: 2, shift: 4, win: 8 }
+const MOD_NOREPEAT = 0x4000
+
+// "Win+Alt+Q" 형태를 RegisterHotKey 인자로 변환한다
+function parseHotkey(spec) {
+  const parts = String(spec).split('+').map((p) => p.trim()).filter(Boolean)
+  if (parts.length < 2) return null
+
+  const keyPart = parts[parts.length - 1]
+  const modifierParts = parts.slice(0, -1)
+
+  let modifiers = MOD_NOREPEAT
+  for (const part of modifierParts) {
+    const bit = HOTKEY_MODIFIERS[part.toLowerCase()]
+    if (!bit) return null
+    modifiers |= bit
+  }
+
+  // 영문 한 글자 또는 F1~F12만 지원한다
+  let vk = null
+  if (/^[A-Za-z0-9]$/.test(keyPart)) {
+    vk = keyPart.toUpperCase().charCodeAt(0)
+  } else if (/^F([1-9]|1[0-2])$/i.test(keyPart)) {
+    vk = 0x70 + Number(keyPart.slice(1)) - 1
+  }
+  if (vk === null) return null
+
+  return { modifiers, vk }
+}
+
+// 열려 있는 Tether 창을 앞으로 가져오고, 없으면 채팅 화면으로 새로 연다
+function openChat() {
+  const scriptPath = path.join(__dirname, 'focus-window.ps1')
+  execFile('powershell.exe', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+  ], { timeout: 5000 }, (err, stdout) => {
+    const focused = !err && String(stdout).includes('FOUND:1')
+    if (focused) {
+      log('hotkey_focus_existing', {})
+      return
+    }
+    exec(`start "" "${appUrl}/?screen=chat"`)
+    log('hotkey_open_new', {})
+  })
+}
+
+// PowerShell 리스너를 띄우고 HOTKEY 신호를 받는다 (네이티브 모듈 의존 없음)
+function startHotkeyListener() {
+  if (hotkeyConfig === false || hotkeyConfig === null || hotkeyConfig === '') {
+    log('hotkey_disabled', {})
+    return
+  }
+
+  const parsed = parseHotkey(hotkeyConfig)
+  if (!parsed) {
+    log('hotkey_parse_failed', { spec: String(hotkeyConfig) })
+    console.error(`[Sidecar] 단축키 형식을 읽을 수 없습니다: ${hotkeyConfig} (예: Win+Alt+Q)`)
+    return
+  }
+
+  const scriptPath = path.join(__dirname, 'hotkey.ps1')
+  const child = spawn('powershell.exe', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+    '-Modifiers', String(parsed.modifiers), '-Key', String(parsed.vk),
+  ], { windowsHide: true })
+
+  let buffer = ''
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk.toString()
+    const lines = buffer.split(/\r?\n/)
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      const signal = line.trim()
+      if (signal === 'HOTKEY') {
+        openChat()
+      } else if (signal === 'READY') {
+        log('hotkey_registered', { spec: hotkeyConfig })
+        console.log(`  단축키 ${hotkeyConfig} → 채팅 화면 열기`)
+      } else if (signal.startsWith('ERROR:register_failed')) {
+        log('hotkey_register_failed', { spec: hotkeyConfig, detail: signal })
+        console.error(`[Sidecar] 단축키 ${hotkeyConfig} 등록 실패 — 다른 프로그램이 사용 중일 수 있습니다.`)
+      }
+    }
+  })
+
+  child.on('error', (err) => log('hotkey_listener_error', { message: err.message }))
+  child.on('exit', (code) => {
+    log('hotkey_listener_exit', { code })
+    // 비정상 종료 시에만 재시작 (정상 종료 코드 0은 등록 실패 후 종료 등)
+    if (code !== 0 && !shuttingDown) setTimeout(startHotkeyListener, 5000)
+  })
+
+  hotkeyChild = child
+}
+
+let hotkeyChild = null
+let shuttingDown = false
+
 // ─── Firestore 리스너 ─────────────────────────────────────────────────────
 
 const startTime = new Date()
@@ -304,13 +409,16 @@ console.log(`Tether Sidecar v${APP_VERSION} — 알림 감시 시작`)
 VERSION_HISTORY.forEach((v) => console.log(`  v${v.version} (${v.date}) ${v.summary}`))
 
 startPingServer()
+startHotkeyListener()
 watchSettings()
 watchMessages()
 watchStatus()
 watchDiary()
 
 function cleanupAndExit() {
+  shuttingDown = true
   log('sidecar_stop', {})
+  try { hotkeyChild?.kill() } catch { /* ignore */ }
   try { fs.unlinkSync(LOCK_PATH) } catch { /* ignore */ }
   process.exit(0)
 }
