@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-10-0-skip-pin-for-owner-account',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 소장님 계정은 PIN 없이 바로 입장.`,
+    detail: '지정된 Google 계정으로 로그인되어 있으면 PIN 입력 없이 바로 들어갑니다. Google 로그인과 관리자 승인을 이미 거친 상태라 그것을 인증으로 삼습니다. 다른 계정은 기존대로 PIN을 입력합니다.',
+  },
+  {
     id: '2026-07-26-update-v0-9-0-dark-theme',
     date: '2026.07.26',
     type: 'update',

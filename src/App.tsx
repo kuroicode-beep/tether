@@ -28,6 +28,7 @@ import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
 import { consumeSidecarUnlockToken, pollSidecarUnlockRequest } from './lib/sidecarUnlock'
+import { isPinFreeEmail } from './lib/coupleAuth'
 
 // 잠금 화면에 있는 동안 사이드카 단축키 요청을 확인하는 주기
 const SIDECAR_UNLOCK_POLL_MS = 1000
@@ -377,6 +378,14 @@ function AppContent() {
     setScreen(session.status === 'connected' ? 'home' : 'onboarding')
   }, [session.status, navigate])
 
+  // 지정 계정으로 로그인한 경우 PIN 잠금을 생략한다.
+  // Google 로그인 + 관리자 승인을 이미 통과한 상태이므로 그것을 인증으로 삼는다.
+  useEffect(() => {
+    if (session.status !== 'connected' || unlocked) return
+    if (!isPinFreeEmail(session.user?.email)) return
+    handleUnlocked()
+  }, [session.status, session.user, unlocked, handleUnlocked])
+
   // Windows 사이드카 단축키로 열린 경우에만 PIN을 건너뛴다.
   // 토큰은 로컬 사이드카(127.0.0.1)에서만 검증되므로 다른 기기에서는 통하지 않는다.
   //
@@ -465,8 +474,17 @@ function AppContent() {
     )
   }
 
+  // PIN 생략 계정은 잠금 화면이 한 프레임 스쳐 보이지 않도록 렌더 단계에서도 건너뛴다
+  const pinFree = isPinFreeEmail(session.user?.email)
+
   if (!unlocked || screen === 'lock') {
-    return <LockScreen onUnlocked={handleUnlocked} />
+    if (!pinFree) return <LockScreen onUnlocked={handleUnlocked} />
+    // 잠금은 생략하되, 효과가 첫 화면을 정하기 전까지 빈 화면이 보이지 않게 한다
+    return (
+      <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)' }}>
+        <p className="font-body-md text-body-md text-on-surface-variant">들어가는 중이에요...</p>
+      </div>
+    )
   }
 
   const toHome = () => setScreen('home')

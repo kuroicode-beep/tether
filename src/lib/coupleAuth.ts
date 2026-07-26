@@ -43,6 +43,12 @@ export function isAdminEmail(email?: string | null): boolean {
   return (email ?? '').trim().toLowerCase() === ADMIN_EMAIL
 }
 
+// PIN 잠금을 생략하는 계정. Google 로그인 자체를 인증으로 삼는다.
+// 관리자 판정과 목적이 다르므로 따로 둔다 (나중에 각각 바꿀 수 있게).
+export function isPinFreeEmail(email?: string | null): boolean {
+  return isAdminEmail(email)
+}
+
 // 6자리 영숫자 초대 코드 생성
 export const generateInviteCode = (): string =>
   Math.random().toString(36).substring(2, 8).toUpperCase()
