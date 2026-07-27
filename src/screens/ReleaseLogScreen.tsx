@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-11-0-chat-viewport-anchoring',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 입력창이 전송 후에도 키보드 위에 그대로.`,
+    detail: '메시지를 보낸 뒤 입력창만 키보드 뒤로 내려가던 문제를 고쳤습니다. 키보드 높이를 계산해 입력창을 띄우던 방식을 버리고, 채팅 화면 자체를 실제로 보이는 영역에 맞추도록 바꿨습니다. 입력창은 그 화면의 맨 아래 요소라 계산이 끼어들 여지가 없습니다.',
+  },
+  {
     id: '2026-07-26-update-v0-10-0-skip-pin-for-owner-account',
     date: '2026.07.26',
     type: 'update',

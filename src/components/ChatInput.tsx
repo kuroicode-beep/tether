@@ -31,29 +31,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
   const [caption, setCaption] = useState('')
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const barRef = useRef<HTMLElement>(null)
   const composingRef = useRef(false)
-
-  // 입력 바의 실제 높이를 --chat-input-h로 노출한다.
-  // 안전영역 여백이나 여러 줄 입력으로 높이가 바뀌어도 메시지 목록 여백이 따라간다.
-  useEffect(() => {
-    const el = barRef.current
-    if (!el) return
-    const root = document.documentElement
-
-    const update = () => {
-      const height = Math.round(el.getBoundingClientRect().height)
-      if (height > 0) root.style.setProperty('--chat-input-h', `${height}px`)
-    }
-
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(el)
-    return () => {
-      observer.disconnect()
-      root.style.removeProperty('--chat-input-h')
-    }
-  }, [])
 
   // textarea 자동 높이 — 줄어들 수 있을 때만 auto로 되감아 iOS 레이아웃 흔들림을 줄인다
   const adjustHeight = () => {
@@ -176,7 +154,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelAllFiles} />
-          <div className="attachment-sheet app-fixed-x fixed z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+          <div className="attachment-sheet z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
               이 파일을 보낼까요? {fileQueue.length > 0 ? `(${fileQueue.length + 1}개 중 1개)` : ''}
@@ -243,7 +221,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
         </>
       )}
 
-      <footer ref={barRef} className="chat-input-bar app-fixed-x">
+      <footer className="chat-input-bar">
         <button
           type="button"
           onPointerDown={(e) => e.preventDefault()}

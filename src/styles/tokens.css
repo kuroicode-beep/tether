@@ -1084,16 +1084,45 @@ html[data-theme="dark"] body {
   text-transform: uppercase;
 }
 
+/* ── 채팅 화면 — 보이는 영역(visual viewport)에 직접 붙인다 ──
+   키보드 높이를 계산해 요소를 띄우는 방식은 iOS 동작 차이와 스크롤 보정 때문에
+   전송 직후 입력 바가 내려가는 문제가 반복됐다. 대신 화면 자체를 보이는 영역에
+   고정하고, 입력 바는 그 안의 일반 흐름 요소로 둔다.
+   그러면 입력 바는 항상 보이는 영역의 바닥이며 계산이 개입할 여지가 없다. */
+.chat-screen {
+  position: fixed;
+  top: var(--vv-top, 0px);
+  height: var(--vv-height, 100dvh);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100vw, var(--app-max-width));
+  max-width: var(--app-max-width);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 상단 테마 플레이어가 떠 있으면 그만큼 아래에서 시작한다
+   (.app-screen-slot--with-theme-music의 padding-top과 같은 값) */
+.app-screen-slot--with-theme-music .chat-screen {
+  top: calc(var(--vv-top, 0px) + 30px);
+  height: calc(var(--vv-height, 100dvh) - 30px);
+}
+
+/* 첨부 확인 시트 — 채팅 화면 안쪽 바닥에 붙는다 */
+.chat-screen .attachment-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  transform: none;
+}
+
 /* 채팅 메시지 목록 — 스크롤이 문서로 전파되어 화면이 튀는 것을 막는다 */
 .chat-message-list {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-}
-
-/* 첨부 확인 시트 — 입력 바와 같은 방식으로 키보드 위에 띄운다 */
-.attachment-sheet.app-fixed-x {
-  bottom: 0;
-  transform: translateX(-50%) translateY(calc(-1 * var(--kb-inset, 0px)));
 }
 
 /* 첨부 시트의 캡션 입력 */
@@ -1138,9 +1167,11 @@ html[data-theme="dark"] body {
 }
 
 /* 채팅 입력창 */
+/* 입력 바는 채팅 화면 흐름의 마지막 요소다 (fixed 아님).
+   화면이 보이는 영역에 고정돼 있으므로 자동으로 키보드 바로 위에 놓인다. */
 .chat-input-bar {
-  position: fixed;
-  bottom: 0;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -1154,13 +1185,6 @@ html[data-theme="dark"] body {
 /* 키보드가 올라오면 홈 인디케이터 여백이 필요 없다 (키보드가 가리고 있다) */
 body[data-keyboard="open"] .chat-input-bar {
   padding-bottom: 10px;
-}
-
-/* iOS 키보드가 올라온 만큼 입력 바를 띄운다 (useKeyboardInset).
-   .app-fixed-x의 translateX(-50%)를 유지해야 하므로 함께 지정한다.
-   레이아웃을 건드리지 않도록 bottom이 아닌 transform을 쓴다. */
-.chat-input-bar.app-fixed-x {
-  transform: translateX(-50%) translateY(calc(-1 * var(--kb-inset, 0px)));
 }
 
 [data-theme="high-contrast"] .chat-input-bar {

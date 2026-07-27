@@ -39,6 +39,7 @@ export function useKeyboardInset(): boolean {
     let raf = 0
     let lastInset = -1
     let lastHeight = -1
+    let lastTop = -1
     let maxHeight = 0
     let isOpen = false
 
@@ -50,6 +51,13 @@ export function useKeyboardInset(): boolean {
       if (lastHeight < 0 || Math.abs(height - lastHeight) >= MIN_DELTA) {
         lastHeight = height
         root.style.setProperty('--vv-height', `${height}px`)
+      }
+
+      // 보이는 영역의 시작 위치. 화면을 여기에 그대로 붙인다.
+      const top = Math.max(0, Math.round(vv.offsetTop))
+      if (lastTop < 0 || Math.abs(top - lastTop) >= MIN_DELTA) {
+        lastTop = top
+        root.style.setProperty('--vv-top', `${top}px`)
       }
 
       const rawInset = window.innerHeight - vv.height - vv.offsetTop
@@ -84,6 +92,7 @@ export function useKeyboardInset(): boolean {
       vv.removeEventListener('resize', schedule)
       vv.removeEventListener('scroll', schedule)
       root.style.removeProperty('--vv-height')
+      root.style.removeProperty('--vv-top')
       root.style.setProperty('--kb-inset', '0px')
       document.body.removeAttribute('data-keyboard')
     }
