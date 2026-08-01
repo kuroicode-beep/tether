@@ -24,6 +24,21 @@ const cases: Array<[string, unknown]> = [
   ['/릴레이소설 초기화', { kind: 'reset' }],
   // 도움말
   ['/릴레이소설', { kind: 'help' }],
+  // 축약 명령어 /릴소
+  ['/릴소 쓰기 비가 그쳤다', { kind: 'write', text: '비가 그쳤다' }],
+  ['/릴소 시작 겨울의 끝', { kind: 'start', title: '겨울의 끝' }],
+  ['/릴소 끝', { kind: 'pause' }],
+  ['/릴소 완결', { kind: 'complete' }],
+  ['/릴소 도움', { kind: 'assist' }],
+  ['/릴소 제목 새 제목', { kind: 'title', title: '새 제목' }],
+  ['/릴소 배경 탐정물', { kind: 'background', text: '탐정물' }],
+  ['/릴소 배경 삭제 2', { kind: 'backgroundRemove', index: 2 }],
+  ['/릴소 초기화', { kind: 'reset' }],
+  ['/릴소', { kind: 'help' }],
+  ['/릴소시작 밤길', { kind: 'start', title: '밤길' }],
+  ['/릴소 이상한명령', null],
+  ['/릴', null],
+  ['릴소 시작', null],
   // 명령이 아닌 것 — 전부 일반 대화로 흘러야 한다
   ['오늘 저녁 뭐 먹을까', null],
   ['릴레이소설 시작', null],

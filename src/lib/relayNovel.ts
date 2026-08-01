@@ -49,7 +49,8 @@ export type RelayCommand =
   | { kind: 'reset' }
   | { kind: 'help' }
 
-const PREFIX = '/릴레이소설'
+// 긴 표기를 먼저 확인한다 (짧은 축약이 긴 이름을 가로채지 않도록)
+const PREFIXES = ['/릴레이소설', '/릴소'] as const
 
 // 같은 뜻으로 자주 쓸 만한 표기를 함께 받는다
 const ALIASES: Record<string, RelayCommand['kind']> = {
@@ -80,11 +81,12 @@ const BACKGROUND_REMOVE_KEYWORDS = ['삭제', '지우기', '빼기']
 // 채팅 입력을 릴레이소설 명령어로 해석한다. 명령어가 아니면 null.
 export function parseRelayCommand(input: string): RelayCommand | null {
   const trimmed = input.trim()
-  if (!trimmed.startsWith(PREFIX)) return null
+  const prefix = PREFIXES.find((p) => trimmed.startsWith(p))
+  if (!prefix) return null
 
-  const rest = trimmed.slice(PREFIX.length).trim()
-  // "/릴레이소설시작"처럼 붙여 쓴 경우가 아니라 다른 명령어면 무시한다
-  if (rest.length > 0 && !trimmed.startsWith(`${PREFIX} `)) {
+  const rest = trimmed.slice(prefix.length).trim()
+  // "/릴소시작"처럼 붙여 쓴 경우가 아니라 다른 명령어면 무시한다
+  if (rest.length > 0 && !trimmed.startsWith(`${prefix} `)) {
     const glued = Object.keys(ALIASES).find((k) => k && rest.startsWith(k))
     if (!glued) return null
     return toCommand(glued, rest.slice(glued.length).trim())
@@ -127,6 +129,8 @@ export const RELAY_HELP_TEXT = [
   '/릴레이소설 배경 삭제 2 — 2번 설정을 지워요',
   '/릴레이소설 초기화 — 둘 다 입력하면 본문과 설정을 비워요',
   '',
+  '',
+  '/릴레이소설 대신 /릴소 로 짧게 써도 돼요. (예: /릴소 쓰기 비가 그쳤다)',
   '한 턴씩 번갈아 씁니다. 슬래시(/) 명령만 소설로 처리되고,',
   '그 외의 대화는 평범한 채팅으로 남아요.',
 ].join('\n')

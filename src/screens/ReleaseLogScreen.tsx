@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-13-1-relay-shorthand',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 축약 명령어.`,
+    detail: '/릴레이소설 대신 /릴소 로 짧게 쓸 수 있습니다. 모든 명령에 그대로 적용돼요 — /릴소 쓰기, /릴소 도움, /릴소 배경 처럼요.',
+  },
+  {
     id: '2026-07-26-update-v0-13-0-relay-novel-title-background',
     date: '2026.07.26',
     type: 'update',
