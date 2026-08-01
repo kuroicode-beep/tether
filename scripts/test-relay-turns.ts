@@ -79,4 +79,35 @@ check('차례인 사람은 끝 가능', canPause({ nextTurnUid: ME, turnCount: 3
 check('차례 아닌 사람은 끝 불가', canPause({ nextTurnUid: ME, turnCount: 3, status: 'active' }, PARTNER), false)
 
 console.log(`\n${pass}/${total} 통과`)
+
+// ── 초기화 합의 (둘 다 입력해야 실행) ──
+console.log('\n[초기화 합의]')
+const A = 'uidA', B = 'uidB'
+function vote(votes: string[], me: string, partner: string | null) {
+  const set = new Set(votes); set.add(me)
+  const both = !!partner && set.has(partner) && set.has(me)
+  return both
+    ? { result: 'done' as const, votes: [] as string[] }
+    : { result: 'pending' as const, votes: [...set] }
+}
+
+let v: string[] = []
+let out = vote(v, A, B); v = out.votes
+check('A만 입력 — 대기', out.result, 'pending')
+check('A 동의 기록됨', v, [A])
+
+out = vote(v, A, B); v = out.votes
+check('A가 또 입력해도 대기 (혼자로는 안 됨)', out.result, 'pending')
+
+out = vote(v, B, A); v = out.votes
+check('B도 입력 — 초기화 실행', out.result, 'done')
+check('실행 후 동의 기록 비움', v, [])
+
+// 턴이 진행되면 남은 동의는 무효
+let v2 = vote([], A, B).votes
+check('A 동의 남아있음', v2, [A])
+v2 = []   // appendTurn이 resetVotes를 비운다
+check('턴 진행 후 동의 초기화', v2, [])
+
+console.log(`\n${pass}/${total} 통과`)
 if (pass !== total) process.exit(1)

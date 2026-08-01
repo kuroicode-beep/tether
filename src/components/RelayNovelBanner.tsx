@@ -8,16 +8,23 @@ interface RelayNovelBannerProps {
   assisting: boolean
   turnOwnerName: string
   isMyTurn: boolean
+  onOpenInfo: () => void
 }
 
 export function RelayNovelBanner({
-  novel, assisting, turnOwnerName, isMyTurn,
+  novel, assisting, turnOwnerName, isMyTurn, onOpenInfo,
 }: RelayNovelBannerProps) {
   const paused = novel.status === 'paused'
   const stateLabel = assisting ? '이어쓰는 중' : paused ? '잠시 멈춤' : '쓰는 중'
+  const noteCount = novel.background.length
 
   return (
-    <div className="relay-banner" role="status" aria-live="polite">
+    <button
+      type="button"
+      className="relay-banner"
+      onClick={onOpenInfo}
+      aria-label={`릴레이소설 ${novel.title}, 설정 ${noteCount}개, 열어보기`}
+    >
       <span className="material-symbols-outlined relay-banner-icon" aria-hidden="true">
         history_edu
       </span>
@@ -25,16 +32,21 @@ export function RelayNovelBanner({
         <p className="relay-banner-title">{novel.title}</p>
         <p className="relay-banner-meta">
           릴레이소설 · {novel.turnCount}턴 · {stateLabel}
+          {noteCount > 0 && ` · 설정 ${noteCount}`}
         </p>
       </div>
       <span className={`relay-turn-badge${isMyTurn ? ' relay-turn-badge--mine' : ''}`}>
         {isMyTurn ? '내 차례' : `${turnOwnerName} 차례`}
       </span>
-      {assisting && (
+      {assisting ? (
         <span className="material-symbols-outlined relay-banner-spinner" aria-hidden="true">
           progress_activity
         </span>
+      ) : (
+        <span className="material-symbols-outlined relay-banner-more" aria-hidden="true">
+          chevron_right
+        </span>
       )}
-    </div>
+    </button>
   )
 }

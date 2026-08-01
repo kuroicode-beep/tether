@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-13-0-relay-novel-title-background',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 제목·설정·초기화.`,
+    detail: '일반 대화가 소설 턴으로 들어가던 문제를 고쳤습니다. 이제 슬래시로 시작하는 명령만 소설로 처리되고, 턴은 /릴레이소설 쓰기 내용 으로 씁니다. 제목은 /릴레이소설 제목 으로 둘 다 언제든 바꿀 수 있고, /릴레이소설 배경 으로 장르·배경·인물 설정을 더하거나 지울 수 있습니다. 설정은 이어쓰기 도움에 함께 전달되고, 상단 제목 띠를 누르면 확인·삭제할 수 있어요. /릴레이소설 초기화 는 둘 다 입력해야 실행됩니다.',
+  },
+  {
     id: '2026-07-26-update-v0-12-1-relay-novel-turn-rule',
     date: '2026.07.26',
     type: 'update',

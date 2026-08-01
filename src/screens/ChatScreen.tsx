@@ -12,8 +12,9 @@ import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useRelayNovel } from '../hooks/useRelayNovel'
-import { parseRelayCommand, RELAY_HELP_TEXT } from '../lib/relayNovel'
+import { formatBackground, parseRelayCommand, RELAY_HELP_TEXT } from '../lib/relayNovel'
 import { RelayNovelBanner } from '../components/RelayNovelBanner'
+import { RelayNovelInfoSheet } from '../components/RelayNovelInfoSheet'
 
 interface ChatScreenProps {
   onBack: () => void
@@ -58,6 +59,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     ? (relay.novel.nextTurnUid === uid ? myName : partnerNickname || '상대방')
     : ''
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+  const [relayInfoOpen, setRelayInfoOpen] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [incomingFiles, setIncomingFiles] = useState<{ id: number; files: File[] } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -82,29 +84,9 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   const handleSendText = useCallback(async (text: string) => {
     const command = parseRelayCommand(text)
 
+    // 슬래시 명령이 아니면 언제나 평범한 대화다.
+    // 릴레이소설이 진행 중이어도 일반 대화를 턴으로 삼지 않는다.
     if (!command) {
-      // 세션이 진행 중이고 내 차례일 때만 한 턴으로 기록한다.
-      // 내 차례가 아니면 소설과 무관한 평범한 대화로 보낸다.
-      if (relay.novel && isMyTurn) {
-        // 멈춰 있었다면 내 차례에 쓰는 것으로 다시 이어진다
-        if (relay.novel.status === 'paused') {
-          await relay.setStatus(relay.novel.id, 'active')
-        }
-        const turnNumber = relay.novel.turnCount + 1
-        await sendText(text, {
-          relayKind: 'turn',
-          relayNovelId: relay.novel.id,
-          relayTurn: turnNumber,
-          relayAuthorName: myName,
-        })
-        await relay.appendTurn(relay.novel.id, {
-          authorUid: uid ?? '',
-          authorName: myName,
-          text: text.trim(),
-          at: Date.now(),
-        }, nextTurnUid)
-        return
-      }
       await sendText(text)
       return
     }
@@ -134,9 +116,86 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       return
     }
 
-    // 멈추기와 이어쓰기 도움은 지금 차례인 사람만 쓸 수 있다
-    if ((command.kind === 'pause' || command.kind === 'assist') && !isMyTurn) {
+    // 제목·배경·초기화는 차례와 무관하게 둘 다 언제든 쓸 수 있다
+    if (command.kind === 'title') {
+      await relay.setTitle(relay.novel.id, command.title)
+      postRelaySystem(
+        command.title.trim()
+          ? `제목을 「${command.title.trim()}」로 바꿨어요.`
+          : '제목을 지웠어요.',
+        relay.novel.id,
+      )
+      return
+    }
+
+    if (command.kind === 'background') {
+      if (!command.text.trim()) {
+        postRelaySystem(`설정\n${formatBackground(relay.novel.background)}`, relay.novel.id)
+        return
+      }
+      const added = await relay.addBackground(relay.novel.id, command.text, myName)
+      if (added) {
+        postRelaySystem(
+          `설정을 더했어요.\n${relay.novel.background.length + 1}. ${added.text}`,
+          relay.novel.id,
+        )
+      }
+      return
+    }
+
+    if (command.kind === 'backgroundRemove') {
+      const target = relay.novel.background[command.index - 1]
+      if (!target) {
+        postRelaySystem(
+          `${command.index}번 설정이 없어요.\n${formatBackground(relay.novel.background)}`,
+          relay.novel.id,
+        )
+        return
+      }
+      await relay.removeBackground(relay.novel.id, relay.novel.background, target.id)
+      postRelaySystem(`${command.index}번 설정을 지웠어요. (${target.text})`, relay.novel.id)
+      return
+    }
+
+    if (command.kind === 'reset') {
+      const result = await relay.voteReset(relay.novel, uid ?? '', partnerUid)
+      postRelaySystem(
+        result === 'done'
+          ? '릴레이소설을 초기화했어요. 본문과 설정을 비웠습니다.'
+          : `초기화에 동의했어요. ${partnerNickname || '상대방'}도 /릴레이소설 초기화 를 입력하면 비워집니다.`,
+        relay.novel.id,
+      )
+      return
+    }
+
+    // 쓰기·멈추기·이어쓰기 도움은 지금 차례인 사람만 쓸 수 있다
+    if ((command.kind === 'write' || command.kind === 'pause' || command.kind === 'assist') && !isMyTurn) {
       postRelaySystem(`지금은 ${turnOwnerName} 차례예요. 차례인 사람만 쓸 수 있어요.`, relay.novel.id)
+      return
+    }
+
+    if (command.kind === 'write') {
+      const body = command.text.trim()
+      if (!body) {
+        postRelaySystem('쓸 내용을 함께 적어주세요. 예) /릴레이소설 쓰기 비가 그쳤다', relay.novel.id)
+        return
+      }
+      if (relay.novel.status === 'paused') {
+        await relay.setStatus(relay.novel.id, 'active')
+      }
+      const turnNumber = relay.novel.turnCount + 1
+      await sendText(body, {
+        relayKind: 'turn',
+        relayNovelId: relay.novel.id,
+        relayTurn: turnNumber,
+        relayAuthorName: myName,
+      })
+      await relay.appendTurn(relay.novel.id, {
+        authorUid: uid ?? '',
+        authorName: myName,
+        text: body,
+        at: Date.now(),
+      }, nextTurnUid)
       return
     }
 
@@ -180,7 +239,10 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       console.warn('[ChatScreen] relay assist failed', err)
       postRelaySystem('이어쓰기 도움을 불러오지 못했어요. 잠시 후 다시 시도해주세요.', relay.novel.id)
     }
-  }, [relay, sendText, postRelaySystem, myName, uid, isMyTurn, nextTurnUid, turnOwnerName])
+  }, [
+    relay, sendText, postRelaySystem, myName, uid, partnerUid, partnerNickname,
+    isMyTurn, nextTurnUid, turnOwnerName,
+  ])
 
   const handleSendToAlbum = useCallback(async () => {
     if (!viewerUrl) return
@@ -361,6 +423,20 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           assisting={relay.assisting}
           turnOwnerName={turnOwnerName}
           isMyTurn={isMyTurn}
+          onOpenInfo={() => setRelayInfoOpen(true)}
+        />
+      )}
+
+      {relay.novel && relayInfoOpen && (
+        <RelayNovelInfoSheet
+          novel={relay.novel}
+          turnOwnerName={turnOwnerName}
+          isMyTurn={isMyTurn}
+          onRemoveBackground={(noteId) => {
+            if (!relay.novel) return
+            void relay.removeBackground(relay.novel.id, relay.novel.background, noteId)
+          }}
+          onClose={() => setRelayInfoOpen(false)}
         />
       )}
 

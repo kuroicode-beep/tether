@@ -1126,10 +1126,112 @@ html[data-theme="dark"] body {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  text-align: left;
   padding: 10px 16px;
   background: var(--color-chip-bg);
   border-bottom: 1px solid var(--color-primary);
   flex-shrink: 0;
+}
+
+.relay-banner:active {
+  filter: brightness(0.95);
+}
+
+.relay-banner-more {
+  font-size: 22px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* 설정 시트 */
+.relay-sheet-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.relay-sheet-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-top: 4px;
+}
+
+.relay-sheet-hint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.relay-sheet-empty {
+  font-size: 16px;
+  color: var(--color-text);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.relay-sheet-list {
+  margin-top: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.relay-sheet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.relay-sheet-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.relay-sheet-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.relay-sheet-item-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.relay-sheet-item-by {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.relay-sheet-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+[data-theme="high-contrast"] .relay-sheet-item-text,
+[data-theme="high-contrast"] .relay-sheet-title {
+  color: var(--hc-box-text) !important;
 }
 
 .relay-banner-icon {

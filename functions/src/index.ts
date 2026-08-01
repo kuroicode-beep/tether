@@ -606,6 +606,7 @@ const ASSIST_SYSTEM_PROMPT = [
   '- 반드시 한국어로 씁니다.',
   '- 두 문장 이상 세 문장 이하로만 씁니다.',
   '- 이야기를 끝맺지 말고 다음 사람이 이어쓸 여지를 남깁니다.',
+  '- 설정(장르·배경·인물)이 주어지면 반드시 그 설정을 지킵니다.',
   '- 설명이나 인사말 없이 소설 본문만 출력합니다.',
 ].join('\n')
 
@@ -647,10 +648,22 @@ export const relayNovelAssist = functions.https.onCall(async (data, context) => 
   }
 
   const title = String(data?.title ?? '').slice(0, 100).trim()
-  const storySoFar = turns.join('\n')
-  const userPrompt = title
-    ? `제목: ${title}\n\n지금까지의 이야기:\n${storySoFar}\n\n이어서 두세 문장을 써주세요.`
-    : `지금까지의 이야기:\n${storySoFar}\n\n이어서 두세 문장을 써주세요.`
+
+  // 배경·장르·인물 설정 (최대 20개 · 각 500자)
+  const rawBackground = Array.isArray(data?.background) ? data.background : []
+  const background = rawBackground
+    .slice(0, 20)
+    .map((b: unknown) => String(b ?? '').slice(0, 500).trim())
+    .filter((b: string) => b.length > 0)
+
+  const sections: string[] = []
+  if (title) sections.push(`제목: ${title}`)
+  if (background.length > 0) {
+    sections.push(`설정:\n${background.map((b: string, i: number) => `${i + 1}. ${b}`).join('\n')}`)
+  }
+  sections.push(`지금까지의 이야기:\n${turns.join('\n')}`)
+  sections.push('이어서 두세 문장을 써주세요.')
+  const userPrompt = sections.join('\n\n')
 
   try {
     const controller = new AbortController()
