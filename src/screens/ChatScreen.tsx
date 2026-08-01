@@ -11,6 +11,9 @@ import { ChatInput } from '../components/ChatInput'
 import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
+import { useRelayNovel } from '../hooks/useRelayNovel'
+import { parseRelayCommand, RELAY_HELP_TEXT } from '../lib/relayNovel'
+import { RelayNovelBanner } from '../components/RelayNovelBanner'
 
 interface ChatScreenProps {
   onBack: () => void
@@ -44,7 +47,9 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     uid,
   )
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
+  const relay = useRelayNovel(coupleId, uid)
   const keyboardOpen = useKeyboardInset()
+  const myName = myNickname || '나'
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [incomingFiles, setIncomingFiles] = useState<{ id: number; files: File[] } | null>(null)
@@ -60,6 +65,104 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
+
+  // 릴레이소설 — 시스템 안내는 진행 상황을 알리는 메시지로 남긴다
+  const postRelaySystem = useCallback((text: string, novelId?: string) => {
+    void sendText(text, { relayKind: 'system', relayNovelId: novelId })
+  }, [sendText])
+
+  // 채팅 입력을 가로채 릴레이소설 명령어를 먼저 처리한다
+  const handleSendText = useCallback(async (text: string) => {
+    const command = parseRelayCommand(text)
+
+    if (!command) {
+      // 세션이 진행 중이면 일반 입력을 한 턴으로 기록한다
+      if (relay.novel?.status === 'active') {
+        const turnNumber = relay.novel.turnCount + 1
+        await sendText(text, {
+          relayKind: 'turn',
+          relayNovelId: relay.novel.id,
+          relayTurn: turnNumber,
+          relayAuthorName: myName,
+        })
+        await relay.appendTurn(relay.novel.id, {
+          authorUid: uid ?? '',
+          authorName: myName,
+          text: text.trim(),
+          at: Date.now(),
+        })
+        return
+      }
+      await sendText(text)
+      return
+    }
+
+    if (command.kind === 'help') {
+      postRelaySystem(RELAY_HELP_TEXT)
+      return
+    }
+
+    if (command.kind === 'start') {
+      if (relay.novel) {
+        postRelaySystem(
+          relay.novel.status === 'paused'
+            ? `"${relay.novel.title}"가 멈춰 있어요. 아무 말이나 쓰면 이어집니다.`
+            : `"${relay.novel.title}"를 이미 쓰고 있어요.`,
+          relay.novel.id,
+        )
+        return
+      }
+      const created = await relay.start(command.title)
+      if (created) postRelaySystem(`「${created.title}」 릴레이소설을 시작했어요.`, created.id)
+      return
+    }
+
+    if (!relay.novel) {
+      postRelaySystem('진행 중인 릴레이소설이 없어요. /릴레이소설 시작 으로 열어주세요.')
+      return
+    }
+
+    if (command.kind === 'pause') {
+      await relay.setStatus(relay.novel.id, 'paused')
+      postRelaySystem(`「${relay.novel.title}」를 잠시 멈췄어요. 이어서 쓰려면 그냥 쓰면 돼요.`, relay.novel.id)
+      return
+    }
+
+    if (command.kind === 'complete') {
+      await relay.setStatus(relay.novel.id, 'completed')
+      postRelaySystem(
+        `「${relay.novel.title}」 완결! ${relay.novel.turnCount}턴으로 마무리했어요. 릴레이소설 서재에 보관했어요.`,
+        relay.novel.id,
+      )
+      return
+    }
+
+    // command.kind === 'assist'
+    if (relay.novel.turns.length === 0) {
+      postRelaySystem('아직 이야기가 없어요. 첫 문장을 먼저 써주세요.', relay.novel.id)
+      return
+    }
+    try {
+      const suggestion = await relay.requestAssist(relay.novel)
+      const turnNumber = relay.novel.turnCount + 1
+      await sendText(suggestion, {
+        relayKind: 'assist',
+        relayNovelId: relay.novel.id,
+        relayTurn: turnNumber,
+        relayAuthorName: '이어쓰기 도움',
+      })
+      await relay.appendTurn(relay.novel.id, {
+        authorUid: uid ?? '',
+        authorName: '이어쓰기 도움',
+        text: suggestion,
+        at: Date.now(),
+        bySidekick: true,
+      })
+    } catch (err) {
+      console.warn('[ChatScreen] relay assist failed', err)
+      postRelaySystem('이어쓰기 도움을 불러오지 못했어요. 잠시 후 다시 시도해주세요.', relay.novel.id)
+    }
+  }, [relay, sendText, postRelaySystem, myName, uid])
 
   const handleSendToAlbum = useCallback(async () => {
     if (!viewerUrl) return
@@ -234,6 +337,8 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         </div>
       </header>
 
+      {relay.novel && <RelayNovelBanner novel={relay.novel} assisting={relay.assisting} />}
+
       <main
         ref={listRef}
         className="chat-message-list flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
@@ -326,7 +431,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       </main>
 
       <ChatInput
-        onSendText={sendText}
+        onSendText={handleSendText}
         onSendFile={sendFile}
         autoFocus
         incomingFiles={incomingFiles}

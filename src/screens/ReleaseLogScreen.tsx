@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-12-0-relay-novel',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설.`,
+    detail: '채팅에서 둘이 한 턴씩 주고받으며 소설을 씁니다. /릴레이소설 시작 으로 열고, /릴레이소설 끝 으로 잠시 멈추고, /릴레이소설 완결 하면 홈의 릴레이소설 서재에 보관됩니다. 흐름이 막히면 /릴레이소설 도움 을 치면 두세 문장을 이어받을 수 있어요. 소설 turn은 일반 대화와 구분되는 원고 카드로 표시되고, 완결본은 문서 파일로 저장할 수 있습니다.',
+  },
+  {
     id: '2026-07-26-update-v0-11-0-chat-viewport-anchoring',
     date: '2026.07.26',
     type: 'update',

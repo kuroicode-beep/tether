@@ -32,7 +32,18 @@ export interface ChatMessage {
   fileSize?: number
   createdAt: number | null
   readBy: string[]
+  // 릴레이소설 — 일반 채팅과 구분해 렌더하기 위한 표시
+  relayNovelId?: string
+  relayTurn?: number
+  relayKind?: 'turn' | 'system' | 'assist'
+  relayAuthorName?: string
 }
+
+// 메시지에 함께 저장할 부가 정보 (릴레이소설 등)
+export type ChatMessageMeta = Pick<
+  ChatMessage,
+  'relayNovelId' | 'relayTurn' | 'relayKind' | 'relayAuthorName'
+>
 
 function toMessage(d: DocumentData, id: string): ChatMessage {
   const ts = d['createdAt'] as Timestamp | null
@@ -49,7 +60,19 @@ function toMessage(d: DocumentData, id: string): ChatMessage {
     fileSize: d['fileSize'] as number | undefined,
     createdAt: ts?.toMillis() ?? null,
     readBy: (d['readBy'] as string[]) ?? [],
+    relayNovelId: d['relayNovelId'] as string | undefined,
+    relayTurn: d['relayTurn'] as number | undefined,
+    relayKind: d['relayKind'] as ChatMessage['relayKind'],
+    relayAuthorName: d['relayAuthorName'] as string | undefined,
   }
+}
+
+// undefined 필드를 걸러 Firestore에 그대로 넘길 수 있게 만든다
+function cleanMeta(meta?: ChatMessageMeta): Record<string, unknown> {
+  if (!meta) return {}
+  return Object.fromEntries(
+    Object.entries(meta).filter(([, value]) => value !== undefined),
+  )
 }
 
 function chatMatchesPending(p: ChatMessage, s: ChatMessage): boolean {
@@ -184,7 +207,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     }
   }, [applyMerge])
 
-  const sendText = useCallback(async (text: string) => {
+  const sendText = useCallback(async (text: string, meta?: ChatMessageMeta) => {
     const trimmed = text.trim()
     if (!trimmed || !coupleId || !myUid) return
 
@@ -214,6 +237,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       text: trimmed,
       createdAt: now,
       readBy: [myUid],
+      ...meta,
     }
     pendingRef.current.set(optimistic.id, optimistic)
     lastSentTextRef.current = { text: trimmed, at: now }
@@ -228,6 +252,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         text: trimmed,
         createdAt,
         readBy: [myUid],
+        ...cleanMeta(meta),
       })
     } catch (err) {
       console.warn('[useChat] sendText failed', err)

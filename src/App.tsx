@@ -23,6 +23,7 @@ import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { ThemeMusicPlayer, type ThemeTrack } from './components/ThemeMusicPlayer'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
+import { RelayNovelScreen } from './screens/RelayNovelScreen'
 import { AdminScreen } from './screens/AdminScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
@@ -48,7 +49,7 @@ import { db } from './lib/firebase'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'library' | 'listenTogether' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
+  | 'settings' | 'photo' | 'library' | 'listenTogether' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog' | 'relayNovel'
   | 'admin'
 
 const NAVIGATION_SCREENS = new Set<string>([
@@ -60,6 +61,7 @@ const NAVIGATION_SCREENS = new Set<string>([
   'photo',
   'library',
   'listenTogether',
+  'relayNovel',
   'links',
   'dateRecipe',
   'history',
@@ -512,6 +514,7 @@ function AppContent() {
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
         {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
         {screen === 'chat'        && <ChatScreen onBack={toHome} onSetThemeTrack={handleSetThemeTrack} />}
+        {screen === 'relayNovel'  && <RelayNovelScreen onBack={toHome} />}
         {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}
