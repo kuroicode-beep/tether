@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-hotfix-v0-13-3-relay-assist-empty',
+    date: '2026.07.26',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 이어쓰기 도움이 빈 답을 주던 문제.`,
+    detail: '/릴소 도움 이 자주 실패하던 원인을 찾았습니다. 쓰는 모델이 답을 만들기 전에 먼저 생각을 하는 방식인데, 허용한 분량이 생각에 다 쓰여 정작 본문이 비어 있었습니다. 분량을 넉넉히 늘려 5회 연속 정상 생성을 확인했습니다.',
+  },
+  {
     id: '2026-07-26-hotfix-v0-13-2-relay-reset-closes-session',
     date: '2026.07.26',
     type: 'hotfix',

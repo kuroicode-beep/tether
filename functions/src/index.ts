@@ -681,7 +681,10 @@ export const relayNovelAssist = functions.https.onCall(async (data, context) => 
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.9,
-        max_tokens: 300,
+        // deepseek-v4-flash는 추론형이라 completion 토큰을 추론에 먼저 쓴다.
+        // 300으로 두면 추론만 하다 끝나 본문이 빈 채로 돌아온다 (finish_reason: length).
+        // 실측 기준 추론 약 300~400 + 본문 약 150이므로 넉넉히 잡는다.
+        max_tokens: 1500,
       }),
       signal: controller.signal,
     })
@@ -694,10 +697,15 @@ export const relayNovelAssist = functions.https.onCall(async (data, context) => 
     }
 
     const payload = await res.json() as {
-      choices?: Array<{ message?: { content?: string } }>
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>
     }
-    const text = (payload.choices?.[0]?.message?.content ?? '').trim()
+    const choice = payload.choices?.[0]
+    const text = (choice?.message?.content ?? '').trim()
     if (!text) {
+      // 토큰이 추론에만 쓰이고 본문이 비는 경우를 구분해 남긴다
+      functions.logger.error('[relayNovelAssist] empty content', {
+        finishReason: choice?.finish_reason ?? null,
+      })
       throw new functions.https.HttpsError('unavailable', 'assist_empty')
     }
 
