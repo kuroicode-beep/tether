@@ -18,6 +18,8 @@ export interface RelayNovel {
   status: RelayNovelStatus
   turns: RelayNovelTurn[]
   turnCount: number
+  // 지금 쓸 차례인 사람. 한 턴씩 번갈아 쓰는 규칙의 기준이 된다.
+  nextTurnUid: string
   startedBy: string
   startedAt: number | null
   completedAt: number | null
@@ -74,9 +76,12 @@ function toCommand(keyword: string, argument: string): RelayCommand | null {
 export const RELAY_HELP_TEXT = [
   '릴레이소설 명령어',
   '/릴레이소설 시작 [제목] — 새 이야기를 시작해요',
-  '/릴레이소설 끝 — 잠시 멈춰요 (이어서 다시 쓸 수 있어요)',
+  '/릴레이소설 끝 — 잠시 멈춰요 (차례인 사람만)',
   '/릴레이소설 완결 — 마무리하고 릴레이소설 서재에 보관해요',
-  '/릴레이소설 도움 — 막힐 때 두세 문장을 이어받아요',
+  '/릴레이소설 도움 — 막힐 때 두세 문장을 이어받아요 (차례인 사람만)',
+  '',
+  '한 턴씩 번갈아 씁니다. 내 차례에 쓴 말이 그대로 한 턴이 되고,',
+  '차례가 아닐 때 쓴 말은 소설에 들어가지 않는 평범한 대화가 돼요.',
 ].join('\n')
 
 // 완결본을 문서 파일로 내려받을 때 쓰는 본문

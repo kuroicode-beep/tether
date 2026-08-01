@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-update-v0-12-1-relay-novel-turn-rule',
+    date: '2026.07.26',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 차례 규칙.`,
+    detail: '한 턴씩 번갈아 쓰도록 규칙을 넣었습니다. 채팅 상단에 지금 누구 차례인지 표시되고, 내 차례에 쓴 말만 소설의 한 턴이 됩니다. 차례가 아닐 때 쓴 말은 소설에 들어가지 않는 평범한 대화로 남습니다. 멈추기와 이어쓰기 도움은 차례인 사람만 쓸 수 있습니다.',
+  },
+  {
     id: '2026-07-26-update-v0-12-0-relay-novel',
     date: '2026.07.26',
     type: 'update',

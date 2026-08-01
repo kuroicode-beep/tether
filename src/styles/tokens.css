@@ -1158,6 +1158,30 @@ html[data-theme="dark"] body {
   margin-top: 1px;
 }
 
+/* 차례 표시 — 색만이 아니라 글자로도 누구 차례인지 알린다 */
+.relay-turn-badge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+}
+
+.relay-turn-badge--mine {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+[data-theme="high-contrast"] .relay-turn-badge {
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+  background: var(--hc-box-bg) !important;
+}
+
 .relay-banner-spinner {
   font-size: 20px;
   color: var(--color-primary);

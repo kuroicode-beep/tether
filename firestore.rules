@@ -233,7 +233,7 @@ service cloud.firestore {
         // 턴 추가와 상태 변경만 허용한다 (작성자·시작 시각은 고정)
         allow update: if isCoupleMember()
                       && request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['turns', 'turnCount', 'status', 'completedAt', 'title']);
+                           .hasOnly(['turns', 'turnCount', 'nextTurnUid', 'status', 'completedAt', 'title']);
         allow delete: if false;
       }
 

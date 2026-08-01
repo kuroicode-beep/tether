@@ -50,6 +50,13 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   const relay = useRelayNovel(coupleId, uid)
   const keyboardOpen = useKeyboardInset()
   const myName = myNickname || '나'
+
+  // 릴레이소설 턴 규칙 — 한 턴씩 번갈아 쓴다
+  const isMyTurn = !!relay.novel && !!uid && relay.novel.nextTurnUid === uid
+  const nextTurnUid = (uid && relay.novel?.nextTurnUid === uid ? partnerUid : uid) ?? uid ?? ''
+  const turnOwnerName = relay.novel
+    ? (relay.novel.nextTurnUid === uid ? myName : partnerNickname || '상대방')
+    : ''
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [incomingFiles, setIncomingFiles] = useState<{ id: number; files: File[] } | null>(null)
@@ -76,8 +83,13 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     const command = parseRelayCommand(text)
 
     if (!command) {
-      // 세션이 진행 중이면 일반 입력을 한 턴으로 기록한다
-      if (relay.novel?.status === 'active') {
+      // 세션이 진행 중이고 내 차례일 때만 한 턴으로 기록한다.
+      // 내 차례가 아니면 소설과 무관한 평범한 대화로 보낸다.
+      if (relay.novel && isMyTurn) {
+        // 멈춰 있었다면 내 차례에 쓰는 것으로 다시 이어진다
+        if (relay.novel.status === 'paused') {
+          await relay.setStatus(relay.novel.id, 'active')
+        }
         const turnNumber = relay.novel.turnCount + 1
         await sendText(text, {
           relayKind: 'turn',
@@ -90,7 +102,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           authorName: myName,
           text: text.trim(),
           at: Date.now(),
-        })
+        }, nextTurnUid)
         return
       }
       await sendText(text)
@@ -119,6 +131,12 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
 
     if (!relay.novel) {
       postRelaySystem('진행 중인 릴레이소설이 없어요. /릴레이소설 시작 으로 열어주세요.')
+      return
+    }
+
+    // 멈추기와 이어쓰기 도움은 지금 차례인 사람만 쓸 수 있다
+    if ((command.kind === 'pause' || command.kind === 'assist') && !isMyTurn) {
+      postRelaySystem(`지금은 ${turnOwnerName} 차례예요. 차례인 사람만 쓸 수 있어요.`, relay.novel.id)
       return
     }
 
@@ -157,12 +175,12 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         text: suggestion,
         at: Date.now(),
         bySidekick: true,
-      })
+      }, nextTurnUid)
     } catch (err) {
       console.warn('[ChatScreen] relay assist failed', err)
       postRelaySystem('이어쓰기 도움을 불러오지 못했어요. 잠시 후 다시 시도해주세요.', relay.novel.id)
     }
-  }, [relay, sendText, postRelaySystem, myName, uid])
+  }, [relay, sendText, postRelaySystem, myName, uid, isMyTurn, nextTurnUid, turnOwnerName])
 
   const handleSendToAlbum = useCallback(async () => {
     if (!viewerUrl) return
@@ -337,7 +355,14 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         </div>
       </header>
 
-      {relay.novel && <RelayNovelBanner novel={relay.novel} assisting={relay.assisting} />}
+      {relay.novel && (
+        <RelayNovelBanner
+          novel={relay.novel}
+          assisting={relay.assisting}
+          turnOwnerName={turnOwnerName}
+          isMyTurn={isMyTurn}
+        />
+      )}
 
       <main
         ref={listRef}

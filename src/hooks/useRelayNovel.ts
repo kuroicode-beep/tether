@@ -19,6 +19,7 @@ function toNovel(id: string, d: Record<string, unknown>): RelayNovel {
     status: (d['status'] as RelayNovelStatus) ?? 'active',
     turns: (d['turns'] as RelayNovelTurn[]) ?? [],
     turnCount: (d['turnCount'] as number) ?? 0,
+    nextTurnUid: (d['nextTurnUid'] as string) ?? (d['startedBy'] as string) ?? '',
     startedBy: (d['startedBy'] as string) ?? '',
     startedAt: startedAt?.toMillis() ?? null,
     completedAt: completedAt?.toMillis() ?? null,
@@ -58,6 +59,8 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
       status: 'active' as RelayNovelStatus,
       turns: [],
       turnCount: 0,
+      // 시작한 사람이 첫 턴을 쓴다
+      nextTurnUid: myUid,
       startedBy: myUid,
       startedAt: Timestamp.now(),
       completedAt: null,
@@ -68,6 +71,7 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
       status: 'active',
       turns: [],
       turnCount: 0,
+      nextTurnUid: myUid,
       startedBy: myUid,
       startedAt: Date.now(),
       completedAt: null,
@@ -82,12 +86,18 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
     })
   }, [coupleId])
 
-  // 한 턴을 소설 문서에 덧붙인다 (서재에서 채팅 페이지네이션과 무관하게 읽기 위함)
-  const appendTurn = useCallback(async (novelId: string, turn: RelayNovelTurn) => {
+  // 한 턴을 소설 문서에 덧붙이고 차례를 상대에게 넘긴다.
+  // (서재에서 채팅 페이지네이션과 무관하게 읽기 위해 문서에도 함께 쌓는다)
+  const appendTurn = useCallback(async (
+    novelId: string,
+    turn: RelayNovelTurn,
+    nextTurnUid: string,
+  ) => {
     if (!coupleId) return
     await updateDoc(doc(db, 'couples', coupleId, 'relayNovels', novelId), {
       turns: arrayUnion(turn),
       turnCount: increment(1),
+      nextTurnUid,
     })
   }, [coupleId])
 
