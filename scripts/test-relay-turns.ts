@@ -111,3 +111,30 @@ check('턴 진행 후 동의 초기화', v2, [])
 
 console.log(`\n${pass}/${total} 통과`)
 if (pass !== total) process.exit(1)
+
+// ── 초기화 후 새 이야기 시작 ──
+console.log('\n[초기화 후 시작]')
+
+// 진행 중 세션 판정 = status in ['active','paused']
+const isOngoing = (status: string) => status === 'active' || status === 'paused'
+// 서재 목록 판정 = status === 'completed'
+const inLibrary = (status: string) => status === 'completed'
+
+check('초기화 전 — 진행 중', isOngoing('active'), true)
+check('초기화 후 — 진행 중 아님', isOngoing('discarded'), false)
+check('초기화된 세션은 서재에 안 뜸', inLibrary('discarded'), false)
+check('완결본은 서재에 뜸', inLibrary('completed'), true)
+check('완결본은 진행 중 아님', isOngoing('completed'), false)
+
+// 진행 중 세션이 없으면 /릴소 시작 이 새 세션을 연다
+const canStartFresh = (ongoing: boolean) => !ongoing
+check('초기화 후 새로 시작 가능', canStartFresh(isOngoing('discarded')), true)
+check('진행 중이면 새로 시작 불가', canStartFresh(isOngoing('active')), false)
+
+// 0턴 세션에 시작하면 제목만 다시 정하고 이어간다
+const startOnExisting = (turnCount: number) => turnCount === 0 ? 'rename' : 'blocked'
+check('0턴 세션에 시작 — 제목 재설정', startOnExisting(0), 'rename')
+check('5턴 세션에 시작 — 막힘', startOnExisting(5), 'blocked')
+
+console.log(`\n${pass}/${total} 통과`)
+if (pass !== total) process.exit(1)

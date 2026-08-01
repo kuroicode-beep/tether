@@ -2,7 +2,8 @@
 // 릴레이소설 명령어 파싱과 공용 타입.
 // 채팅 입력이 명령어인지 판단하는 책임만 지고, 실행은 useRelayNovel이 맡는다.
 
-export type RelayNovelStatus = 'active' | 'paused' | 'completed'
+// discarded — 초기화로 버려진 세션. 진행 중에도, 서재에도 나타나지 않는다.
+export type RelayNovelStatus = 'active' | 'paused' | 'completed' | 'discarded'
 
 export interface RelayNovelTurn {
   authorUid: string

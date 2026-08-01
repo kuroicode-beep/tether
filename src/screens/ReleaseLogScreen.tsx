@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-07-26-hotfix-v0-13-2-relay-reset-closes-session',
+    date: '2026.07.26',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 초기화 후 새 이야기가 안 열리던 문제.`,
+    detail: '초기화가 본문만 비우고 세션은 그대로 두는 바람에, 그 뒤 /릴소 시작 을 하면 "이미 쓰고 있어요"라고 막혔습니다. 이제 초기화하면 세션까지 닫혀 바로 새 이야기를 열 수 있습니다. 아직 한 턴도 쓰지 않은 이야기에 /릴소 시작 을 하면 제목만 다시 정하고 그대로 이어갑니다.',
+  },
+  {
     id: '2026-07-26-update-v0-13-1-relay-shorthand',
     date: '2026.07.26',
     type: 'update',

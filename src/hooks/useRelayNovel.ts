@@ -128,13 +128,13 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
       return 'pending'
     }
 
+    // 비우기만 하면 빈 세션이 남아 /릴소 시작 이 막힌다. 세션 자체를 닫는다.
     await updateDoc(ref, {
       turns: [],
       turnCount: 0,
       background: [],
       resetVotes: [],
-      status: 'active' as RelayNovelStatus,
-      nextTurnUid: myUid2,
+      status: 'discarded' as RelayNovelStatus,
     })
     return 'done'
   }, [coupleId])

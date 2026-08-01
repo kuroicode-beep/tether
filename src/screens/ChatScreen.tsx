@@ -98,10 +98,20 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
 
     if (command.kind === 'start') {
       if (relay.novel) {
+        // 아직 한 턴도 쓰지 않은 세션이면 새로 시작한 것으로 본다 (제목만 다시 정한다)
+        if (relay.novel.turnCount === 0) {
+          if (command.title.trim()) await relay.setTitle(relay.novel.id, command.title)
+          if (relay.novel.status !== 'active') await relay.setStatus(relay.novel.id, 'active')
+          postRelaySystem(
+            `「${command.title.trim() || relay.novel.title}」 릴레이소설을 시작했어요. /릴소 쓰기 로 첫 turn을 써주세요.`,
+            relay.novel.id,
+          )
+          return
+        }
         postRelaySystem(
           relay.novel.status === 'paused'
-            ? `"${relay.novel.title}"가 멈춰 있어요. 아무 말이나 쓰면 이어집니다.`
-            : `"${relay.novel.title}"를 이미 쓰고 있어요.`,
+            ? `「${relay.novel.title}」가 ${relay.novel.turnCount}턴에서 멈춰 있어요. /릴소 쓰기 로 이어집니다.`
+            : `「${relay.novel.title}」를 ${relay.novel.turnCount}턴까지 쓰고 있어요. 새로 시작하려면 /릴소 완결 이나 /릴소 초기화 를 써주세요.`,
           relay.novel.id,
         )
         return
@@ -161,7 +171,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       const result = await relay.voteReset(relay.novel, uid ?? '', partnerUid)
       postRelaySystem(
         result === 'done'
-          ? '릴레이소설을 초기화했어요. 본문과 설정을 비웠습니다.'
+          ? '릴레이소설을 초기화했어요. /릴소 시작 으로 새 이야기를 열 수 있어요.'
           : `초기화에 동의했어요. ${partnerNickname || '상대방'}도 /릴레이소설 초기화 를 입력하면 비워집니다.`,
         relay.novel.id,
       )
