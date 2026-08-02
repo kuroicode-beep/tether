@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-hotfix-v0-14-1-ios-background-notification',
+    date: '2026.08.02',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 아이폰 알림이 아예 뜨지 않던 문제.`,
+    detail: '두 가지가 겹쳐 있었습니다. 첫째, 알림을 실제로 그리는 백그라운드 코드에 Firebase 설정이 빈 채로 배포되고 있었습니다. 빌드 과정에서 설정을 채워 넣는 단계가 나중 단계에 덮어써지고 있었고, 이제 마지막에 확실히 채우고 빠지면 빌드를 멈추게 했습니다. 둘째, 알림 내용이 함께 온 경우 브라우저가 알아서 띄울 거라 보고 아무것도 표시하지 않는 경로가 있었는데, 아이폰에서는 자동 표시가 되지 않아 앱이 닫혀 있으면 알림이 사라졌습니다. 이제 항상 직접 표시합니다.',
+  },
+  {
     id: '2026-08-02-update-v0-14-0-notification-settings-source-of-truth',
     date: '2026.08.02',
     type: 'update',

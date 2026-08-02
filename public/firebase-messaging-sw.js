@@ -1,4 +1,5 @@
-// public/firebase-messaging-sw.js — FCM 백그라운드 알림 (빌드 시 __VITE_*__ 치환)
+// public/firebase-messaging-sw.js — FCM 백그라운드 알림
+// 아래 설정값은 빌드 마지막 단계(scripts/inject-sw-env.mjs)에서 실제 값으로 치환된다.
 importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/11.0.0/firebase-messaging-compat.js');
 
@@ -46,14 +47,11 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTag = data.notificationId ?? `${type}-${Date.now()}`;
   const inAppMessage = { title, body, type, screen, url: targetUrl, notificationId: notificationTag };
 
-  const hasFcmNotification = !!payload.notification?.title || !!payload.notification?.body;
-  if (hasFcmNotification && data.forceSwDisplay !== '1') {
-    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      clients
-        .filter((client) => client.focused === true)
-        .forEach((client) => postInAppAlert(client, inAppMessage));
-    });
-  }
+  // notification 페이로드가 있으면 브라우저가 알아서 띄운다고 보고 여기서 끝내던 코드가 있었다.
+  // iOS(홈 화면 PWA)에서는 자동 표시가 일어나지 않아, 앱이 닫혀 있으면
+  // 포커스된 창도 없고 showNotification도 호출되지 않아 알림이 아무것도 뜨지 않았다.
+  // 이제 경로를 하나로 합쳐 항상 서비스워커가 표시한다.
+  // 자동 표시가 일어나는 브라우저에서는 서버와 같은 tag를 써서 하나로 합쳐진다.
 
   // 포커스 기준: 창이 포커스를 갖고 있을 때만 시스템 알림을 생략한다.
   // 보이지만 다른 창에 포커스가 있으면(사이드 배치 등) 시스템 알림을 띄운다.
