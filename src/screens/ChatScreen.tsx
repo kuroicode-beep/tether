@@ -12,7 +12,9 @@ import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useRelayNovel } from '../hooks/useRelayNovel'
-import { formatBackground, parseRelayCommand, RELAY_HELP_TEXT } from '../lib/relayNovel'
+import {
+  formatBackground, parseRelayCommand, RELAY_HELP_TEXT, RELAY_QUICK_HINT,
+} from '../lib/relayNovel'
 import { RelayNovelBanner } from '../components/RelayNovelBanner'
 import { RelayNovelInfoSheet } from '../components/RelayNovelInfoSheet'
 import { RelayNovelReadSheet } from '../components/RelayNovelReadSheet'
@@ -105,7 +107,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           if (command.title.trim()) await relay.setTitle(relay.novel.id, command.title)
           if (relay.novel.status !== 'active') await relay.setStatus(relay.novel.id, 'active')
           postRelaySystem(
-            `「${command.title.trim() || relay.novel.title}」 릴레이소설을 시작했어요. /릴소 쓰기 로 첫 turn을 써주세요.`,
+            `「${command.title.trim() || relay.novel.title}」 릴레이소설을 시작했어요.\n\n${RELAY_QUICK_HINT}`,
             relay.novel.id,
           )
           return
@@ -119,7 +121,12 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         return
       }
       const created = await relay.start(command.title)
-      if (created) postRelaySystem(`「${created.title}」 릴레이소설을 시작했어요.`, created.id)
+      if (created) {
+        postRelaySystem(
+          `「${created.title}」 릴레이소설을 시작했어요.\n\n${RELAY_QUICK_HINT}`,
+          created.id,
+        )
+      }
       return
     }
 

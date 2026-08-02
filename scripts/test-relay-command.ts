@@ -36,7 +36,7 @@ const cases: Array<[string, unknown]> = [
   ['/릴소 초기화', { kind: 'reset' }],
   ['/릴소', { kind: 'help' }],
   ['/릴소시작 밤길', { kind: 'start', title: '밤길' }],
-  ['/릴소 이상한명령', null],
+  ['/릴소 이상한명령', { kind: 'help' }],
   ['/릴', null],
   ['릴소 시작', null],
   // 띄어쓴 표기
@@ -48,10 +48,15 @@ const cases: Array<[string, unknown]> = [
   ['/릴레이소설 보기', { kind: 'view' }],
   ['/릴소 읽기', { kind: 'view' }],
   ['/릴소 내용', { kind: 'view' }],
+  // 도움말 별칭
+  ['/릴소 도움말', { kind: 'help' }],
+  ['/릴소 명령어', { kind: 'help' }],
+  ['/릴소 ?', { kind: 'help' }],
+  ['/릴소 help', { kind: 'help' }],
   // 명령이 아닌 것 — 전부 일반 대화로 흘러야 한다
   ['오늘 저녁 뭐 먹을까', null],
   ['릴레이소설 시작', null],
-  ['/릴레이소설 이상한명령', null],
+  ['/릴레이소설 이상한명령', { kind: 'help' }],
   ['/다른명령 시작', null],
   ['비가 그친 골목에 우산이 있었다', null],
 ]

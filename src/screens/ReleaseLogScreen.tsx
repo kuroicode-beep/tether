@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-update-v0-15-1-relay-help',
+    date: '2026.08.02',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 명령어 안내 개선.`,
+    detail: '/릴소 도움말 이 명령어를 쓰기·보기·이야기 관리·제목 설정으로 묶어 보여줍니다. 명령어, ?, help 로도 열립니다. 이야기를 시작하면 자주 쓰는 명령어 세 줄이 함께 표시되고, 잘못 친 명령은 조용히 넘어가지 않고 도움말을 띄웁니다.',
+  },
+  {
     id: '2026-08-02-update-v0-15-0-relay-view',
     date: '2026.08.02',
     type: 'update',
