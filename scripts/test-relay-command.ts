@@ -53,6 +53,10 @@ const cases: Array<[string, unknown]> = [
   ['/릴소 명령어', { kind: 'help' }],
   ['/릴소 ?', { kind: 'help' }],
   ['/릴소 help', { kind: 'help' }],
+  // 여러 줄 서식 유지 (Shift+Enter)
+  ['/릴소 쓰기 첫 줄.\n\n둘째 문단.\n셋째 줄.', { kind: 'write', text: '첫 줄.\n\n둘째 문단.\n셋째 줄.' }],
+  ['/릴소 쓰기\n줄바꿈으로 시작', { kind: 'write', text: '줄바꿈으로 시작' }],
+  ['/릴레이소설 쓰기 가\n나', { kind: 'write', text: '가\n나' }],
   // 명령이 아닌 것 — 전부 일반 대화로 흘러야 한다
   ['오늘 저녁 뭐 먹을까', null],
   ['릴레이소설 시작', null],

@@ -101,8 +101,12 @@ export function parseRelayCommand(input: string): RelayCommand | null {
     return toCommand(glued, rest.slice(glued.length).trim())
   }
 
-  const [head, ...tail] = rest.split(/\s+/)
-  return toCommand(head ?? '', tail.join(' '))
+  // 첫 낱말만 떼어내고 나머지는 원문 그대로 넘긴다.
+  // split(/\s+/) 후 다시 이어붙이면 줄바꿈이 공백으로 뭉개져
+  // 여러 문단으로 쓴 소설 turn의 서식이 사라진다.
+  const head = rest.split(/\s/, 1)[0] ?? ''
+  const argument = rest.slice(head.length).replace(/^[^\S\n]*\n?/, '').replace(/^[^\S\n]+/, '')
+  return toCommand(head, argument)
 }
 
 function toCommand(keyword: string, argument: string): RelayCommand | null {

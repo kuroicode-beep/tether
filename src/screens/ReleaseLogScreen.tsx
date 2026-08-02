@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-hotfix-v0-15-2-relay-write-linebreaks',
+    date: '2026.08.02',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 소설 쓸 때 줄바꿈이 사라지던 문제.`,
+    detail: 'Shift+Enter로 문단을 나눠 써도 저장될 때 줄바꿈이 모두 공백으로 합쳐졌습니다. 이제 쓴 그대로 문단과 줄바꿈이 유지되고, 읽기 화면과 문서 저장에도 그대로 반영됩니다.',
+  },
+  {
     id: '2026-08-02-update-v0-15-1-relay-help',
     date: '2026.08.02',
     type: 'update',
