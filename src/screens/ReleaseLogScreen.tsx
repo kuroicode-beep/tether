@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-update-v0-14-0-notification-settings-source-of-truth',
+    date: '2026.08.02',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 알림이 저절로 꺼지던 문제.`,
+    detail: '알림 설정을 기기에만 저장하고 있어서, 오래된 설정이 남은 기기에서 알림음만 바꿔도 메시지 알림이 통째로 꺼지는 일이 있었습니다. 실제로 두 분 모두 메시지 알림이 꺼져 있었고, 그래서 알림이 오지 않았습니다. 이제 서버에 저장된 설정을 기준으로 삼아 어느 기기에서 보든 같은 상태가 보입니다. 꺼져 있던 메시지 알림은 다시 켜뒀고, 응답하지 않는 기기 등록 하나도 정리했습니다.',
+  },
+  {
     id: '2026-07-26-hotfix-v0-13-3-relay-assist-empty',
     date: '2026.07.26',
     type: 'hotfix',

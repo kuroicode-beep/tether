@@ -135,7 +135,7 @@ function AppContent() {
   const [playerState, setPlayerState] = useState<CachedPlayerState>(() => loadCachedPlayerState())
   const [playerRefreshKey, setPlayerRefreshKey] = useState(0)
   const push = usePushNotification(session.uid)
-  const { loadSettings, onForegroundMessage, syncToken } = push
+  const { loadSettings, onForegroundMessage, syncToken, syncSettingsFromServer } = push
   const pendingNavRef = useRef<string | null>(null)
   const sidecarUnlockTriedRef = useRef(false)
   const screenRef = useRef<Screen>('lock')
@@ -165,6 +165,13 @@ function AppContent() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     void syncToken()
   }, [session.status, session.uid, unlocked, syncToken])
+
+  // 알림 설정의 원본은 서버다. 기기별 로컬 캐시가 서버 값을 덮어쓰지 않도록
+  // 접속할 때마다 서버 값을 내려받아 캐시를 맞춘다.
+  useEffect(() => {
+    if (session.status !== 'connected' || !session.uid) return
+    void syncSettingsFromServer()
+  }, [session.status, session.uid, syncSettingsFromServer])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')

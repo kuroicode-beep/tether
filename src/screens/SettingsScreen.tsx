@@ -108,6 +108,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
+  // 로컬 캐시로 먼저 그리고, 서버 값이 오면 그것으로 맞춘다.
+  // 서버가 원본이어야 토글이 실제 동작과 일치한다.
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
   const [pushResyncing, setPushResyncing] = useState(false)
@@ -233,6 +235,15 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
 
   useEffect(() => {
     setPushGranted(push.isGranted())
+  }, [push])
+
+  // 서버에 저장된 알림 설정을 읽어 토글을 실제 상태에 맞춘다
+  useEffect(() => {
+    let cancelled = false
+    void push.syncSettingsFromServer().then((settings) => {
+      if (!cancelled) setNotifSettings(settings)
+    })
+    return () => { cancelled = true }
   }, [push])
 
   const handleGoogleLink = async () => {
