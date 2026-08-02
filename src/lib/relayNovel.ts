@@ -44,6 +44,7 @@ export type RelayCommand =
   | { kind: 'complete' }
   | { kind: 'assist' }
   | { kind: 'write'; text: string }
+  | { kind: 'view' }
   | { kind: 'title'; title: string }
   | { kind: 'background'; text: string }
   | { kind: 'backgroundRemove'; index: number }
@@ -68,6 +69,9 @@ const ALIASES: Record<string, RelayCommand['kind']> = {
   '쓰기': 'write',
   '턴': 'write',
   '이어': 'write',
+  '보기': 'view',
+  '읽기': 'view',
+  '내용': 'view',
   '제목': 'title',
   '배경': 'background',
   '설정': 'background',
@@ -121,6 +125,7 @@ function toCommand(keyword: string, argument: string): RelayCommand | null {
 export const RELAY_HELP_TEXT = [
   '릴레이소설 명령어',
   '/릴레이소설 쓰기 내용 — 내 차례의 한 턴을 써요',
+  '/릴레이소설 보기 — 지금까지 쓴 내용을 읽어요',
   '/릴레이소설 시작 [제목] — 새 이야기를 시작해요',
   '/릴레이소설 끝 — 잠시 멈춰요 (차례인 사람만)',
   '/릴레이소설 완결 — 마무리하고 릴레이소설 서재에 보관해요',

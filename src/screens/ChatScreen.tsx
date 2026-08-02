@@ -15,6 +15,7 @@ import { useRelayNovel } from '../hooks/useRelayNovel'
 import { formatBackground, parseRelayCommand, RELAY_HELP_TEXT } from '../lib/relayNovel'
 import { RelayNovelBanner } from '../components/RelayNovelBanner'
 import { RelayNovelInfoSheet } from '../components/RelayNovelInfoSheet'
+import { RelayNovelReadSheet } from '../components/RelayNovelReadSheet'
 
 interface ChatScreenProps {
   onBack: () => void
@@ -60,6 +61,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     : ''
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [relayInfoOpen, setRelayInfoOpen] = useState(false)
+  const [relayReadOpen, setRelayReadOpen] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [incomingFiles, setIncomingFiles] = useState<{ id: number; files: File[] } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -126,7 +128,16 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       return
     }
 
-    // 제목·배경·초기화는 차례와 무관하게 둘 다 언제든 쓸 수 있다
+    // 보기·제목·배경·초기화는 차례와 무관하게 둘 다 언제든 쓸 수 있다
+    if (command.kind === 'view') {
+      if (relay.novel.turns.length === 0) {
+        postRelaySystem('아직 쓴 내용이 없어요. /릴소 쓰기 로 첫 문장을 시작해보세요.', relay.novel.id)
+        return
+      }
+      setRelayReadOpen(true)
+      return
+    }
+
     if (command.kind === 'title') {
       await relay.setTitle(relay.novel.id, command.title)
       postRelaySystem(
@@ -458,8 +469,13 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
             if (!relay.novel) return
             void relay.removeBackground(relay.novel.id, relay.novel.background, noteId)
           }}
+          onOpenRead={() => { setRelayInfoOpen(false); setRelayReadOpen(true) }}
           onClose={() => setRelayInfoOpen(false)}
         />
+      )}
+
+      {relay.novel && relayReadOpen && (
+        <RelayNovelReadSheet novel={relay.novel} onClose={() => setRelayReadOpen(false)} />
       )}
 
       <main

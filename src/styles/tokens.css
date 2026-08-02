@@ -1403,6 +1403,21 @@ html[data-theme="dark"] body {
   color: var(--hc-box-text) !important;
 }
 
+/* 진행 중인 이야기 읽기 시트 — 본문이 길어도 시트 안에서만 스크롤한다 */
+.relay-read-sheet {
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.relay-read-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* 릴레이소설 서재 */
 .relay-card {
   display: block;

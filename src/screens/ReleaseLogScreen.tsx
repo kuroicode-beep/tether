@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-update-v0-15-0-relay-view',
+    date: '2026.08.02',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 지금까지 읽기.`,
+    detail: '/릴소 보기 로 지금까지 쓴 내용을 소설처럼 이어서 읽을 수 있습니다. 채팅에서는 turn이 대화 사이에 흩어져 있는데, 여기서는 순서대로 모아 보여줍니다. 진행 중인 이야기도 문서 파일로 저장할 수 있고, 상단 제목 띠를 눌러서도 열 수 있어요.',
+  },
+  {
     id: '2026-08-02-hotfix-v0-14-2-relay-turn-rollback',
     date: '2026.08.02',
     type: 'hotfix',

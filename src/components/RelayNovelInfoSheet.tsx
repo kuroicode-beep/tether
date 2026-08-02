@@ -8,11 +8,12 @@ interface RelayNovelInfoSheetProps {
   turnOwnerName: string
   isMyTurn: boolean
   onRemoveBackground: (noteId: string) => void
+  onOpenRead: () => void
   onClose: () => void
 }
 
 export function RelayNovelInfoSheet({
-  novel, turnOwnerName, isMyTurn, onRemoveBackground, onClose,
+  novel, turnOwnerName, isMyTurn, onRemoveBackground, onOpenRead, onClose,
 }: RelayNovelInfoSheetProps) {
   return (
     <>
@@ -64,7 +65,12 @@ export function RelayNovelInfoSheet({
           이 설정은 /릴레이소설 도움 을 쓸 때 함께 전달돼요.
         </p>
 
-        <button type="button" onClick={onClose} className="btn-outline w-full mt-lg">
+        {novel.turns.length > 0 && (
+          <button type="button" onClick={onOpenRead} className="btn-outline w-full mt-lg active">
+            지금까지 쓴 내용 읽기 ({novel.turnCount}턴)
+          </button>
+        )}
+        <button type="button" onClick={onClose} className="btn-outline w-full mt-sm">
           닫기
         </button>
       </div>
