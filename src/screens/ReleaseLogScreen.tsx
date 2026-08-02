@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-update-v0-16-0-install-guide',
+    date: '2026.08.02',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 첫 화면에 설치·알림 안내.`,
+    detail: '로그인 화면에서 기기별 설치 방법을 볼 수 있습니다. 아이폰·안드로이드·윈도우·맥 네 가지이고, 접속한 기기에 맞는 안내가 먼저 열립니다. 설치법보다 알림과 전원 설정에 무게를 뒀습니다 — 알림이 안 오는 원인은 대부분 사파리 탭으로 쓰거나 배터리 최적화가 켜져 있어서였기 때문입니다.',
+  },
+  {
     id: '2026-08-02-hotfix-v0-15-2-relay-write-linebreaks',
     date: '2026.08.02',
     type: 'hotfix',

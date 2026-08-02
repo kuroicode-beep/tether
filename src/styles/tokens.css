@@ -1418,6 +1418,201 @@ html[data-theme="dark"] body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── 첫 화면 설치 안내 ── */
+.install-guide {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.install-guide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 14px 16px;
+  text-align: left;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-text);
+}
+
+.install-guide-toggle:active {
+  transform: scale(0.99);
+}
+
+.install-guide-toggle .material-symbols-outlined {
+  font-size: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.install-guide-toggle-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.install-guide-toggle-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.install-guide-toggle-sub {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.install-guide-chevron {
+  color: var(--color-text-muted) !important;
+}
+
+.install-guide-panel {
+  margin-top: 10px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+/* 기기 선택 — 색이 아니라 테두리와 "선택됨" 글자로 구분한다 */
+.install-guide-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.install-guide-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 68px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.install-guide-tab .material-symbols-outlined {
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+.install-guide-tab--active {
+  border-color: var(--color-primary);
+  background: var(--color-chip-bg);
+}
+
+.install-guide-tab-mark {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.install-guide-section {
+  margin-bottom: 20px;
+}
+
+.install-guide-section:last-child {
+  margin-bottom: 0;
+}
+
+.install-guide-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 10px;
+}
+
+.install-guide-section-title .material-symbols-outlined {
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+.install-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.install-guide-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.install-guide-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.install-guide-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+  word-break: keep-all;
+}
+
+.install-guide-caution {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-chip-bg);
+  border-left: 4px solid var(--color-primary);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text);
+  word-break: keep-all;
+}
+
+.install-guide-caution .material-symbols-outlined {
+  font-size: 20px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+[data-theme="high-contrast"] .install-guide-toggle,
+[data-theme="high-contrast"] .install-guide-panel,
+[data-theme="high-contrast"] .install-guide-tab,
+[data-theme="high-contrast"] .install-guide-caution {
+  background: var(--hc-box-bg) !important;
+  border: var(--hc-box-border-width) solid var(--hc-box-border) !important;
+  color: var(--hc-box-text) !important;
+}
+
+[data-theme="high-contrast"] .install-guide-toggle-title,
+[data-theme="high-contrast"] .install-guide-text,
+[data-theme="high-contrast"] .install-guide-section-title,
+[data-theme="high-contrast"] .install-guide-caution {
+  color: var(--hc-box-text) !important;
+}
+
 /* 릴레이소설 서재 */
 .relay-card {
   display: block;
