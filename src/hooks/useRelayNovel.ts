@@ -111,6 +111,35 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
     })
   }, [coupleId])
 
+  // 턴 메시지를 지우면 소설에서도 그 턴을 되돌린다.
+  // 지운 것이 마지막 턴이면 차례를 원래 작성자에게 돌려준다 —
+  // 지웠는데 차례만 넘어가 버리면 다시 쓸 방법이 없다.
+  const removeTurn = useCallback(async (
+    target: RelayNovel,
+    authorUid: string,
+    text: string,
+  ): Promise<boolean> => {
+    if (!coupleId) return false
+
+    const trimmed = text.trim()
+    // 같은 내용이 여러 번 나올 수 있으므로 가장 마지막 것을 지운다
+    const index = target.turns.map((turn, i) => ({ turn, i }))
+      .filter(({ turn }) => turn.authorUid === authorUid && turn.text.trim() === trimmed)
+      .pop()?.i
+
+    if (index === undefined) return false
+
+    const wasLastTurn = index === target.turns.length - 1
+    const nextTurns = target.turns.filter((_, i) => i !== index)
+
+    await updateDoc(doc(db, 'couples', coupleId, 'relayNovels', target.id), {
+      turns: nextTurns,
+      turnCount: nextTurns.length,
+      ...(wasLastTurn ? { nextTurnUid: target.turns[index].authorUid } : {}),
+    })
+    return true
+  }, [coupleId])
+
   // 초기화 동의. 둘 다 모이면 본문과 설정을 비우고 처음 상태로 되돌린다.
   const voteReset = useCallback(async (
     novel: RelayNovel,
@@ -202,7 +231,7 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
 
   return {
     novel, assisting, start, setStatus, appendTurn, requestAssist,
-    setTitle, addBackground, removeBackground, voteReset,
+    setTitle, addBackground, removeBackground, voteReset, removeTurn,
   }
 }
 

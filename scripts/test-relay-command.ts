@@ -39,6 +39,10 @@ const cases: Array<[string, unknown]> = [
   ['/릴소 이상한명령', null],
   ['/릴', null],
   ['릴소 시작', null],
+  // 띄어쓴 표기
+  ['/릴레이 소설 도움', { kind: 'assist' }],
+  ['/릴레이 소설 쓰기 비가 왔다', { kind: 'write', text: '비가 왔다' }],
+  ['/릴레이 소설', { kind: 'help' }],
   // 명령이 아닌 것 — 전부 일반 대화로 흘러야 한다
   ['오늘 저녁 뭐 먹을까', null],
   ['릴레이소설 시작', null],

@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-02-hotfix-v0-14-2-relay-turn-rollback',
+    date: '2026.08.02',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 릴레이소설 턴을 지워도 차례가 넘어가던 문제.`,
+    detail: '쓴 turn을 삭제해도 소설에는 그대로 남아 차례만 상대에게 넘어가 다시 쓸 수 없었습니다. 이제 turn 메시지를 지우면 소설에서도 그 turn이 빠지고, 마지막 turn이었다면 차례가 원래 쓴 사람에게 돌아옵니다. /릴레이 소설 처럼 띄어 쓴 명령도 인식합니다.',
+  },
+  {
     id: '2026-08-02-hotfix-v0-14-1-ios-background-notification',
     date: '2026.08.02',
     type: 'hotfix',

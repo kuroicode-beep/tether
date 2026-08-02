@@ -254,6 +254,18 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     isMyTurn, nextTurnUid, turnOwnerName,
   ])
 
+  // 릴레이소설 턴 메시지를 지우면 소설에서도 그 턴을 되돌린다.
+  // 메시지만 지우고 턴이 그대로 소모되면 차례를 잃는다.
+  const handleDeleteMessage = useCallback(async (msg: ChatMessage) => {
+    const isRelayTurn = msg.relayKind === 'turn' || msg.relayKind === 'assist'
+    const belongsToCurrent = isRelayTurn && relay.novel && msg.relayNovelId === relay.novel.id
+
+    if (belongsToCurrent && relay.novel) {
+      await relay.removeTurn(relay.novel, msg.senderUid, msg.text ?? '')
+    }
+    await deleteMessage(msg.id)
+  }, [relay, deleteMessage])
+
   const handleSendToAlbum = useCallback(async () => {
     if (!viewerUrl) return
     await addPhotoFromUrl(viewerUrl, '채팅에서 저장한 사진')
@@ -522,7 +534,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
                             const next = window.prompt('메시지 수정', msg.text ?? '')
                             if (next?.trim()) updateMessage(msg.id, next)
                           }}
-                          onDelete={() => deleteMessage(msg.id)}
+                          onDelete={() => handleDeleteMessage(msg)}
                         >
                           {bubble}
                         </ContentActionSheet>

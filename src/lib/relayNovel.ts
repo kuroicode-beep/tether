@@ -50,8 +50,9 @@ export type RelayCommand =
   | { kind: 'reset' }
   | { kind: 'help' }
 
-// 긴 표기를 먼저 확인한다 (짧은 축약이 긴 이름을 가로채지 않도록)
-const PREFIXES = ['/릴레이소설', '/릴소'] as const
+// 긴 표기를 먼저 확인한다 (짧은 축약이 긴 이름을 가로채지 않도록).
+// "/릴레이 소설"처럼 띄어 쓰는 경우가 실제로 있어 함께 받는다.
+const PREFIXES = ['/릴레이 소설', '/릴레이소설', '/릴소'] as const
 
 // 같은 뜻으로 자주 쓸 만한 표기를 함께 받는다
 const ALIASES: Record<string, RelayCommand['kind']> = {
