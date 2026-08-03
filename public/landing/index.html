@@ -232,7 +232,9 @@ code, .mono { font-family: var(--font-mono); }
 
 /* ── 푸터 ── */
 footer { padding: 40px 0 56px; border-top: 1px solid var(--border); }
+.svil-mission { margin-bottom: 20px; font-size: 15px; }
 .foot-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.copyright { color: var(--text-sub); font-size: 15px; }
 .foot-rows .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; font-size: 16px; }
 .foot-rows .k { color: var(--text-sub); min-width: 96px; }
 .foot-rows a { color: var(--accent); text-decoration: none; }
@@ -508,14 +510,19 @@ footer p { font-size: 15px; }
   </section>
 </main>
 
+<!-- 이 푸터는 `svil-copyright` 스킬(SVIL 공용 정본)의 사본이다.
+     문구·링크를 바꿔야 하면 그 스킬을 먼저 고치고 여기로 다시 옮긴다. -->
 <footer>
   <div class="wrap">
+    <p class="svil-mission" data-i18n="svil_mission"></p>
     <div class="foot-rows">
       <div class="row"><span class="k" data-i18n="foot_contact"></span><a href="mailto:kuroicode@gmail.com">kuroicode@gmail.com</a></div>
       <div class="row"><span class="k" data-i18n="foot_blog"></span><a href="https://ghost-production-0ec2.up.railway.app/" target="_blank" rel="noopener">인블루의 로그 보관소</a></div>
       <div class="row"><span class="k" data-i18n="foot_home"></span><a href="https://kuroicode-beep.github.io/svil-homepage/" target="_blank" rel="noopener">SVIL</a></div>
+      <div class="row"><span class="k" data-i18n="foot_youtube"></span><a href="https://www.youtube.com/@SVIL-LAB" target="_blank" rel="noopener">@SVIL-LAB</a></div>
+      <div class="row"><span class="k" data-i18n="foot_github"></span><a href="https://github.com/kuroicode-beep" target="_blank" rel="noopener">kuroicode-beep</a></div>
     </div>
-    <p><span data-i18n="footer_by"></span><span class="ver" id="ver">v0.17.0</span></p>
+    <p class="copyright">© <span id="svil-year">2026</span> SVIL Singularity Visual Intelligence Lab.<span class="ver" id="ver">v0.17.0</span></p>
   </div>
 </footer>
 
@@ -625,8 +632,9 @@ const I18N = {
     final_cta: "Continue with Google",
     final_note: "Approval may take a while after signing up.",
 
+    svil_mission: "Singularity Visual Intelligence Lab: research and development to improve AI accessibility for people with low vision.",
     foot_contact: "Contact", foot_blog: "Blog", foot_home: "Homepage",
-    footer_by: "Built by SVIL — Singularity Visual Intelligence Lab."
+    foot_youtube: "YouTube", foot_github: "GitHub"
   },
 
   ko: {
@@ -731,8 +739,9 @@ const I18N = {
     final_cta: "Google로 시작하기",
     final_note: "가입 후 승인까지 시간이 걸릴 수 있습니다.",
 
+    svil_mission: "Singularity Visual Intelligence Lab: 저시력 시각장애인의 AI 접근성을 높이기 위한 연구와 개발을 합니다.",
     foot_contact: "협업 문의", foot_blog: "블로그", foot_home: "홈페이지",
-    footer_by: "SVIL — Singularity Visual Intelligence Lab 제작."
+    foot_youtube: "유튜브", foot_github: "GitHub"
   },
 
   ja: {
@@ -837,8 +846,9 @@ const I18N = {
     final_cta: "Googleではじめる",
     final_note: "登録後、承認まで時間がかかることがあります。",
 
+    svil_mission: "Singularity Visual Intelligence Lab: ロービジョンの方のAIアクセシビリティを高めるための研究と開発をしています。",
     foot_contact: "お問い合わせ", foot_blog: "ブログ", foot_home: "ホームページ",
-    footer_by: "SVIL — Singularity Visual Intelligence Lab 制作。"
+    foot_youtube: "YouTube", foot_github: "GitHub"
   },
 
   zh: {
@@ -943,8 +953,9 @@ const I18N = {
     final_cta: "使用 Google 开始",
     final_note: "注册后审核可能需要一些时间。",
 
+    svil_mission: "Singularity Visual Intelligence Lab：致力于提升低视力人群 AI 无障碍体验的研究与开发。",
     foot_contact: "合作咨询", foot_blog: "博客", foot_home: "主页",
-    footer_by: "由 SVIL — Singularity Visual Intelligence Lab 制作。"
+    foot_youtube: "YouTube", foot_github: "GitHub"
   },
 
   vi: {
@@ -1049,8 +1060,9 @@ const I18N = {
     final_cta: "Tiếp tục với Google",
     final_note: "Sau khi đăng ký, việc phê duyệt có thể mất một chút thời gian.",
 
+    svil_mission: "Singularity Visual Intelligence Lab: nghiên cứu và phát triển nhằm cải thiện khả năng tiếp cận AI cho người thị lực kém.",
     foot_contact: "Liên hệ", foot_blog: "Blog", foot_home: "Trang chủ",
-    footer_by: "Thực hiện bởi SVIL — Singularity Visual Intelligence Lab."
+    foot_youtube: "YouTube", foot_github: "GitHub"
   }
 };
 
@@ -1158,6 +1170,9 @@ document.querySelectorAll('.shot').forEach(function (img) {
   if (img.complete) revealShot(img);
   else img.addEventListener('load', function () { revealShot(img); });
 });
+
+// 저작권 연도는 렌더 시점 기준. HTML의 값은 JS 비활성 환경용 폴백이다.
+document.getElementById('svil-year').textContent = new Date().getFullYear();
 
 os = detectOs();
 tabs.forEach(function (x) { x.setAttribute('aria-selected', String(x.dataset.os === os)); });
