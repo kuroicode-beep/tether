@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-03-update-v0-17-0-landing-page',
+    date: '2026.08.03',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 소개 페이지 신설.`,
+    detail: 'tether-d1dab.web.app/landing 에 앱 소개 페이지를 만들었습니다. 기능별 설명, 가입부터 승인 대기까지의 절차, 기기별 알림 설정 안내가 들어 있고 한국어·영어·일본어·중국어·베트남어를 지원합니다. 기능 설명에는 실제 화면 사진이 들어갈 자리를 마련해뒀습니다.',
+  },
+  {
     id: '2026-08-02-update-v0-16-0-install-guide',
     date: '2026.08.02',
     type: 'update',

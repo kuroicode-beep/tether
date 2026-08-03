@@ -86,6 +86,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wav}'],
+        // /landing/ 은 앱이 아니라 독립 정적 페이지다.
+        // navigateFallback이 가로채 앱 index.html을 돌려주면 랜딩이 뜨지 않는다.
+        navigateFallbackDenylist: [/^\/landing\//],
         // FCM background handler를 PWA SW(/sw.js)에 통합 — 별도 scope 충돌 방지 (#22 Codex)
         importScripts: ['firebase-messaging-sw.js'],
       }
