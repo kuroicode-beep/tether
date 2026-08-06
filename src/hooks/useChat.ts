@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   collection, addDoc, onSnapshot,
-  query, orderBy, limit, startAfter,
+  query, orderBy, limit, where,
   Timestamp, serverTimestamp, doc, updateDoc, deleteDoc, arrayUnion, getDocs, writeBatch, setDoc,
-  QueryDocumentSnapshot, DocumentData,
+  DocumentData,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
@@ -115,7 +115,8 @@ export function useChat(coupleId: string | null, myUid: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
-  const lastDocRef = useRef<QueryDocumentSnapshot | null>(null)
+  // 오늘 0시 기준 — 처음엔 오늘 메시지만 구독하고, 이전은 버튼으로 불러온다
+  const todayStartRef = useRef<number>(0)
   const olderRef = useRef<ChatMessage[]>([])
   const liveRef = useRef<ChatMessage[]>([])
   const pendingRef = useRef(new Map<string, ChatMessage>())
@@ -133,7 +134,6 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     if (!coupleId) {
       setMessages([])
       setHasMore(false)
-      lastDocRef.current = null
       olderRef.current = []
       liveRef.current = []
       pendingRef.current.clear()
@@ -144,19 +144,25 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     liveRef.current = []
     pendingRef.current.clear()
 
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    todayStartRef.current = todayStart.getTime()
+
+    const messagesRef = collection(db, 'couples', coupleId, 'messages')
+
+    // 오늘 보낸 메시지만 실시간 구독한다 (이전 내용은 loadMore로 가져온다)
     const q = query(
-      collection(db, 'couples', coupleId, 'messages'),
-      orderBy('createdAt', 'desc'),
-      limit(PAGE_SIZE),
+      messagesRef,
+      where('createdAt', '>=', Timestamp.fromDate(todayStart)),
+      orderBy('createdAt', 'asc'),
     )
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const live = snap.docs.map((d) => toMessage(d.data(), d.id)).reverse()
+        // serverTimestamp가 아직 확정되지 않은 내 메시지는 추정치로 정렬한다
+        const live = snap.docs.map((d) => toMessage(d.data({ serverTimestamps: 'estimate' }), d.id))
         liveRef.current = live
-        lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null
-        setHasMore(snap.docs.length === PAGE_SIZE)
         reconcilePending(pendingRef.current, live, chatMatchesPending, (s) => s.clientId)
         applyMerge()
       },
@@ -166,17 +172,32 @@ export function useChat(coupleId: string | null, myUid: string | null) {
       },
     )
 
+    // 오늘 이전 메시지가 있는지 확인해 "이전 내용 보기" 버튼 노출 여부를 정한다
+    getDocs(query(
+      messagesRef,
+      where('createdAt', '<', Timestamp.fromDate(todayStart)),
+      orderBy('createdAt', 'desc'),
+      limit(1),
+    ))
+      .then((snap) => setHasMore(!snap.empty))
+      .catch((err) => {
+        console.warn('[useChat] hasMore check failed', err)
+        setHasMore(false)
+      })
+
     return () => unsub()
   }, [coupleId, applyMerge])
 
   const loadMore = useCallback(async () => {
-    if (!coupleId || !lastDocRef.current || !hasMore || loading) return
+    if (!coupleId || !hasMore || loading) return
     setLoading(true)
     try {
+      // 이미 불러온 가장 오래된 메시지(없으면 오늘 0시)보다 이전 것을 가져온다
+      const boundary = olderRef.current[0]?.createdAt ?? todayStartRef.current
       const q = query(
         collection(db, 'couples', coupleId, 'messages'),
+        where('createdAt', '<', Timestamp.fromMillis(boundary)),
         orderBy('createdAt', 'desc'),
-        startAfter(lastDocRef.current),
         limit(PAGE_SIZE),
       )
       const snap = await getDocs(q)
@@ -186,7 +207,6 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         ...liveRef.current.map((m) => m.id),
       ])
       olderRef.current = [...older.filter((m) => !existingIds.has(m.id)), ...olderRef.current]
-      lastDocRef.current = snap.docs[snap.docs.length - 1] ?? null
       setHasMore(snap.docs.length === PAGE_SIZE)
       applyMerge()
     } catch (err) {
@@ -244,13 +264,13 @@ export function useChat(coupleId: string | null, myUid: string | null) {
     applyMerge()
 
     try {
-      const createdAt = Timestamp.now()
+      // 기기 시계 차이로 순서가 꼬이지 않도록 서버 시간을 쓴다
       await addDoc(collection(db, 'couples', coupleId, 'messages'), {
         clientId,
         senderUid: myUid,
         type: 'text',
         text: trimmed,
-        createdAt,
+        createdAt: serverTimestamp(),
         readBy: [myUid],
         ...cleanMeta(meta),
       })
@@ -288,14 +308,13 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         contentType: file.type || 'image/jpeg',
       })
       const imageUrl = await getDownloadURL(storageRef)
-      const createdAt = Timestamp.now()
       await addDoc(collection(db, 'couples', coupleId, 'messages'), {
         clientId,
         senderUid: myUid,
         type: 'image',
         imageUrl,
         ...(trimmedCaption ? { text: trimmedCaption } : {}),
-        createdAt,
+        createdAt: serverTimestamp(),
         readBy: [myUid],
       })
     } catch (err) {
@@ -342,7 +361,6 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         },
       })
       const fileUrl = await getDownloadURL(storageRef)
-      const createdAt = Timestamp.now()
       const messageRef = await addDoc(collection(db, 'couples', coupleId, 'messages'), {
         clientId,
         senderUid: myUid,
@@ -352,7 +370,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         fileType: contentType,
         fileSize: file.size,
         ...(trimmedCaption ? { text: trimmedCaption } : {}),
-        createdAt,
+        createdAt: serverTimestamp(),
         readBy: [myUid],
       })
       await setDoc(doc(db, 'couples', coupleId, 'files', messageRef.id), {
@@ -363,7 +381,7 @@ export function useChat(coupleId: string | null, myUid: string | null) {
         fileName: file.name || 'file',
         fileType: contentType,
         fileSize: file.size,
-        createdAt,
+        createdAt: serverTimestamp(),
       })
     } catch (err) {
       console.warn('[useChat] sendFile failed', err)

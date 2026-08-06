@@ -336,18 +336,18 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     requestAnimationFrame(() => scrollToBottom('auto'))
   }, [keyboardOpen, scrollToBottom])
 
-  // 사용자가 직접 맨 위에 닿았을 때만 이전 메시지를 불러온다 (iOS 자동 튐 방지)
-  const handleListScroll = useCallback(() => {
+  // "이전 내용 보기" 버튼 — 이전 메시지를 불러오고 보던 위치를 유지한다
+  const handleLoadPrevious = useCallback(() => {
     const list = listRef.current
-    if (!list || !initialScrollDoneRef.current || inputFocusedRef.current) return
-    if (!hasMore || loading || list.scrollTop > 24) return
+    if (!list || !hasMore || loading) return
 
     const prevHeight = list.scrollHeight
+    const prevTop = list.scrollTop
     void loadMore().then(() => {
       const nextList = listRef.current
       if (!nextList) return
       const added = nextList.scrollHeight - prevHeight
-      nextList.scrollTop = Math.max(added, 0)
+      nextList.scrollTop = prevTop + Math.max(added, 0)
     })
   }, [hasMore, loading, loadMore])
 
@@ -489,10 +489,21 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         ref={listRef}
         className="chat-message-list flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '12px' }}
-        onScroll={handleListScroll}
       >
-        <div ref={topRef} className="h-1 shrink-0">
-          {loading && (
+        <div ref={topRef} className="shrink-0">
+          {hasMore && (
+            <div className="flex justify-center pb-sm">
+              <button
+                type="button"
+                className="chat-load-previous"
+                onClick={handleLoadPrevious}
+                disabled={loading}
+              >
+                {loading ? '불러오는 중…' : '이전 내용 보기'}
+              </button>
+            </div>
+          )}
+          {!hasMore && loading && (
             <div className="flex justify-center py-sm">
               <span className="material-symbols-outlined text-outline-variant animate-spin text-sm">
                 progress_activity

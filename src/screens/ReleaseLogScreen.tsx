@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-update-v0-18-0-chat-order-today',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 순서 정리와 이전 내용 보기.`,
+    detail: '메시지 시간을 서버 기준으로 통일해 기기 시계가 달라도 입력한 순서대로 표시됩니다. 채팅방에 들어가면 오늘 대화만 먼저 보이고, 맨 위의 "이전 내용 보기" 버튼을 누르면 지난 대화를 이어서 불러옵니다.',
+  },
+  {
     id: '2026-08-03-update-v0-17-0-landing-page',
     date: '2026.08.03',
     type: 'update',
