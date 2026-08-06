@@ -7,6 +7,8 @@ interface ChatInputProps {
   autoFocus?: boolean
   incomingFiles?: { id: number; files: File[] } | null
   onFocusChange?: (focused: boolean) => void
+  onTyping?: () => void
+  onTypingStop?: () => void
 }
 
 interface FilePreview {
@@ -24,7 +26,9 @@ function formatFileSize(size: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomingFiles, onFocusChange }: ChatInputProps) {
+export function ChatInput({
+  onSendText, onSendFile, disabled, autoFocus, incomingFiles, onFocusChange, onTyping, onTypingStop,
+}: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const [fileQueue, setFileQueue] = useState<File[]>([])
@@ -85,6 +89,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
     const trimmed = current.trim()
     if (!trimmed || disabled || composingRef.current) return
     onSendText(trimmed)
+    onTypingStop?.()
     setText('')
     if (editorRef.current) {
       editorRef.current.value = ''
@@ -105,6 +110,9 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
     const next = e.currentTarget.value
     setText(next.replace(/\u00a0/g, ' '))
     adjustHeight()
+    // \uc785\ub825 \uc911 \uc0c1\ud0dc \uc804\ub2ec \u2014 \ub0b4\uc6a9\uc744 \ub2e4 \uc9c0\uc6b0\uba74 \uba48\ucd98 \uac83\uc73c\ub85c \uc54c\ub9b0\ub2e4
+    if (next.trim()) onTyping?.()
+    else onTypingStop?.()
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {

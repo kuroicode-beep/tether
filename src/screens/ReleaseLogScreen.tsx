@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-update-v0-19-0-typing-indicator',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 상대방 입력 중 표시.`,
+    detail: '상대가 채팅을 치기 시작하면 입력창 위에 "OO 입력 중"이 점 애니메이션과 함께 떠요. 입력을 멈추거나 지우거나 전송하면 사라집니다. 6초 안에 갱신이 없으면 자동으로 꺼져요.',
+  },
+  {
     id: '2026-08-07-hotfix-v0-18-2-chat-input-korean-ime',
     date: '2026.08.07',
     type: 'hotfix',

@@ -12,6 +12,7 @@ import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useRelayNovel } from '../hooks/useRelayNovel'
+import { useTypingStatus } from '../hooks/useTypingStatus'
 import {
   formatBackground, parseRelayCommand, RELAY_HELP_TEXT, RELAY_QUICK_HINT,
 } from '../lib/relayNovel'
@@ -52,6 +53,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   )
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const relay = useRelayNovel(coupleId, uid)
+  const { partnerTyping, notifyTyping, stopTyping } = useTypingStatus(coupleId, uid, partnerUid)
   const keyboardOpen = useKeyboardInset()
   const myName = myNickname || '나'
 
@@ -593,13 +595,23 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         <div ref={bottomRef} className="h-1" />
       </main>
 
-      <ChatInput
-        onSendText={handleSendText}
-        onSendFile={sendFile}
-        autoFocus
-        incomingFiles={incomingFiles}
-        onFocusChange={(focused) => { inputFocusedRef.current = focused }}
-      />
+      <div className="chat-input-wrap">
+        {partnerTyping && (
+          <div className="typing-indicator" role="status" aria-live="polite">
+            <span className="typing-indicator-text">{partnerName} 입력 중</span>
+            <span className="typing-dots" aria-hidden="true"><i /><i /><i /></span>
+          </div>
+        )}
+        <ChatInput
+          onSendText={handleSendText}
+          onSendFile={sendFile}
+          autoFocus
+          incomingFiles={incomingFiles}
+          onFocusChange={(focused) => { inputFocusedRef.current = focused }}
+          onTyping={notifyTyping}
+          onTypingStop={stopTyping}
+        />
+      </div>
 
       {viewerUrl && (
         <ImageViewer
