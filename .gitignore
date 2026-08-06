@@ -11,6 +11,9 @@ dist/
 dist-ssr/
 functions/lib/
 
+# Firebase deploy cache
+.firebase/
+
 # Environment
 .env
 .env.local
