@@ -2,10 +2,12 @@
 // Firebase 초기화 + Auth Persistence 명시 설정
 import { initializeApp } from 'firebase/app'
 import {
+  clearIndexedDbPersistence,
   getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  terminate,
 } from 'firebase/firestore'
 import {
   browserLocalPersistence,
@@ -72,6 +74,29 @@ function createFirestoreDb() {
 }
 
 export const db = createFirestoreDb()
+
+// 2026-08-07 채팅 초기화로 서버에서 대량 삭제된 문서가 로컬 IndexedDB 캐시에는
+// 그대로 남아, 쿼리마다 메인 스레드에서 유령 문서 수만 건을 스캔하며 느려진다.
+// 앱 시작 시 1회만 캐시를 비우고 새로고침해 캐시를 새로 채운다.
+const CACHE_PURGE_KEY = 'tether:fscache-purged:2026-08-07'
+
+// 캐시를 정리했으면 true를 반환한다 (호출부는 렌더를 멈추고 reload를 기다린다)
+export async function purgeStaleFirestoreCacheOnce(): Promise<boolean> {
+  try {
+    if (localStorage.getItem(CACHE_PURGE_KEY)) return false
+    // 실패해도 재시도 루프에 빠지지 않도록 플래그를 먼저 기록한다
+    localStorage.setItem(CACHE_PURGE_KEY, String(Date.now()))
+    await terminate(db)
+    await clearIndexedDbPersistence(db)
+    window.location.reload()
+    return true
+  } catch (err) {
+    // 다른 탭이 캐시를 점유 중이면 정리를 건너뛰고 그대로 진행한다
+    console.warn('[firebase] stale cache purge skipped', err)
+    return false
+  }
+}
+
 export const storage = getStorage(app)
 
 // Android Chrome / iOS Safari의 cross-site storage 제한 환경에서도 redirect 토큰이

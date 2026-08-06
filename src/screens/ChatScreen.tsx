@@ -78,6 +78,12 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
+  // 메시지 id → 목록 인덱스 (렌더마다 findIndex로 전체를 훑지 않도록)
+  const messageIndexById = useMemo(() => {
+    const map = new Map<string, number>()
+    messages.forEach((m, i) => map.set(m.id, i))
+    return map
+  }, [messages])
 
   // 릴레이소설 — 시스템 안내는 진행 상황을 알리는 메시지로 남긴다
   const postRelaySystem = useCallback((text: string, novelId?: string) => {
@@ -373,7 +379,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   // 메시지 사이에 날짜 디바이더가 필요한지 판단
   const needsDivider = useCallback(
     (msg: ChatMessage, index: number): boolean => {
-      if (!msg.createdAt) return false
+      if (!msg.createdAt || index < 0) return false
       if (index === 0) return true
       const prev = messages[index - 1]
       if (!prev.createdAt) return false
@@ -537,7 +543,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
               className={`message-group${isNewSender ? ' new-sender' : ''}`}
             >
               {group.map((msg, msgIndex) => {
-                const flatIndex = messages.findIndex((m) => m.id === msg.id)
+                const flatIndex = messageIndexById.get(msg.id) ?? -1
                 const isMe = msg.senderUid === uid
                 const showSenderName = msgIndex === 0 && !isMe
                 const showTime = msgIndex === group.length - 1

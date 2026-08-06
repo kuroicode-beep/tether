@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-hotfix-v0-18-1-chat-slow-cache',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅창이 느려지던 문제.`,
+    detail: '채팅 초기화로 서버에서 지운 옛 메시지가 기기 안 캐시에는 그대로 남아, 채팅을 열 때마다 유령 데이터 수만 건을 뒤지느라 느려졌습니다. 업데이트 후 처음 열 때 캐시를 한 번 비우고 자동으로 새로고침합니다. 메시지 목록 그리기도 함께 가볍게 손봤습니다.',
+  },
+  {
     id: '2026-08-07-update-v0-18-0-chat-order-today',
     date: '2026.08.07',
     type: 'update',
