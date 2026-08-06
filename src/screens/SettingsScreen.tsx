@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useTheme } from '../hooks/useTheme'
+import { useTheme, type Theme } from '../hooks/useTheme'
 import { FONT_FAMILY_OPTIONS, FONT_SCALE_OPTIONS, type FontScale, useFontScale } from '../hooks/useFontScale'
 import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { useBiometric } from '../hooks/useBiometric'
@@ -34,6 +34,13 @@ const PREVIEW_SIZES: Record<FontScale, string> = {
   M: '16px',
   L: '20px',
 }
+
+// 테마 선택지 — 색상만으로 구분하지 않도록 텍스트 라벨을 함께 표시한다
+const THEME_OPTIONS: Array<{ id: Theme; label: string; swatch: string; checkColor: string }> = [
+  { id: 'sage', label: '기본', swatch: '#4A7B5F', checkColor: '#FFFFFF' },
+  { id: 'dark', label: '다크', swatch: '#121714', checkColor: '#7FBF98' },
+  { id: 'high-contrast', label: '고대비', swatch: '#0D0D0D', checkColor: '#FFE600' },
+]
 
 // ── 연결 해제 확인 다이얼로그 ────────────────────────────────────────────────
 interface ConfirmDialogProps {
@@ -101,6 +108,8 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
 
   const [bioEnabled, setBioEnabled] = useState(() => bio.isRegistered())
   const [bioLoading, setBioLoading] = useState(false)
+  // 로컬 캐시로 먼저 그리고, 서버 값이 오면 그것으로 맞춘다.
+  // 서버가 원본이어야 토글이 실제 동작과 일치한다.
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(() => push.loadSettings())
   const [pushGranted, setPushGranted] = useState(() => push.isGranted())
   const [pushResyncing, setPushResyncing] = useState(false)
@@ -226,6 +235,15 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
 
   useEffect(() => {
     setPushGranted(push.isGranted())
+  }, [push])
+
+  // 서버에 저장된 알림 설정을 읽어 토글을 실제 상태에 맞춘다
+  useEffect(() => {
+    let cancelled = false
+    void push.syncSettingsFromServer().then((settings) => {
+      if (!cancelled) setNotifSettings(settings)
+    })
+    return () => { cancelled = true }
   }, [push])
 
   const handleGoogleLink = async () => {
@@ -480,42 +498,46 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-card)' }}>
             {/* Theme */}
-            <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
-              <div className="flex items-center gap-md">
+            <div className="p-md border-b border-outline-variant/20">
+              <div className="flex items-center gap-md mb-md">
                 <span className="material-symbols-outlined text-secondary">palette</span>
-                <span className="font-body-md text-body-md">Theme Selection</span>
+                <span className="font-body-md text-body-md">테마 선택</span>
               </div>
               <div className="flex gap-sm">
-                <button
-                  onClick={() => setTheme('sage')}
-                  className={`w-10 h-10 rounded-full border-2 bg-[#4A7B5F] flex items-center justify-center transition-transform active:scale-90 ${
-                    theme === 'sage' ? 'border-primary' : 'border-outline-variant'
-                  }`}
-                >
-                  {theme === 'sage' && (
-                    <span
-                      className="material-symbols-outlined text-white text-sm"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
+                {THEME_OPTIONS.map((option) => {
+                  const selected = theme === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTheme(option.id)}
+                      aria-pressed={selected}
+                      className={`flex-1 flex flex-col items-center gap-xs rounded-xl border-2 py-sm px-xs transition-transform active:scale-95 ${
+                        selected ? 'border-primary' : 'border-outline-variant/50'
+                      }`}
                     >
-                      check
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setTheme('high-contrast')}
-                  className={`w-10 h-10 rounded-full border-2 bg-[#1f1b13] transition-transform active:scale-90 ${
-                    theme === 'high-contrast' ? 'border-primary' : 'border-outline-variant'
-                  }`}
-                >
-                  {theme === 'high-contrast' && (
-                    <span
-                      className="material-symbols-outlined text-white text-sm"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      check
-                    </span>
-                  )}
-                </button>
+                      <span
+                        className="w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ background: option.swatch, border: '1px solid rgba(128,128,128,0.35)' }}
+                      >
+                        {selected && (
+                          <span
+                            className="material-symbols-outlined text-sm"
+                            style={{ fontVariationSettings: "'FILL' 1", color: option.checkColor }}
+                          >
+                            check
+                          </span>
+                        )}
+                      </span>
+                      <span className="font-label-sm text-label-sm text-on-surface">
+                        {option.label}
+                      </span>
+                      <span className="font-label-sm text-label-sm text-on-surface-variant">
+                        {selected ? '선택됨' : ' '}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

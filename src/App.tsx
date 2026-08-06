@@ -23,10 +23,16 @@ import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { ThemeMusicPlayer, type ThemeTrack } from './components/ThemeMusicPlayer'
 import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
 import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
+import { RelayNovelScreen } from './screens/RelayNovelScreen'
 import { AdminScreen } from './screens/AdminScreen'
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
+import { consumeSidecarUnlockToken, pollSidecarUnlockRequest } from './lib/sidecarUnlock'
+import { isPinFreeEmail } from './lib/coupleAuth'
+
+// 잠금 화면에 있는 동안 사이드카 단축키 요청을 확인하는 주기
+const SIDECAR_UNLOCK_POLL_MS = 1000
 import {
   playNotificationSound,
   screenFromNotificationUrl,
@@ -43,7 +49,7 @@ import { db } from './lib/firebase'
 
 type Screen =
   | 'lock' | 'onboarding' | 'home' | 'chat' | 'diary' | 'contents'
-  | 'settings' | 'photo' | 'library' | 'listenTogether' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog'
+  | 'settings' | 'photo' | 'library' | 'listenTogether' | 'links' | 'dateRecipe' | 'history' | 'anniversary' | 'statusHistory' | 'releaseLog' | 'relayNovel'
   | 'admin'
 
 const NAVIGATION_SCREENS = new Set<string>([
@@ -55,6 +61,7 @@ const NAVIGATION_SCREENS = new Set<string>([
   'photo',
   'library',
   'listenTogether',
+  'relayNovel',
   'links',
   'dateRecipe',
   'history',
@@ -128,8 +135,9 @@ function AppContent() {
   const [playerState, setPlayerState] = useState<CachedPlayerState>(() => loadCachedPlayerState())
   const [playerRefreshKey, setPlayerRefreshKey] = useState(0)
   const push = usePushNotification(session.uid)
-  const { loadSettings, onForegroundMessage, syncToken } = push
+  const { loadSettings, onForegroundMessage, syncToken, syncSettingsFromServer } = push
   const pendingNavRef = useRef<string | null>(null)
+  const sidecarUnlockTriedRef = useRef(false)
   const screenRef = useRef<Screen>('lock')
   const recentNotificationIdsRef = useRef<Map<string, number>>(new Map())
   screenRef.current = screen
@@ -157,6 +165,13 @@ function AppContent() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     void syncToken()
   }, [session.status, session.uid, unlocked, syncToken])
+
+  // 알림 설정의 원본은 서버다. 기기별 로컬 캐시가 서버 값을 덮어쓰지 않도록
+  // 접속할 때마다 서버 값을 내려받아 캐시를 맞춘다.
+  useEffect(() => {
+    if (session.status !== 'connected' || !session.uid) return
+    void syncSettingsFromServer()
+  }, [session.status, session.uid, syncSettingsFromServer])
 
   const navigate = useCallback((target: string) => {
     if (target === 'more') setScreen('settings')
@@ -356,7 +371,7 @@ function AppContent() {
     connect(session.connection)
   }, [session.status, session.connection, connect])
 
-  const handleUnlocked = () => {
+  const handleUnlocked = useCallback(() => {
     setUnlocked(true)
     const pending = pendingNavRef.current
     if (pending) {
@@ -370,7 +385,62 @@ function AppContent() {
       return
     }
     setScreen(session.status === 'connected' ? 'home' : 'onboarding')
-  }
+  }, [session.status, navigate])
+
+  // 지정 계정으로 로그인한 경우 PIN 잠금을 생략한다.
+  // Google 로그인 + 관리자 승인을 이미 통과한 상태이므로 그것을 인증으로 삼는다.
+  useEffect(() => {
+    if (session.status !== 'connected' || unlocked) return
+    if (!isPinFreeEmail(session.user?.email)) return
+    handleUnlocked()
+  }, [session.status, session.user, unlocked, handleUnlocked])
+
+  // Windows 사이드카 단축키로 열린 경우에만 PIN을 건너뛴다.
+  // 토큰은 로컬 사이드카(127.0.0.1)에서만 검증되므로 다른 기기에서는 통하지 않는다.
+  //
+  // 두 경로가 필요하다:
+  //  1) 창을 새로 연 경우 — 주소의 unlock 토큰을 검증한다
+  //  2) 이미 열린 창을 포커스한 경우 — 주소가 새로 오지 않으므로,
+  //     잠금 화면에 있는 동안 사이드카에 "방금 단축키가 눌렸는지"를 물어본다
+  useEffect(() => {
+    if (session.status !== 'connected' || unlocked) return
+
+    let cancelled = false
+    let timer = 0
+
+    const grant = () => {
+      if (cancelled) return
+      handleUnlocked()
+    }
+
+    const poll = () => {
+      void pollSidecarUnlockRequest().then((granted) => {
+        if (cancelled) return
+        if (granted) {
+          pendingNavRef.current = 'chat'
+          grant()
+          return
+        }
+        timer = window.setTimeout(poll, SIDECAR_UNLOCK_POLL_MS)
+      })
+    }
+
+    if (!sidecarUnlockTriedRef.current) {
+      sidecarUnlockTriedRef.current = true
+      void consumeSidecarUnlockToken().then((granted) => {
+        if (cancelled) return
+        if (granted) grant()
+        else poll()
+      })
+    } else {
+      poll()
+    }
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [session.status, unlocked, handleUnlocked])
 
   const handleChangePin = () => {
     setUnlocked(false)
@@ -413,8 +483,17 @@ function AppContent() {
     )
   }
 
+  // PIN 생략 계정은 잠금 화면이 한 프레임 스쳐 보이지 않도록 렌더 단계에서도 건너뛴다
+  const pinFree = isPinFreeEmail(session.user?.email)
+
   if (!unlocked || screen === 'lock') {
-    return <LockScreen onUnlocked={handleUnlocked} />
+    if (!pinFree) return <LockScreen onUnlocked={handleUnlocked} />
+    // 잠금은 생략하되, 효과가 첫 화면을 정하기 전까지 빈 화면이 보이지 않게 한다
+    return (
+      <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)' }}>
+        <p className="font-body-md text-body-md text-on-surface-variant">들어가는 중이에요...</p>
+      </div>
+    )
   }
 
   const toHome = () => setScreen('home')
@@ -442,6 +521,7 @@ function AppContent() {
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
         {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
         {screen === 'chat'        && <ChatScreen onBack={toHome} onSetThemeTrack={handleSetThemeTrack} />}
+        {screen === 'relayNovel'  && <RelayNovelScreen onBack={toHome} />}
         {screen === 'diary'       && <DiaryScreen onNavigate={navigate} />}
         {screen === 'contents'    && <ContentsScreen onNavigate={navigate} />}
         {screen === 'photo'       && <PhotoAlbum onBack={toHome} />}

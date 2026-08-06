@@ -32,6 +32,15 @@
         ]
       },
       {
+        "source": "/landing{,/**}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(js|css|woff2|woff|ttf|eot|otf)",
         "headers": [
           {

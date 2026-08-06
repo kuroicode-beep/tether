@@ -5,10 +5,13 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
-const { execFile, exec } = require('child_process')
+const { execFile, exec, spawn } = require('child_process')
 
-const APP_VERSION = '0.2.0'
+const APP_VERSION = '0.3.2'
 const VERSION_HISTORY = [
+  { version: '0.3.2', date: '2026-07-26', summary: '이미 열린 잠금 화면도 단축키로 해제, 단축키로 여는 채팅창은 다크모드' },
+  { version: '0.3.1', date: '2026-07-26', summary: '단축키로 열 때 PIN 건너뛰기(1회용 로컬 토큰), 포트 기반 단일 인스턴스 판정' },
+  { version: '0.3.0', date: '2026-07-26', summary: '전역 단축키(기본 Win+Alt+Q)로 채팅 화면 바로 열기' },
   { version: '0.2.0', date: '2026-07-17', summary: '로컬 ping 서버(웹앱 중복 알림 방지 연동), Tether 창 포커스 시 알림 억제' },
   { version: '0.1.0', date: '2026-07-17', summary: '최초 릴리스 — 메시지/상태/일기 실시간 알림, 커스텀 사운드, 알림 설정 연동' },
 ]
@@ -26,26 +29,23 @@ if (!fs.existsSync(CONFIG_PATH)) {
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
 const { myUid, coupleId, appUrl, projectId } = config
 
+// 채팅 화면을 여는 전역 단축키 (config.hotkey로 변경, false면 비활성화)
+const DEFAULT_HOTKEY = 'Win+Alt+Q'
+const hotkeyConfig = config.hotkey === undefined ? DEFAULT_HOTKEY : config.hotkey
+
 // coupleId = 정렬된 두 uid를 '_'로 연결한 값 (uid에는 '_'가 없다)
 const partnerUid = coupleId.split('_').find((u) => u !== myUid)
 
-// ─── 단일 인스턴스 잠금 (중복 실행 시 중복 알림 방지) ─────────────────────
+// ─── 단일 인스턴스 판정 ───────────────────────────────────────────────────
+// PID 파일로는 판정하지 않는다. 프로세스가 비정상 종료되면 lock이 남고,
+// Windows가 그 PID를 다른 프로세스에 재사용하면 살아있는 것으로 오판해
+// 사이드카가 영영 뜨지 않는다. 실제 판정은 PING_PORT 바인딩으로 한다.
+// lock 파일은 진단용 기록으로만 남긴다.
 
 const LOCK_PATH = path.join(__dirname, 'sidecar.lock')
-function acquireLock() {
-  try {
-    const existingPid = Number(fs.readFileSync(LOCK_PATH, 'utf8'))
-    if (existingPid) {
-      try {
-        process.kill(existingPid, 0) // 살아있는지 확인만
-        console.error(`[Sidecar] 이미 실행 중입니다 (PID ${existingPid}). 종료합니다.`)
-        process.exit(0)
-      } catch { /* 죽은 프로세스의 잔여 lock — 무시하고 진행 */ }
-    }
-  } catch { /* lock 파일 없음 — 정상 */ }
-  fs.writeFileSync(LOCK_PATH, String(process.pid))
+function writeLockFile() {
+  try { fs.writeFileSync(LOCK_PATH, String(process.pid)) } catch { /* ignore */ }
 }
-acquireLock()
 
 // ─── 로그 (개인정보 본문은 기록하지 않는다) ──────────────────────────────
 
@@ -130,11 +130,60 @@ function playSound() {
   ], () => { /* fire-and-forget */ })
 }
 
+// ─── 단축키 잠금 해제 토큰 ────────────────────────────────────────────────
+// 단축키로 채팅을 열 때 PIN을 건너뛰기 위한 1회용 토큰.
+// 이 PC에서 단축키를 실제로 누른 경우에만 발급되고, 검증은 127.0.0.1로만
+// 가능하므로 다른 기기에서는 URL을 알아도 잠금을 풀 수 없다.
+
+const crypto = require('crypto')
+
+const UNLOCK_TOKEN_TTL_MS = 30_000
+const unlockTokens = new Map() // token → 만료 시각
+
+// 만료된 토큰을 정리한다
+function pruneUnlockTokens() {
+  const now = Date.now()
+  for (const [token, expiresAt] of unlockTokens) {
+    if (expiresAt <= now) unlockTokens.delete(token)
+  }
+}
+
+// 30초간 유효한 1회용 토큰을 만든다
+function issueUnlockToken() {
+  pruneUnlockTokens()
+  const token = crypto.randomBytes(24).toString('hex')
+  unlockTokens.set(token, Date.now() + UNLOCK_TOKEN_TTL_MS)
+  return token
+}
+
+// 토큰을 검증하고 즉시 폐기한다 (재사용 불가)
+function consumeUnlockToken(token) {
+  pruneUnlockTokens()
+  if (!token || !unlockTokens.has(token)) return false
+  unlockTokens.delete(token)
+  return true
+}
+
+// 이미 열려 있는 창을 포커스한 경우 — 그 창은 URL을 새로 받지 않으므로
+// 잠금 해제 요청을 짧게 보관해두고, 잠금 화면에 있는 앱이 가져가게 한다.
+let pendingUnlockUntil = 0
+
+function markUnlockPending() {
+  pendingUnlockUntil = Date.now() + UNLOCK_TOKEN_TTL_MS
+}
+
+function consumeUnlockPending() {
+  if (Date.now() > pendingUnlockUntil) return false
+  pendingUnlockUntil = 0
+  return true
+}
+
 // ─── 로컬 ping 서버 (웹앱이 사이드카 감지 → 자기 FCM 토큰 해제) ───────────
 
 const http = require('http')
 
-function startPingServer() {
+// 포트 바인딩이 곧 단일 인스턴스 판정이다. 성공하면 onReady로 나머지를 시작한다.
+function startPingServer(onReady) {
   const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     // Chrome Private Network Access preflight (https 페이지 → localhost 요청 허용)
@@ -152,11 +201,37 @@ function startPingServer() {
       res.end(JSON.stringify({ ok: true, app: 'tether-sidecar', version: APP_VERSION }))
       return
     }
+    // 잠금 화면에 있는 앱이 "방금 단축키가 눌렸는지"를 가져간다
+    if (req.method === 'GET' && req.url === '/unlock-pending') {
+      const ok = consumeUnlockPending()
+      if (ok) log('unlock_pending_consumed', {})
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok }))
+      return
+    }
+    // 단축키로 발급한 토큰 검증 — 성공 시 앱이 PIN을 건너뛴다
+    if (req.method === 'GET' && req.url.startsWith('/unlock?')) {
+      const token = new URL(req.url, `http://127.0.0.1:${PING_PORT}`).searchParams.get('token')
+      const ok = consumeUnlockToken(token)
+      log('unlock_verify', { ok })
+      res.writeHead(ok ? 200 : 403, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok }))
+      return
+    }
     res.writeHead(404)
     res.end()
   })
-  server.on('error', (err) => log('ping_server_error', { message: err.message }))
-  server.listen(PING_PORT, '127.0.0.1', () => log('ping_server_up', { port: PING_PORT }))
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[Sidecar] 이미 실행 중입니다 (포트 ${PING_PORT} 사용 중). 종료합니다.`)
+      process.exit(0)
+    }
+    log('ping_server_error', { message: err.message })
+  })
+  server.listen(PING_PORT, '127.0.0.1', () => {
+    log('ping_server_up', { port: PING_PORT })
+    onReady()
+  })
 }
 
 // ─── 포커스 감지 (Tether 창이 앞에 있으면 알림 억제) ──────────────────────
@@ -222,6 +297,112 @@ async function showToast(title, body, screen) {
     },
   )
 }
+
+// ─── 전역 단축키 → 채팅 화면 열기 ─────────────────────────────────────────
+
+const HOTKEY_MODIFIERS = { alt: 1, ctrl: 2, control: 2, shift: 4, win: 8 }
+const MOD_NOREPEAT = 0x4000
+
+// "Win+Alt+Q" 형태를 RegisterHotKey 인자로 변환한다
+function parseHotkey(spec) {
+  const parts = String(spec).split('+').map((p) => p.trim()).filter(Boolean)
+  if (parts.length < 2) return null
+
+  const keyPart = parts[parts.length - 1]
+  const modifierParts = parts.slice(0, -1)
+
+  let modifiers = MOD_NOREPEAT
+  for (const part of modifierParts) {
+    const bit = HOTKEY_MODIFIERS[part.toLowerCase()]
+    if (!bit) return null
+    modifiers |= bit
+  }
+
+  // 영문 한 글자 또는 F1~F12만 지원한다
+  let vk = null
+  if (/^[A-Za-z0-9]$/.test(keyPart)) {
+    vk = keyPart.toUpperCase().charCodeAt(0)
+  } else if (/^F([1-9]|1[0-2])$/i.test(keyPart)) {
+    vk = 0x70 + Number(keyPart.slice(1)) - 1
+  }
+  if (vk === null) return null
+
+  return { modifiers, vk }
+}
+
+// 열려 있는 Tether 창을 앞으로 가져오고, 없으면 채팅 화면으로 새로 연다
+function openChat() {
+  const scriptPath = path.join(__dirname, 'focus-window.ps1')
+  execFile('powershell.exe', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+  ], { timeout: 5000 }, (err, stdout) => {
+    const focused = !err && String(stdout).includes('FOUND:1')
+    if (focused) {
+      // 창은 이미 떠 있으므로 URL을 새로 줄 수 없다.
+      // 잠금 화면이라면 앱이 이 요청을 가져가 스스로 잠금을 푼다.
+      markUnlockPending()
+      log('hotkey_focus_existing', {})
+      return
+    }
+    // 1회용 토큰을 붙여 열면 앱이 로컬 검증 후 PIN을 건너뛴다.
+    // theme=dark — 단축키로 여는 채팅창은 다크모드로 띄운다.
+    const token = issueUnlockToken()
+    exec(`start "" "${appUrl}/?screen=chat&unlock=${token}&theme=dark"`)
+    log('hotkey_open_new', {})
+  })
+}
+
+// PowerShell 리스너를 띄우고 HOTKEY 신호를 받는다 (네이티브 모듈 의존 없음)
+function startHotkeyListener() {
+  if (hotkeyConfig === false || hotkeyConfig === null || hotkeyConfig === '') {
+    log('hotkey_disabled', {})
+    return
+  }
+
+  const parsed = parseHotkey(hotkeyConfig)
+  if (!parsed) {
+    log('hotkey_parse_failed', { spec: String(hotkeyConfig) })
+    console.error(`[Sidecar] 단축키 형식을 읽을 수 없습니다: ${hotkeyConfig} (예: Win+Alt+Q)`)
+    return
+  }
+
+  const scriptPath = path.join(__dirname, 'hotkey.ps1')
+  const child = spawn('powershell.exe', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+    '-Modifiers', String(parsed.modifiers), '-Key', String(parsed.vk),
+  ], { windowsHide: true })
+
+  let buffer = ''
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk.toString()
+    const lines = buffer.split(/\r?\n/)
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      const signal = line.trim()
+      if (signal === 'HOTKEY') {
+        openChat()
+      } else if (signal === 'READY') {
+        log('hotkey_registered', { spec: hotkeyConfig })
+        console.log(`  단축키 ${hotkeyConfig} → 채팅 화면 열기`)
+      } else if (signal.startsWith('ERROR:register_failed')) {
+        log('hotkey_register_failed', { spec: hotkeyConfig, detail: signal })
+        console.error(`[Sidecar] 단축키 ${hotkeyConfig} 등록 실패 — 다른 프로그램이 사용 중일 수 있습니다.`)
+      }
+    }
+  })
+
+  child.on('error', (err) => log('hotkey_listener_error', { message: err.message }))
+  child.on('exit', (code) => {
+    log('hotkey_listener_exit', { code })
+    // 비정상 종료 시에만 재시작 (정상 종료 코드 0은 등록 실패 후 종료 등)
+    if (code !== 0 && !shuttingDown) setTimeout(startHotkeyListener, 5000)
+  })
+
+  hotkeyChild = child
+}
+
+let hotkeyChild = null
+let shuttingDown = false
 
 // ─── Firestore 리스너 ─────────────────────────────────────────────────────
 
@@ -303,14 +484,20 @@ log('sidecar_start', { version: APP_VERSION, partnerUid: `${partnerUid.slice(0, 
 console.log(`Tether Sidecar v${APP_VERSION} — 알림 감시 시작`)
 VERSION_HISTORY.forEach((v) => console.log(`  v${v.version} (${v.date}) ${v.summary}`))
 
-startPingServer()
-watchSettings()
-watchMessages()
-watchStatus()
-watchDiary()
+// 포트를 잡는 데 성공한 인스턴스만 실제 감시를 시작한다
+startPingServer(() => {
+  writeLockFile()
+  startHotkeyListener()
+  watchSettings()
+  watchMessages()
+  watchStatus()
+  watchDiary()
+})
 
 function cleanupAndExit() {
+  shuttingDown = true
   log('sidecar_stop', {})
+  try { hotkeyChild?.kill() } catch { /* ignore */ }
   try { fs.unlinkSync(LOCK_PATH) } catch { /* ignore */ }
   process.exit(0)
 }

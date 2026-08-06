@@ -224,6 +224,20 @@ service cloud.firestore {
                       && resource.data.senderUid == request.auth.uid;
       }
 
+      // Relay novels: both members co-write one story; only members read/write.
+      match /relayNovels/{novelId} {
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember()
+                      && request.resource.data.startedBy == request.auth.uid
+                      && request.resource.data.status == 'active';
+        // 턴 추가와 상태 변경만 허용한다 (작성자·시작 시각은 고정)
+        allow update: if isCoupleMember()
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['turns', 'turnCount', 'nextTurnUid', 'status',
+                                     'completedAt', 'title', 'background', 'resetVotes']);
+        allow delete: if false;
+      }
+
       // Files: durable library index copied from chat file messages.
       match /files/{fileId} {
         function validFileCreate() {

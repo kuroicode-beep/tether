@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
-  onSendFile: (file: File) => void
+  onSendFile: (file: File, caption?: string) => void
   disabled?: boolean
   autoFocus?: boolean
   incomingFiles?: { id: number; files: File[] } | null
@@ -28,22 +28,27 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const [fileQueue, setFileQueue] = useState<File[]>([])
+  const [caption, setCaption] = useState('')
   const editorRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const composingRef = useRef(false)
 
+  // textarea 자동 높이 — 줄어들 수 있을 때만 auto로 되감아 iOS 레이아웃 흔들림을 줄인다
   const adjustHeight = () => {
     const el = editorRef.current
     if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+    if (el.scrollHeight <= el.clientHeight) el.style.height = 'auto'
+    const next = `${Math.min(el.scrollHeight, 120)}px`
+    if (el.style.height !== next) el.style.height = next
   }
 
+  // 전송 후 커서를 입력창 끝으로 되돌린다.
+  // 이미 포커스가 살아 있으면 focus()를 다시 부르지 않는다 — iOS에서 키보드가 내렸다 올라온다.
   const keepInputFocus = () => {
     requestAnimationFrame(() => {
       const el = editorRef.current
       if (!el) return
-      el.focus()
+      if (document.activeElement !== el) el.focus({ preventScroll: true })
       el.setSelectionRange(el.value.length, el.value.length)
     })
   }
@@ -116,15 +121,17 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
     e.target.value = ''
   }
 
+  // 다음 대기 파일로 넘어가며 캡션은 파일마다 새로 입력받는다
   const showNextQueuedFile = (queue: File[]) => {
     const [nextFile, ...rest] = queue
     setFileQueue(rest)
+    setCaption('')
     setPreview(nextFile ? { file: nextFile, url: URL.createObjectURL(nextFile) } : null)
   }
 
   const handleConfirmFile = () => {
     if (!preview) return
-    onSendFile(preview.file)
+    onSendFile(preview.file, caption.trim() || undefined)
     URL.revokeObjectURL(preview.url)
     showNextQueuedFile(fileQueue)
     keepInputFocus()
@@ -138,6 +145,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
   const handleCancelAllFiles = () => {
     if (preview) URL.revokeObjectURL(preview.url)
     setFileQueue([])
+    setCaption('')
     setPreview(null)
   }
 
@@ -146,12 +154,12 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
       {preview && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={handleCancelAllFiles} />
-          <div className="app-fixed-x fixed bottom-0 z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
+          <div className="attachment-sheet z-50 bg-surface rounded-t-3xl px-margin-mobile pt-lg pb-xxl shadow-2xl">
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-lg" />
             <p className="font-label-md text-label-md text-on-surface text-center mb-md font-semibold">
               이 파일을 보낼까요? {fileQueue.length > 0 ? `(${fileQueue.length + 1}개 중 1개)` : ''}
             </p>
-            <div className="flex justify-center mb-xl">
+            <div className="flex justify-center mb-lg">
               {isImageFile(preview.file) ? (
                 <img
                   src={preview.url}
@@ -170,6 +178,27 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
                 </div>
               )}
             </div>
+
+            <label htmlFor="attachment-caption" className="sr-only">
+              {isImageFile(preview.file) ? '사진 설명' : '파일 설명'}
+            </label>
+            <textarea
+              id="attachment-caption"
+              className="attachment-caption-input mb-lg"
+              placeholder={isImageFile(preview.file) ? '사진에 남길 말 (선택)' : '파일에 남길 말 (선택)'}
+              value={caption}
+              rows={1}
+              maxLength={500}
+              onChange={(e) => setCaption(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleConfirmFile()
+                }
+              }}
+            />
+
             <div className="space-y-sm">
               <button type="button" onClick={handleConfirmFile} className="btn-outline w-full active">
                 전송
@@ -192,7 +221,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
         </>
       )}
 
-      <footer className="chat-input-bar app-fixed-x">
+      <footer className="chat-input-bar">
         <button
           type="button"
           onPointerDown={(e) => e.preventDefault()}
@@ -238,7 +267,9 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
           type="button"
           onPointerDown={(e) => e.preventDefault()}
           onClick={handleSend}
-          disabled={!text.trim() || disabled}
+          disabled={disabled}
+          aria-disabled={!text.trim() || disabled}
+          data-inactive={!text.trim() ? 'true' : undefined}
           className="send-btn"
           aria-label="전송"
         >

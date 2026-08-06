@@ -2,5 +2,6 @@
   "myUid": "YOUR_FIREBASE_UID",
   "coupleId": "UID_A_UID_B",
   "appUrl": "https://tether-d1dab.web.app",
-  "projectId": "tether-d1dab"
+  "projectId": "tether-d1dab",
+  "hotkey": "Win+Alt+Q"
 }

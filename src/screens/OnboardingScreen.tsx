@@ -11,6 +11,7 @@ import {
   waitForCoupleConnection,
 } from '../lib/coupleAuth'
 import { PushPermissionSheet } from '../components/PushPermissionSheet'
+import { InstallGuide } from '../components/InstallGuide'
 import { canRequestPushPermission, resetAndSyncPushTokenForUid, usePushNotification } from '../hooks/usePushNotification'
 import { useSession } from '../context/useSession'
 
@@ -326,6 +327,7 @@ export function OnboardingScreen({ onConnected }: OnboardingScreenProps) {
               비회원/익명 시작은 지원하지 않습니다. 가입 후 관리자 승인 상태에 따라 이용이 시작됩니다.
             </p>
             {error && <p className="text-center font-label-sm text-label-sm text-error">{error}</p>}
+            <InstallGuide />
           </div>
         )}
 

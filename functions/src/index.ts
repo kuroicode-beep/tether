@@ -434,12 +434,16 @@ export const onNewMessage = functions.firestore
     if (!(await isNotificationEnabled(partnerUid, 'message'))) return
 
     const senderName = await getSenderName(msg.senderUid as string)
+    // 첨부에 캡션이 있으면 캡션을 본문으로 보여준다
+    const caption = ((msg.text as string | undefined) ?? '').trim()
     const body: string =
       msg.type === 'image'
-        ? '사진을 보냈어요 📸'
+        ? (caption ? `📸 ${caption}` : '사진을 보냈어요 📸')
         : msg.type === 'file'
-          ? `${(msg.fileName as string | undefined) ?? '파일'}을 보냈어요 📎`
-          : (msg.text as string) ?? ''
+          ? (caption
+            ? `📎 ${caption}`
+            : `${(msg.fileName as string | undefined) ?? '파일'}을 보냈어요 📎`)
+          : caption
 
     await sendWebPush(partnerUid, tokens, {
       type: 'message',
@@ -587,5 +591,128 @@ export const debugPushPing = functions.https.onCall(async (data, context) => {
     target,
     recipientUid,
     ...stats,
+  }
+})
+
+// ─── 릴레이소설: DeepSeek 이어쓰기 도우미 ─────────────────────────────────
+// API 키는 서버에만 둔다 (functions/.env). 클라이언트 번들에 노출하지 않는다.
+
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash'
+const ASSIST_SYSTEM_PROMPT = [
+  '당신은 두 사람이 한 문단씩 번갈아 쓰는 릴레이 소설의 보조 작가입니다.',
+  '지금까지의 흐름을 이어받아 두세 문장만 덧붙이세요.',
+  '규칙:',
+  '- 반드시 한국어로 씁니다.',
+  '- 두 문장 이상 세 문장 이하로만 씁니다.',
+  '- 이야기를 끝맺지 말고 다음 사람이 이어쓸 여지를 남깁니다.',
+  '- 설정(장르·배경·인물)이 주어지면 반드시 그 설정을 지킵니다.',
+  '- 설명이나 인사말 없이 소설 본문만 출력합니다.',
+].join('\n')
+
+// 요청자가 해당 커플의 구성원인지 확인한다
+async function assertCoupleMember(coupleId: string, uid: string): Promise<void> {
+  const snap = await db.doc(`couples/${coupleId}`).get()
+  const members = (snap.data()?.members as string[] | undefined) ?? []
+  if (!snap.exists || !members.includes(uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'not_a_member')
+  }
+}
+
+export const relayNovelAssist = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required')
+  }
+
+  const apiKey = process.env.DEEPSEEK_API_KEY
+  if (!apiKey) {
+    functions.logger.error('[relayNovelAssist] DEEPSEEK_API_KEY missing')
+    throw new functions.https.HttpsError('failed-precondition', 'assist_unavailable')
+  }
+
+  const coupleId = String(data?.coupleId ?? '').trim()
+  if (!coupleId) {
+    throw new functions.https.HttpsError('invalid-argument', 'missing_couple')
+  }
+  await assertCoupleMember(coupleId, context.auth.uid)
+
+  // 최근 turn 텍스트만 받는다 (최대 20개 · 각 1000자)
+  const rawTurns = Array.isArray(data?.turns) ? data.turns : []
+  const turns = rawTurns
+    .slice(-20)
+    .map((t: unknown) => String(t ?? '').slice(0, 1000).trim())
+    .filter((t: string) => t.length > 0)
+
+  if (turns.length === 0) {
+    throw new functions.https.HttpsError('failed-precondition', 'no_story_yet')
+  }
+
+  const title = String(data?.title ?? '').slice(0, 100).trim()
+
+  // 배경·장르·인물 설정 (최대 20개 · 각 500자)
+  const rawBackground = Array.isArray(data?.background) ? data.background : []
+  const background = rawBackground
+    .slice(0, 20)
+    .map((b: unknown) => String(b ?? '').slice(0, 500).trim())
+    .filter((b: string) => b.length > 0)
+
+  const sections: string[] = []
+  if (title) sections.push(`제목: ${title}`)
+  if (background.length > 0) {
+    sections.push(`설정:\n${background.map((b: string, i: number) => `${i + 1}. ${b}`).join('\n')}`)
+  }
+  sections.push(`지금까지의 이야기:\n${turns.join('\n')}`)
+  sections.push('이어서 두세 문장을 써주세요.')
+  const userPrompt = sections.join('\n\n')
+
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 25_000)
+    const res = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: DEEPSEEK_MODEL,
+        messages: [
+          { role: 'system', content: ASSIST_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.9,
+        // deepseek-v4-flash는 추론형이라 completion 토큰을 추론에 먼저 쓴다.
+        // 300으로 두면 추론만 하다 끝나 본문이 빈 채로 돌아온다 (finish_reason: length).
+        // 실측 기준 추론 약 300~400 + 본문 약 150이므로 넉넉히 잡는다.
+        max_tokens: 1500,
+      }),
+      signal: controller.signal,
+    })
+    clearTimeout(timer)
+
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 300)
+      functions.logger.error('[relayNovelAssist] api error', { status: res.status, detail })
+      throw new functions.https.HttpsError('unavailable', 'assist_failed')
+    }
+
+    const payload = await res.json() as {
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>
+    }
+    const choice = payload.choices?.[0]
+    const text = (choice?.message?.content ?? '').trim()
+    if (!text) {
+      // 토큰이 추론에만 쓰이고 본문이 비는 경우를 구분해 남긴다
+      functions.logger.error('[relayNovelAssist] empty content', {
+        finishReason: choice?.finish_reason ?? null,
+      })
+      throw new functions.https.HttpsError('unavailable', 'assist_empty')
+    }
+
+    return { text: text.slice(0, 1200), model: DEEPSEEK_MODEL }
+  } catch (err) {
+    if (err instanceof functions.https.HttpsError) throw err
+    functions.logger.error('[relayNovelAssist] failed', { message: (err as Error).message })
+    throw new functions.https.HttpsError('unavailable', 'assist_failed')
   }
 })

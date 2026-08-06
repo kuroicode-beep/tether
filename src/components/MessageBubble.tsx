@@ -68,15 +68,19 @@ export function MessageBubble({
   onImageTap,
   onSetThemeTrack,
 }: MessageBubbleProps) {
-  const { type, text, imageUrl, fileUrl, fileName, fileType, fileSize, createdAt, readBy, senderUid } = message
+  const {
+    type, text, imageUrl, fileUrl, fileName, fileType, fileSize, createdAt, readBy, senderUid,
+    relayKind, relayTurn, relayAuthorName,
+  } = message
   const [imgError, setImgError] = useState(false)
   const isRead = isMe && readBy.filter((uid) => uid !== senderUid).length > 0
   const timeText = formatTime(createdAt)
   const accessibleSender = isMe ? '내가 보낸' : `${senderName ?? '상대방'}이 보낸`
+  const caption = type === 'text' ? '' : (text ?? '').trim()
   const accessibleContent = type === 'image'
-    ? (imgError ? '불러올 수 없는 사진 메시지' : '사진 메시지')
+    ? (imgError ? '불러올 수 없는 사진 메시지' : `사진 메시지${caption ? `, ${caption}` : ''}`)
     : type === 'file'
-      ? `${fileName ?? '파일'} 파일 메시지`
+      ? `${fileName ?? '파일'} 파일 메시지${caption ? `, ${caption}` : ''}`
     : (text || '빈 메시지')
   const accessibilityLabel = `${accessibleSender} 메시지${timeText ? `, ${timeText}` : ''}, ${accessibleContent}`
   const isAudio = type === 'file' && (fileType?.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg)$/i.test(fileName ?? ''))
@@ -85,6 +89,39 @@ export function MessageBubble({
   useEffect(() => {
     setImgError(false)
   }, [imageUrl])
+
+  // 릴레이소설 안내 — 발신자와 무관하게 가운데 정렬된 안내 카드로 보여준다
+  if (relayKind === 'system') {
+    return (
+      <div className="relay-system" role="note">
+        <span className="material-symbols-outlined relay-system-icon" aria-hidden="true">
+          history_edu
+        </span>
+        <p className="relay-system-text">{text}</p>
+      </div>
+    )
+  }
+
+  // 릴레이소설 한 턴 — 원고 카드로 일반 말풍선과 확실히 구분한다
+  if (relayKind === 'turn' || relayKind === 'assist') {
+    const byAssist = relayKind === 'assist'
+    return (
+      <div
+        className={`relay-turn${byAssist ? ' relay-turn--assist' : ''}${isMe ? ' relay-turn--mine' : ''}`}
+        aria-label={`릴레이소설 ${relayTurn ?? ''}번째 turn, ${relayAuthorName ?? senderName ?? ''}`}
+      >
+        <div className="relay-turn-head">
+          <span className="relay-turn-number">{relayTurn ?? '-'}</span>
+          <span className="relay-turn-author">
+            {relayAuthorName ?? (isMe ? '나' : senderName ?? '상대방')}
+          </span>
+          {byAssist && <span className="relay-turn-tag">이어쓰기 도움</span>}
+        </div>
+        <p className="relay-turn-text">{text}</p>
+        {timeText && <span className="relay-turn-time">{timeText}</span>}
+      </div>
+    )
+  }
 
   return (
     <div className={isMe ? 'message-mine' : 'message-partner'} aria-label={accessibilityLabel}>
@@ -105,7 +142,7 @@ export function MessageBubble({
             <img
               key={imageUrl}
               src={imageUrl}
-              alt={`${accessibleSender} 사진 메시지`}
+              alt={caption || `${accessibleSender} 사진 메시지`}
               className="message-image block max-h-[300px] max-w-[220px] object-cover"
               loading="lazy"
               decoding="async"
@@ -164,6 +201,12 @@ export function MessageBubble({
           </div>
         )
       ) : null}
+
+      {caption && (
+        <div className="bubble message-attachment-caption" role="text">
+          {renderTextWithLinks(caption)}
+        </div>
+      )}
 
       {(showTime || showUnreadMarker) && (
         <div className="message-time" aria-hidden="true">

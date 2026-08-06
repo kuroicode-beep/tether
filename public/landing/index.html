@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tether — A private space for two</title>
+<meta name="description" content="An invite-only app for two people. Chat, moods, a shared diary, photos, music, and a relay novel in one private place.">
+<meta name="theme-color" content="#111412">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<meta property="og:title" content="Tether — A private space for two">
+<meta property="og:description" content="An invite-only app for two people.">
+<meta property="og:type" content="website">
+<style>
+/* Tether 랜딩 — 자체 완결형 단일 파일. 외부 CDN·스크립트·폰트 없음. */
+:root {
+  /* SVIL 고대비 다크 — Tether 브랜드(sage) 계열 */
+  --bg: #111412;
+  --surface: #1a1f1c;
+  --surface-2: #232b26;
+  --border: #3a443d;
+  --border-strong: #6b7a70;
+  --text: #eef2ee;
+  --text-sub: #c2cec5;
+  --accent: #9adbb2;
+  --accent-strong: #b6e8c8;
+  --accent-deep: #7fbf98;
+  --on-accent: #05291a;
+  --focus: #ffd479;
+
+  /* 로컬 설치 폰트만 — CDN 금지. 없으면 시스템 산세리프로 폴백. */
+  --font-ui: "LINESeedKR", "LINE Seed KR", "Pretendard", "Malgun Gothic", "맑은 고딕",
+             system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Consolas", "Cascadia Mono", ui-monospace, "Malgun Gothic", monospace;
+
+  --page: 1120px;
+  --r-sm: 8px;
+  --r: 16px;
+  --r-lg: 24px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { width: 100%; max-width: var(--page); margin: 0 auto; padding: 0 24px; }
+section { padding: 64px 0; }
+section + section { border-top: 1px solid var(--border); }
+.center { text-align: center; }
+
+h1 { font-size: 44px; line-height: 1.2; letter-spacing: -0.02em; color: var(--accent); }
+h2 { font-size: 30px; line-height: 1.35; letter-spacing: -0.01em; }
+h3 { font-size: 20px; line-height: 1.5; }
+p { color: var(--text-sub); }
+.sub { margin-top: 12px; }
+.meta { font-size: 14px; color: var(--text-sub); }
+code, .mono { font-family: var(--font-mono); }
+
+/* ── 언어 전환 ── */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(17, 20, 18, .92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 700; font-size: 18px; }
+.langbar { display: flex; gap: 6px; flex-wrap: wrap; }
+.langbar button {
+  min-height: 40px; padding: 6px 12px;
+  background: var(--surface); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: 999px;
+  font-family: inherit; font-size: 14px; cursor: pointer;
+}
+.langbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+/* ── 버튼 ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 56px; padding: 14px 28px;
+  border: 1.5px solid var(--border); border-radius: 999px;
+  background: var(--surface-2); color: var(--text);
+  font-family: inherit; font-size: 17px; text-decoration: none; cursor: pointer;
+}
+.btn:hover { border-color: var(--border-strong); }
+.btn-primary { background: var(--accent-deep); color: var(--on-accent); border-color: var(--accent-deep); }
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.link-quiet { color: var(--accent); text-decoration: none; font-size: 16px; }
+.link-quiet:hover { text-decoration: underline; }
+
+/* ── 히어로 ── */
+.hero { padding: 72px 0 64px; position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; inset: -25% 15% 45%;
+  background: radial-gradient(closest-side, rgba(154, 219, 178, .15), transparent);
+  pointer-events: none;
+}
+.hero-inner { position: relative; text-align: center; }
+.hero h1 { margin-top: 10px; }
+.tagline { margin-top: 4px; font-size: 22px; color: var(--text); }
+.hero p.sub { margin-left: auto; margin-right: auto; max-width: 46ch; }
+.cta-group { margin-top: 28px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+/* ── 기능 카드 ── */
+.grid { margin-top: 32px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px;
+}
+.card svg { color: var(--accent); }
+.card h3 { margin-top: 10px; font-size: 18px; }
+.card p { margin-top: 4px; font-size: 15px; }
+.card--featured { border-left: 3px solid var(--accent); }
+.badge {
+  display: inline-block; margin-top: 10px; padding: 2px 10px;
+  border-radius: var(--r-sm); background: rgba(154, 219, 178, .16);
+  color: var(--accent); font-size: 13px;
+}
+
+/* ── 기능 상세 ── */
+.detail-list { margin-top: 40px; display: flex; flex-direction: column; gap: 48px; }
+.detail-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--accent); font-size: 15px; letter-spacing: .04em;
+}
+.detail-new {
+  font-style: normal; padding: 2px 8px; border-radius: var(--r-sm);
+  background: rgba(154, 219, 178, .16); font-size: 12px;
+}
+.detail h3 { margin-top: 8px; font-size: 24px; }
+.detail p { margin-top: 10px; }
+.detail-points { margin-top: 14px; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.detail-points li { position: relative; padding-left: 18px; font-size: 16px; color: var(--text-sub); }
+.detail-points li::before {
+  content: ''; position: absolute; left: 0; top: 12px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+.shot-frame {
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--surface); padding: 10px; overflow: hidden;
+}
+.shot-frame[hidden] { display: none; }
+.shot { display: block; width: 100%; height: auto; border-radius: var(--r); }
+
+/* ── 스테퍼 ── */
+.steps { margin-top: 32px; list-style: none; }
+.step { display: grid; grid-template-columns: 48px 1fr; gap: 16px; padding-bottom: 28px; position: relative; }
+.step:last-child { padding-bottom: 0; }
+.step::before {
+  content: ''; position: absolute; left: 23px; top: 48px; bottom: 0;
+  width: 2px; background: var(--border);
+}
+.step:last-child::before { display: none; }
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); color: var(--text-sub);
+  border: 2px solid var(--border); font-size: 18px;
+  position: relative; z-index: 1;
+}
+.step--active .step-num { background: var(--accent-deep); color: var(--on-accent); border-color: var(--accent-deep); }
+.step-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.step p { margin-top: 6px; font-size: 16px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px; border-radius: var(--r-sm);
+  background: rgba(154, 219, 178, .16); color: var(--accent); font-size: 13px;
+}
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+/* ── 승인 대기 ── */
+.await-card {
+  margin-top: 36px; padding: 32px 24px; text-align: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+.await-icon {
+  width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+  background: rgba(154, 219, 178, .12); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.await-row {
+  margin-top: 20px; padding: 12px 16px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.await-row .k { font-size: 15px; color: var(--text-sub); }
+.await-note { margin-top: 14px; font-size: 15px; }
+
+/* ── 설치 안내 ── */
+.tabs { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  flex: 1 1 auto; min-width: 100px; min-height: 56px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 8px 12px; border-radius: var(--r);
+  background: var(--surface); border: 2px solid var(--border);
+  color: var(--text); font-family: inherit; font-size: 16px; cursor: pointer;
+}
+.tab[aria-selected="true"] { border-color: var(--accent); background: rgba(154, 219, 178, .1); }
+.tab-mark { font-size: 12px; color: var(--accent); }
+.tab:not([aria-selected="true"]) .tab-mark { visibility: hidden; }
+.guide { margin-top: 22px; }
+.guide ol { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.guide li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
+.guide .n {
+  width: 28px; height: 28px; border-radius: var(--r-sm);
+  background: var(--accent-deep); color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; margin-top: 2px;
+}
+.guide li span:last-child { color: var(--text); font-size: 16px; }
+.caution {
+  margin-top: 18px; padding: 14px 16px;
+  background: rgba(154, 219, 178, .08); border-left: 4px solid var(--accent);
+  border-radius: var(--r); display: flex; gap: 10px; align-items: flex-start;
+  font-size: 16px; color: var(--text);
+}
+.caution svg { color: var(--accent); flex-shrink: 0; margin-top: 4px; }
+
+/* ── 프라이버시 ── */
+.privacy { margin-top: 26px; list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.privacy li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
+.privacy svg { color: var(--accent); margin-top: 6px; }
+
+/* ── 푸터 ── */
+footer { padding: 40px 0 56px; border-top: 1px solid var(--border); }
+.svil-mission { margin-bottom: 20px; font-size: 15px; }
+.foot-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.copyright { color: var(--text-sub); font-size: 15px; }
+.foot-rows .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; font-size: 16px; }
+.foot-rows .k { color: var(--text-sub); min-width: 96px; }
+.foot-rows a { color: var(--accent); text-decoration: none; }
+.foot-rows a:hover { text-decoration: underline; }
+footer p { font-size: 15px; }
+.ver {
+  display: inline-block; margin-left: 8px; padding: 2px 10px;
+  border-radius: var(--r-sm); background: var(--surface-2);
+  color: var(--text-sub); font-family: var(--font-mono); font-size: 13px;
+}
+
+@media (min-width: 768px) {
+  section { padding: 88px 0; }
+  h1 { font-size: 62px; }
+  h2 { font-size: 36px; }
+  .tagline { font-size: 26px; }
+  .hero { padding: 104px 0 88px; }
+  .cta-group { flex-direction: row; justify-content: center; gap: 16px; }
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { padding: 24px; }
+  .detail-list { gap: 72px; }
+  .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .detail:nth-child(even) .detail-media { order: 2; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px; }
+  .step { grid-template-columns: 1fr; gap: 12px; padding-bottom: 0; }
+  .step::before { left: 48px; right: -24px; top: 23px; bottom: auto; width: auto; height: 2px; }
+  .await-card { padding: 48px 40px; }
+  .privacy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <span class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22c0-5 1-8 4-11 0 0-6-1-9 3-2.4 3.2-1 8-1 8s-1-4 1-7c1.6-2.4 4-3 4-3s-4 2-5 6c-.7 2.8 0 4 0 4H12z"/></svg>
+      Tether
+    </span>
+    <nav class="langbar" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      <button type="button" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+      <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+      <button type="button" data-lang="vi" aria-pressed="false">Tiếng Việt</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color: var(--accent)">
+        <path d="M12 22c0-5 1-8 4-11 0 0-6-1-9 3-2.4 3.2-1 8-1 8s-1-4 1-7c1.6-2.4 4-3 4-3s-4 2-5 6c-.7 2.8 0 4 0 4H12z"/>
+        <path d="M12 22c0-4-1-6-3-8 0 0 4-1 6 2 1.6 2.4.6 6 .6 6z" opacity=".55"/>
+      </svg>
+      <h1>Tether</h1>
+      <p class="tagline" data-i18n="hero_tagline"></p>
+      <p class="sub" data-i18n="hero_sub"></p>
+      <div class="cta-group">
+        <a class="btn btn-primary" href="/"><span data-i18n="cta_primary"></span></a>
+        <a class="link-quiet" href="/" data-i18n="cta_secondary"></a>
+      </div>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="wrap">
+      <div class="center">
+        <h2 data-i18n="what_title"></h2>
+        <p class="sub" data-i18n="what_sub"></p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <h3 data-i18n="f1_t"></h3><p data-i18n="f1_d"></p>
+        </article>
+        <article class="card">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+          <h3 data-i18n="f2_t"></h3><p data-i18n="f2_d"></p>
+        </article>
+        <article class="card">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <h3 data-i18n="f3_t"></h3><p data-i18n="f3_d"></p>
+        </article>
+        <article class="card">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <h3 data-i18n="f4_t"></h3><p data-i18n="f4_d"></p>
+        </article>
+        <article class="card">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <h3 data-i18n="f5_t"></h3><p data-i18n="f5_d"></p>
+        </article>
+        <article class="card card--featured">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          <h3 data-i18n="f6_t"></h3><p data-i18n="f6_d"></p>
+          <span class="badge" data-i18n="badge_new"></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="center">
+        <h2 data-i18n="detail_title"></h2>
+        <p class="sub" data-i18n="detail_sub"></p>
+      </div>
+
+      <div class="detail-list">
+        <article class="detail">
+          <div class="detail-media"><div class="shot-frame" hidden><img class="shot" src="shots/chat.png" data-i18n-alt="d1_alt" alt=""></div></div>
+          <div class="detail-body">
+            <span class="detail-tag" data-i18n="d1_tag"></span>
+            <h3 data-i18n="d1_t"></h3>
+            <p data-i18n="d1_d"></p>
+            <ul class="detail-points">
+              <li data-i18n="d1_p1"></li><li data-i18n="d1_p2"></li><li data-i18n="d1_p3"></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="detail">
+          <div class="detail-media"><div class="shot-frame" hidden><img class="shot" src="shots/relay.png" data-i18n-alt="d2_alt" alt=""></div></div>
+          <div class="detail-body">
+            <span class="detail-tag"><span data-i18n="d2_tag"></span><em class="detail-new" data-i18n="badge_new"></em></span>
+            <h3 data-i18n="d2_t"></h3>
+            <p data-i18n="d2_d"></p>
+            <ul class="detail-points">
+              <li data-i18n="d2_p1"></li><li data-i18n="d2_p2"></li><li data-i18n="d2_p3"></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="detail">
+          <div class="detail-media"><div class="shot-frame" hidden><img class="shot" src="shots/home.png" data-i18n-alt="d3_alt" alt=""></div></div>
+          <div class="detail-body">
+            <span class="detail-tag" data-i18n="d3_tag"></span>
+            <h3 data-i18n="d3_t"></h3>
+            <p data-i18n="d3_d"></p>
+            <ul class="detail-points">
+              <li data-i18n="d3_p1"></li><li data-i18n="d3_p2"></li><li data-i18n="d3_p3"></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="detail">
+          <div class="detail-media"><div class="shot-frame" hidden><img class="shot" src="shots/diary.png" data-i18n-alt="d4_alt" alt=""></div></div>
+          <div class="detail-body">
+            <span class="detail-tag" data-i18n="d4_tag"></span>
+            <h3 data-i18n="d4_t"></h3>
+            <p data-i18n="d4_d"></p>
+            <ul class="detail-points">
+              <li data-i18n="d4_p1"></li><li data-i18n="d4_p2"></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="detail">
+          <div class="detail-media"><div class="shot-frame" hidden><img class="shot" src="shots/listen.png" data-i18n-alt="d5_alt" alt=""></div></div>
+          <div class="detail-body">
+            <span class="detail-tag" data-i18n="d5_tag"></span>
+            <h3 data-i18n="d5_t"></h3>
+            <p data-i18n="d5_d"></p>
+            <ul class="detail-points">
+              <li data-i18n="d5_p1"></li><li data-i18n="d5_p2"></li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="join">
+    <div class="wrap">
+      <div class="center">
+        <h2 data-i18n="join_title"></h2>
+        <p class="sub" data-i18n="join_sub"></p>
+      </div>
+
+      <ol class="steps">
+        <li class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-head"><h3 data-i18n="s1_t"></h3></div>
+            <p data-i18n="s1_d"></p>
+          </div>
+        </li>
+        <li class="step step--active">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-head">
+              <h3 data-i18n="s2_t"></h3>
+              <span class="chip"><span class="dot"></span><span data-i18n="chip_waiting"></span></span>
+            </div>
+            <p data-i18n="s2_d"></p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-head"><h3 data-i18n="s3_t"></h3></div>
+            <p data-i18n="s3_d"></p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-head"><h3 data-i18n="s4_t"></h3></div>
+            <p data-i18n="s4_d"></p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="await-card">
+        <div class="await-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        </div>
+        <h3 data-i18n="await_t"></h3>
+        <p class="sub" data-i18n="await_d"></p>
+        <div class="await-row">
+          <span class="k" data-i18n="await_account"></span>
+          <span class="mono">user***@gmail.com</span>
+        </div>
+        <p class="await-note" data-i18n="await_note"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="notify">
+    <div class="wrap">
+      <div class="center">
+        <h2 data-i18n="notify_title"></h2>
+        <p class="sub" data-i18n="notify_sub"></p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Device">
+        <button class="tab" role="tab" data-os="ios" aria-selected="true">iPhone<span class="tab-mark" data-i18n="tab_selected"></span></button>
+        <button class="tab" role="tab" data-os="android" aria-selected="false">Android<span class="tab-mark" data-i18n="tab_selected"></span></button>
+        <button class="tab" role="tab" data-os="windows" aria-selected="false">Windows<span class="tab-mark" data-i18n="tab_selected"></span></button>
+        <button class="tab" role="tab" data-os="mac" aria-selected="false">Mac<span class="tab-mark" data-i18n="tab_selected"></span></button>
+      </div>
+      <div class="guide" id="guide" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="center"><h2 data-i18n="privacy_title"></h2></div>
+      <ul class="privacy">
+        <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="pv1"></span></li>
+        <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="pv2"></span></li>
+        <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="pv3"></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="center">
+    <div class="wrap">
+      <h2 data-i18n="final_t"></h2>
+      <div class="cta-group">
+        <a class="btn btn-primary" href="/">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.35 11.1H12v3.2h5.35c-.25 1.4-1.8 4.1-5.35 4.1a5.9 5.9 0 1 1 0-11.8c1.7 0 2.85.7 3.5 1.3l2.4-2.3C16.4 4.1 14.4 3.2 12 3.2a8.8 8.8 0 1 0 0 17.6c5.1 0 8.45-3.6 8.45-8.65 0-.6-.05-1.05-.1-1.05z"/></svg>
+          <span data-i18n="final_cta"></span>
+        </a>
+      </div>
+      <p class="meta" style="margin-top:14px" data-i18n="final_note"></p>
+    </div>
+  </section>
+</main>
+
+<!-- 이 푸터는 `svil-copyright` 스킬(SVIL 공용 정본)의 사본이다.
+     문구·링크를 바꿔야 하면 그 스킬을 먼저 고치고 여기로 다시 옮긴다. -->
+<footer>
+  <div class="wrap">
+    <p class="svil-mission" data-i18n="svil_mission"></p>
+    <div class="foot-rows">
+      <div class="row"><span class="k" data-i18n="foot_contact"></span><a href="mailto:kuroicode@gmail.com">kuroicode@gmail.com</a></div>
+      <div class="row"><span class="k" data-i18n="foot_blog"></span><a href="https://ghost-production-0ec2.up.railway.app/" target="_blank" rel="noopener">인블루의 로그 보관소</a></div>
+      <div class="row"><span class="k" data-i18n="foot_home"></span><a href="https://kuroicode-beep.github.io/svil-homepage/" target="_blank" rel="noopener">SVIL</a></div>
+      <div class="row"><span class="k" data-i18n="foot_youtube"></span><a href="https://www.youtube.com/@SVIL-LAB" target="_blank" rel="noopener">@SVIL-LAB</a></div>
+      <div class="row"><span class="k" data-i18n="foot_github"></span><a href="https://github.com/kuroicode-beep" target="_blank" rel="noopener">kuroicode-beep</a></div>
+    </div>
+    <p class="copyright">© <span id="svil-year">2026</span> SVIL Singularity Visual Intelligence Lab.<span class="ver" id="ver">v0.17.0</span></p>
+  </div>
+</footer>
+
+<script>
+// 다국어 사전. 영어(en)가 디폴트/폴백. 모든 언어의 키 집합이 동일해야 한다.
+// 고유명사·코드·이메일·명령어는 번역하지 않는다.
+const I18N = {
+  en: {
+    _title: "Tether — A private space for two",
+    hero_tagline: "A space just for us",
+    hero_sub: "An app only two people use. Invite-only, so no one else can get in.",
+    cta_primary: "Get started",
+    cta_secondary: "I already have an invite",
+
+    what_title: "Everything between you two, in one place",
+    what_sub: "Messages, today's mood, a diary you pass back and forth, music you listen to together. It all stacks up in one place instead of scattering.",
+    f1_t: "Chat", f1_d: "Send photos and files with a note attached",
+    f2_t: "Today's mood", f2_d: "Know how they feel without asking",
+    f3_t: "Shared diary", f3_d: "One entry a day, passed back and forth",
+    f4_t: "Photos", f4_d: "An album only the two of you see",
+    f5_t: "Listen together", f5_d: "Your picks and theirs, played as one list",
+    f6_t: "Relay novel", f6_d: "A story written one paragraph at a time",
+    badge_new: "New",
+
+    detail_title: "How you would use it",
+    detail_sub: "What each feature actually does.",
+    d1_tag: "CHAT",
+    d1_t: "Say something along with the photo",
+    d1_d: "Attach a note when you send a photo, a song, or a document. Send several at once and each gets its own note, and that note shows up in their notification too.",
+    d1_p1: "Read receipts and unread markers",
+    d1_p2: "Tap a photo to view it large or save it to the album",
+    d1_p3: "Files you exchange collect in the shared library",
+    d1_alt: "Tether chat screen",
+    d2_tag: "RELAY NOVEL",
+    d2_t: "A story written one paragraph at a time",
+    d2_d: "Write a story together inside the chat, one turn each. Whose turn it is shows at the top, and only what you write on your turn becomes part of the story. Stuck? An AI adds two or three sentences.",
+    d2_p1: "Write a turn and pass it on",
+    d2_p2: "Set the genre and characters in advance",
+    d2_p3: "Finished stories go to the shelf and save as a document",
+    d2_alt: "Relay novel screen",
+    d3_tag: "TODAY'S MOOD",
+    d3_t: "So they know without asking",
+    d3_d: "Leave a line about how you are doing and it appears on their home screen right away. They get a notification when it changes.",
+    d3_p1: "Mood tags with a short message",
+    d3_p2: "Look back through past moods in history",
+    d3_p3: "See days left until an anniversary on the home screen",
+    d3_alt: "Home screen with today's mood",
+    d4_tag: "SHARED DIARY",
+    d4_t: "One entry a day, passed back and forth",
+    d4_d: "You each write about your day and read each other's. You can reply to an entry, and old ones are always there to open again.",
+    d4_p1: "A notification when a new entry arrives",
+    d4_p2: "Replies that turn an entry into a conversation",
+    d4_alt: "Shared diary screen",
+    d5_tag: "LISTEN TOGETHER AND LIBRARY",
+    d5_t: "Your picks and theirs, played as one",
+    d5_d: "You each choose songs and the combined list plays together. Music and documents you exchange collect in the library so you can find them later.",
+    d5_p1: "Chosen songs play on shuffle repeat",
+    d5_p2: "Pin a theme song to play from the top of the app",
+    d5_alt: "Listen together screen",
+
+    join_title: "How to get in",
+    join_sub: "Not an app anyone can sign up for. It goes in order.",
+    s1_t: "Sign in with Google",
+    s1_d: "No separate ID or password. Switch devices and the same account picks up where you left off.",
+    s2_t: "Wait for approval",
+    s2_d: "Your request goes to the administrator. You cannot use the app until it is approved.",
+    s3_t: "Connect with your partner",
+    s3_d: "One of you creates an invite code, the other enters it, and your space opens.",
+    s4_t: "Install as an app",
+    s4_d: "Add it to your home screen to get notifications. A browser tab alone will not receive them.",
+    chip_waiting: "Waiting",
+    await_t: "Waiting for approval",
+    await_d: "Your request has been sent. This screen moves on by itself once it is approved. You can close the app.",
+    await_account: "Requested account",
+    await_note: "If it is taking a while, just ask your partner directly.",
+
+    notify_title: "To make notifications arrive",
+    notify_sub: "You have to install it as an app. Pick your device.",
+    tab_selected: "Selected",
+    ios_1: "Open this page in Safari. Other browsers cannot install it.",
+    ios_2: "Tap the share button below and choose Add to Home Screen.",
+    ios_3: "Launch from the home screen icon, then allow notifications.",
+    ios_4: "Turn on Settings, General, Background App Refresh.",
+    ios_c: "Using it as a Safari tab means no notifications at all. Always launch from the home screen icon.",
+    and_1: "Open this page in Chrome.",
+    and_2: "Choose Install app from the menu next to the address bar.",
+    and_3: "Launch the app, then allow notifications.",
+    and_4: "Set Settings, Apps, Tether, Battery to Unrestricted.",
+    and_c: "With battery optimisation on, notifications arrive late or not at all. This is the most common cause on Android.",
+    win_1: "Open this page in Chrome or Edge.",
+    win_2: "Click the install icon at the right of the address bar.",
+    win_3: "Launch the app, then allow notifications.",
+    win_4: "Check Settings, System, Notifications.",
+    win_c: "Quitting the browser completely stops notifications. Close the window if you like, but leave the browser running.",
+    mac_1: "In Safari, use the share button and choose Add to Dock.",
+    mac_2: "In Chrome, click the install icon at the right of the address bar.",
+    mac_3: "Launch the app, then allow notifications.",
+    mac_4: "Check System Settings, Notifications.",
+    mac_c: "Focus mode hides notifications. Add Tether to the allowed apps.",
+
+    privacy_title: "Only the two of you",
+    pv1: "No one outside the two invited people can see it",
+    pv2: "Messages and photos are stored only in your shared space",
+    pv3: "You can add a PIN lock on top, per device",
+
+    final_t: "Start when you are ready",
+    final_cta: "Continue with Google",
+    final_note: "Approval may take a while after signing up.",
+
+    svil_mission: "Singularity Visual Intelligence Lab: research and development to improve AI accessibility for people with low vision.",
+    foot_contact: "Contact", foot_blog: "Blog", foot_home: "Homepage",
+    foot_youtube: "YouTube", foot_github: "GitHub"
+  },
+
+  ko: {
+    _title: "Tether — 우리만의 공간",
+    hero_tagline: "우리만의 공간",
+    hero_sub: "둘만 쓰는 앱. 초대받은 두 사람만 들어올 수 있어요.",
+    cta_primary: "시작하기",
+    cta_secondary: "이미 초대를 받았어요",
+
+    what_title: "둘 사이의 모든 것을 한곳에",
+    what_sub: "메시지, 오늘의 기분, 주고받는 일기, 함께 듣는 음악까지. 흩어지지 않고 한 공간에 쌓입니다.",
+    f1_t: "채팅", f1_d: "사진과 파일도 설명을 붙여 함께",
+    f2_t: "오늘의 상태", f2_d: "말하지 않아도 지금 기분을 알 수 있게",
+    f3_t: "교환일기", f3_d: "하루에 한 편씩 주고받는 기록",
+    f4_t: "사진첩", f4_d: "둘만 보는 앨범",
+    f5_t: "같이듣기", f5_d: "각자 고른 곡을 함께 재생",
+    f6_t: "릴레이소설", f6_d: "한 문단씩 번갈아 쓰는 이야기",
+    badge_new: "새 기능",
+
+    detail_title: "어떻게 쓰나요",
+    detail_sub: "기능마다 무엇을 할 수 있는지 정리했어요.",
+    d1_tag: "채팅",
+    d1_t: "사진에도 하고 싶은 말을 붙여서",
+    d1_d: "사진, 음악, 문서를 보낼 때 설명을 함께 남길 수 있어요. 여러 개를 한 번에 보내면 파일마다 따로 적을 수 있고, 상대방 알림에도 그 문구가 그대로 표시됩니다.",
+    d1_p1: "읽음 표시와 안 읽은 메시지 구분",
+    d1_p2: "사진을 눌러 크게 보고 사진첩으로 저장",
+    d1_p3: "주고받은 파일은 자료실에 자동으로 모임",
+    d1_alt: "Tether 채팅 화면",
+    d2_tag: "릴레이소설",
+    d2_t: "한 문단씩 번갈아 쓰는 이야기",
+    d2_d: "채팅 안에서 둘이 한 턴씩 주고받으며 소설을 씁니다. 지금 누구 차례인지 위에 표시되고, 내 차례에 쓴 글만 이야기로 쌓여요. 흐름이 막히면 AI가 두세 문장을 이어줍니다.",
+    d2_p1: "한 턴을 쓰고 차례를 넘겨요",
+    d2_p2: "장르와 인물 설정을 미리 정해둘 수 있어요",
+    d2_p3: "완결하면 서재에 보관되고 문서 파일로 저장돼요",
+    d2_alt: "릴레이소설 화면",
+    d3_tag: "오늘의 상태",
+    d3_t: "묻지 않아도 알 수 있게",
+    d3_d: "지금 컨디션과 기분을 한 줄로 남겨두면 상대방 홈 화면에 바로 보입니다. 상태가 바뀌면 알림으로 알려줘요.",
+    d3_p1: "기분 태그와 짧은 메시지",
+    d3_p2: "지난 상태를 히스토리에서 되돌아보기",
+    d3_p3: "기념일까지 남은 날짜를 홈에서 확인",
+    d3_alt: "홈 화면과 오늘의 상태",
+    d4_tag: "교환일기",
+    d4_t: "하루에 한 편씩 주고받는 기록",
+    d4_d: "그날 하루를 각자 적고 서로 읽어요. 답글을 달 수 있고, 지난 일기는 언제든 다시 꺼내볼 수 있습니다.",
+    d4_p1: "새 일기가 올라오면 알림",
+    d4_p2: "일기마다 답글로 이어지는 대화",
+    d4_alt: "교환일기 화면",
+    d5_tag: "같이듣기와 자료실",
+    d5_t: "각자 고른 곡을 함께",
+    d5_d: "둘이 각각 곡을 골라두면 그 목록이 함께 재생됩니다. 주고받은 음악과 문서는 자료실에 쌓여 나중에도 찾을 수 있어요.",
+    d5_p1: "고른 곡을 랜덤 반복으로 재생",
+    d5_p2: "메인 테마곡을 정해두면 앱 상단에서 바로 재생",
+    d5_alt: "같이듣기 화면",
+
+    join_title: "들어오는 방법",
+    join_sub: "누구나 가입할 수 있는 앱이 아니에요. 순서대로 진행됩니다.",
+    s1_t: "Google 로그인",
+    s1_d: "아이디와 비밀번호를 따로 만들지 않아요. 기기를 바꿔도 같은 계정이면 그대로 이어집니다.",
+    s2_t: "승인 대기",
+    s2_d: "가입 요청이 관리자에게 전달됩니다. 승인 전까지는 앱을 쓸 수 없어요.",
+    s3_t: "상대와 연결",
+    s3_d: "한 사람이 초대 코드를 만들고 다른 한 사람이 입력하면 둘만의 공간이 열려요.",
+    s4_t: "앱으로 설치",
+    s4_d: "홈 화면에 추가해야 알림이 옵니다. 브라우저 탭으로만 쓰면 알림을 받을 수 없어요.",
+    chip_waiting: "대기 중",
+    await_t: "승인을 기다리고 있어요",
+    await_d: "가입 요청이 전달되었습니다. 승인되면 이 화면이 자동으로 넘어가요. 앱을 닫아도 괜찮습니다.",
+    await_account: "요청한 계정",
+    await_note: "승인이 오래 걸리면 상대방에게 직접 물어보세요.",
+
+    notify_title: "알림이 오게 하려면",
+    notify_sub: "앱으로 설치해야 알림이 옵니다. 기기를 선택하세요.",
+    tab_selected: "선택됨",
+    ios_1: "Safari로 이 페이지를 엽니다. 다른 브라우저는 설치가 안 됩니다.",
+    ios_2: "아래 공유 버튼을 눌러 홈 화면에 추가를 선택하세요.",
+    ios_3: "홈 화면 아이콘으로 실행한 뒤 알림을 허용하세요.",
+    ios_4: "설정, 일반, 백그라운드 앱 새로 고침을 켜주세요.",
+    ios_c: "Safari 탭에서 그냥 쓰면 알림이 오지 않습니다. 반드시 홈 화면 아이콘으로 실행해주세요.",
+    and_1: "Chrome으로 이 페이지를 엽니다.",
+    and_2: "주소창 오른쪽 메뉴에서 앱 설치를 선택하세요.",
+    and_3: "앱을 실행한 뒤 알림을 허용하세요.",
+    and_4: "설정, 앱, Tether, 배터리를 제한 없음으로 바꿔주세요.",
+    and_c: "배터리 최적화가 켜져 있으면 알림이 늦게 오거나 오지 않습니다. 안드로이드에서 가장 흔한 원인입니다.",
+    win_1: "Chrome 또는 Edge로 이 페이지를 엽니다.",
+    win_2: "주소창 오른쪽의 설치 아이콘을 누르세요.",
+    win_3: "앱을 실행한 뒤 알림을 허용하세요.",
+    win_4: "Windows 설정, 시스템, 알림에서 허용 상태를 확인하세요.",
+    win_c: "브라우저를 완전히 종료하면 알림이 오지 않습니다. 창을 닫아도 브라우저는 켜두세요.",
+    mac_1: "Safari는 공유 버튼에서 Dock에 추가를 선택하세요.",
+    mac_2: "Chrome은 주소창 오른쪽 설치 아이콘을 누르세요.",
+    mac_3: "앱을 실행한 뒤 알림을 허용하세요.",
+    mac_4: "시스템 설정, 알림에서 허용 상태를 확인하세요.",
+    mac_c: "집중 모드가 켜져 있으면 알림이 숨겨집니다. 허용 앱에 추가해주세요.",
+
+    privacy_title: "둘만 봅니다",
+    pv1: "초대받은 두 사람 외에는 아무도 볼 수 없어요",
+    pv2: "대화와 사진은 둘의 공간에만 저장돼요",
+    pv3: "기기에서 PIN 잠금을 한 번 더 걸 수 있어요",
+
+    final_t: "준비되면 시작해요",
+    final_cta: "Google로 시작하기",
+    final_note: "가입 후 승인까지 시간이 걸릴 수 있습니다.",
+
+    svil_mission: "Singularity Visual Intelligence Lab: 저시력 시각장애인의 AI 접근성을 높이기 위한 연구와 개발을 합니다.",
+    foot_contact: "협업 문의", foot_blog: "블로그", foot_home: "홈페이지",
+    foot_youtube: "유튜브", foot_github: "GitHub"
+  },
+
+  ja: {
+    _title: "Tether — ふたりだけの空間",
+    hero_tagline: "ふたりだけの空間",
+    hero_sub: "ふたりだけで使うアプリ。招待された二人しか入れません。",
+    cta_primary: "はじめる",
+    cta_secondary: "招待をもらっています",
+
+    what_title: "ふたりのあいだのすべてを、ひとつの場所に",
+    what_sub: "メッセージ、今日の気分、交換日記、いっしょに聴く音楽まで。散らばらずに一か所に積み重なります。",
+    f1_t: "チャット", f1_d: "写真やファイルにひとことを添えて",
+    f2_t: "今日の気分", f2_d: "聞かなくても今の気持ちがわかる",
+    f3_t: "交換日記", f3_d: "一日一編ずつ交わす記録",
+    f4_t: "アルバム", f4_d: "ふたりだけが見るアルバム",
+    f5_t: "いっしょに聴く", f5_d: "それぞれ選んだ曲をいっしょに再生",
+    f6_t: "リレー小説", f6_d: "一段落ずつ交代で書く物語",
+    badge_new: "新機能",
+
+    detail_title: "どう使いますか",
+    detail_sub: "機能ごとにできることをまとめました。",
+    d1_tag: "チャット",
+    d1_t: "写真にも伝えたいひとことを添えて",
+    d1_d: "写真、音楽、書類を送るときに説明を添えられます。複数まとめて送るとファイルごとに書けて、相手の通知にもその文がそのまま表示されます。",
+    d1_p1: "既読表示と未読メッセージの区別",
+    d1_p2: "写真をタップして大きく見て、アルバムに保存",
+    d1_p3: "やり取りしたファイルは資料室に自動でまとまる",
+    d1_alt: "Tether チャット画面",
+    d2_tag: "リレー小説",
+    d2_t: "一段落ずつ交代で書く物語",
+    d2_d: "チャットの中でふたりが一ターンずつ交代しながら小説を書きます。今どちらの番かが上に表示され、自分の番に書いた文だけが物語に積まれます。行き詰まったらAIが二、三文つないでくれます。",
+    d2_p1: "一ターン書いて番を渡します",
+    d2_p2: "ジャンルや人物の設定を先に決められます",
+    d2_p3: "完結すると書架に保管され、文書ファイルで保存できます",
+    d2_alt: "リレー小説の画面",
+    d3_tag: "今日の気分",
+    d3_t: "聞かなくても伝わるように",
+    d3_d: "今の体調や気分を一行残すと、相手のホーム画面にすぐ表示されます。変わると通知でお知らせします。",
+    d3_p1: "気分タグと短いメッセージ",
+    d3_p2: "過去の状態を履歴で振り返る",
+    d3_p3: "記念日までの残り日数をホームで確認",
+    d3_alt: "ホーム画面と今日の気分",
+    d4_tag: "交換日記",
+    d4_t: "一日一編ずつ交わす記録",
+    d4_d: "その日をそれぞれ書いて読み合います。返信でき、過去の日記はいつでも開き直せます。",
+    d4_p1: "新しい日記が届くと通知",
+    d4_p2: "日記ごとに返信でつながる会話",
+    d4_alt: "交換日記の画面",
+    d5_tag: "いっしょに聴くと資料室",
+    d5_t: "それぞれ選んだ曲をいっしょに",
+    d5_d: "ふたりがそれぞれ曲を選ぶと、その一覧がいっしょに再生されます。やり取りした音楽や書類は資料室に積まれ、あとからも探せます。",
+    d5_p1: "選んだ曲をランダム繰り返しで再生",
+    d5_p2: "テーマ曲を決めるとアプリ上部からすぐ再生",
+    d5_alt: "いっしょに聴く画面",
+
+    join_title: "入る方法",
+    join_sub: "誰でも登録できるアプリではありません。順番に進みます。",
+    s1_t: "Googleでログイン",
+    s1_d: "IDやパスワードを別に作りません。端末を変えても同じアカウントならそのまま続きます。",
+    s2_t: "承認待ち",
+    s2_d: "登録リクエストが管理者に届きます。承認されるまでアプリは使えません。",
+    s3_t: "相手とつなぐ",
+    s3_d: "一方が招待コードを作り、もう一方が入力するとふたりの空間が開きます。",
+    s4_t: "アプリとして入れる",
+    s4_d: "ホーム画面に追加しないと通知が届きません。ブラウザのタブだけでは受け取れません。",
+    chip_waiting: "待機中",
+    await_t: "承認を待っています",
+    await_d: "リクエストは送信されました。承認されるとこの画面は自動で進みます。アプリを閉じても大丈夫です。",
+    await_account: "リクエストしたアカウント",
+    await_note: "時間がかかるときは相手に直接聞いてみてください。",
+
+    notify_title: "通知を受け取るには",
+    notify_sub: "アプリとして入れる必要があります。端末を選んでください。",
+    tab_selected: "選択中",
+    ios_1: "Safariでこのページを開きます。他のブラウザではインストールできません。",
+    ios_2: "下の共有ボタンからホーム画面に追加を選びます。",
+    ios_3: "ホーム画面のアイコンから起動し、通知を許可します。",
+    ios_4: "設定、一般、Appのバックグラウンド更新をオンにします。",
+    ios_c: "Safariのタブのままだと通知は届きません。必ずホーム画面のアイコンから起動してください。",
+    and_1: "Chromeでこのページを開きます。",
+    and_2: "アドレスバー横のメニューからアプリをインストールを選びます。",
+    and_3: "アプリを起動して通知を許可します。",
+    and_4: "設定、アプリ、Tether、電池を制限なしにします。",
+    and_c: "電池の最適化が有効だと通知が遅れたり届きません。Androidで最も多い原因です。",
+    win_1: "ChromeまたはEdgeでこのページを開きます。",
+    win_2: "アドレスバー右のインストールアイコンを押します。",
+    win_3: "アプリを起動して通知を許可します。",
+    win_4: "設定、システム、通知で許可状態を確認します。",
+    win_c: "ブラウザを完全に終了すると通知が届きません。ウィンドウは閉じてもブラウザは残してください。",
+    mac_1: "Safariは共有ボタンからDockに追加を選びます。",
+    mac_2: "Chromeはアドレスバー右のインストールアイコンを押します。",
+    mac_3: "アプリを起動して通知を許可します。",
+    mac_4: "システム設定、通知で許可状態を確認します。",
+    mac_c: "集中モードが有効だと通知が隠れます。許可アプリに追加してください。",
+
+    privacy_title: "見るのはふたりだけ",
+    pv1: "招待された二人以外は誰も見られません",
+    pv2: "会話と写真はふたりの空間にだけ保存されます",
+    pv3: "端末ごとにPINロックをもう一段かけられます",
+
+    final_t: "準備ができたら はじめましょう",
+    final_cta: "Googleではじめる",
+    final_note: "登録後、承認まで時間がかかることがあります。",
+
+    svil_mission: "Singularity Visual Intelligence Lab: ロービジョンの方のAIアクセシビリティを高めるための研究と開発をしています。",
+    foot_contact: "お問い合わせ", foot_blog: "ブログ", foot_home: "ホームページ",
+    foot_youtube: "YouTube", foot_github: "GitHub"
+  },
+
+  zh: {
+    _title: "Tether — 只属于两个人的空间",
+    hero_tagline: "只属于我们的空间",
+    hero_sub: "只有两个人使用的应用。仅限受邀的两人进入。",
+    cta_primary: "开始使用",
+    cta_secondary: "我已收到邀请",
+
+    what_title: "把两人之间的一切放在一处",
+    what_sub: "消息、今天的心情、往来的日记、一起听的音乐。不再散落各处，全都汇聚在同一个空间。",
+    f1_t: "聊天", f1_d: "照片和文件也能附上说明",
+    f2_t: "今日心情", f2_d: "不用问也知道对方此刻的心情",
+    f3_t: "交换日记", f3_d: "每天一篇，来回传递的记录",
+    f4_t: "相册", f4_d: "只有两人能看的相册",
+    f5_t: "一起听", f5_d: "各自挑的歌，一起播放",
+    f6_t: "接龙小说", f6_d: "一段一段轮流写的故事",
+    badge_new: "新功能",
+
+    detail_title: "怎么使用",
+    detail_sub: "每个功能能做什么，都整理在这里。",
+    d1_tag: "聊天",
+    d1_t: "照片也能带上想说的话",
+    d1_d: "发送照片、音乐或文件时可以附上说明。一次发多个时可以逐个填写，对方的通知里也会显示这句话。",
+    d1_p1: "已读标记与未读区分",
+    d1_p2: "点击照片可放大查看并保存到相册",
+    d1_p3: "互传的文件会自动汇集到资料室",
+    d1_alt: "Tether 聊天界面",
+    d2_tag: "接龙小说",
+    d2_t: "一段一段轮流写的故事",
+    d2_d: "在聊天里两人轮流各写一回合。顶部会显示轮到谁，只有轮到你时写的内容才会成为故事。卡住时由 AI 接上两三句。",
+    d2_p1: "写完一回合就交给对方",
+    d2_p2: "可以先设定题材与人物",
+    d2_p3: "完结后收进书架，可保存为文档",
+    d2_alt: "接龙小说界面",
+    d3_tag: "今日心情",
+    d3_t: "不必开口也能知道",
+    d3_d: "留下一句此刻的状态和心情，就会立刻出现在对方的主页上。状态变化时会以通知提醒。",
+    d3_p1: "心情标签与简短留言",
+    d3_p2: "在历史记录中回看过去的状态",
+    d3_p3: "在主页查看距离纪念日还有几天",
+    d3_alt: "主页与今日心情",
+    d4_tag: "交换日记",
+    d4_t: "每天一篇，来回传递的记录",
+    d4_d: "各自写下当天并互相阅读。可以回复，过去的日记随时能再打开。",
+    d4_p1: "有新日记时会收到通知",
+    d4_p2: "每篇日记都能以回复延续成对话",
+    d4_alt: "交换日记界面",
+    d5_tag: "一起听与资料室",
+    d5_t: "各自挑的歌，一起听",
+    d5_d: "两人各自选歌后，合起来的列表会一起播放。互传的音乐和文件会留在资料室，之后也能找到。",
+    d5_p1: "所选歌曲随机循环播放",
+    d5_p2: "设定主题曲后可从应用顶部直接播放",
+    d5_alt: "一起听界面",
+
+    join_title: "如何加入",
+    join_sub: "这不是谁都能注册的应用，需要按顺序进行。",
+    s1_t: "使用 Google 登录",
+    s1_d: "不需要另外创建账号和密码。换设备后，只要是同一账号就能继续。",
+    s2_t: "等待审核",
+    s2_d: "注册请求会送到管理员。审核通过前无法使用。",
+    s3_t: "与对方连接",
+    s3_d: "一人生成邀请码，另一人输入后，两人的空间就会打开。",
+    s4_t: "安装为应用",
+    s4_d: "添加到主屏幕才会收到通知。只在浏览器标签页中使用收不到。",
+    chip_waiting: "等待中",
+    await_t: "正在等待审核",
+    await_d: "请求已送出。审核通过后这个页面会自动跳转。可以关闭应用。",
+    await_account: "申请的账号",
+    await_note: "如果等待较久，直接问一下对方吧。",
+
+    notify_title: "想收到通知的话",
+    notify_sub: "必须安装为应用。请选择设备。",
+    tab_selected: "已选择",
+    ios_1: "用 Safari 打开本页。其他浏览器无法安装。",
+    ios_2: "点击下方分享按钮，选择添加到主屏幕。",
+    ios_3: "从主屏幕图标启动后允许通知。",
+    ios_4: "打开设置、通用、后台 App 刷新。",
+    ios_c: "只在 Safari 标签页中使用收不到任何通知。请务必从主屏幕图标启动。",
+    and_1: "用 Chrome 打开本页。",
+    and_2: "在地址栏旁的菜单中选择安装应用。",
+    and_3: "启动应用后允许通知。",
+    and_4: "把设置、应用、Tether、电池设为无限制。",
+    and_c: "开启电池优化会导致通知延迟或收不到。这是 Android 上最常见的原因。",
+    win_1: "用 Chrome 或 Edge 打开本页。",
+    win_2: "点击地址栏右侧的安装图标。",
+    win_3: "启动应用后允许通知。",
+    win_4: "在设置、系统、通知中确认权限。",
+    win_c: "完全退出浏览器就收不到通知。可以关闭窗口，但请让浏览器保持运行。",
+    mac_1: "Safari 请用分享按钮选择添加到程序坞。",
+    mac_2: "Chrome 请点击地址栏右侧的安装图标。",
+    mac_3: "启动应用后允许通知。",
+    mac_4: "在系统设置、通知中确认权限。",
+    mac_c: "开启专注模式会隐藏通知。请把 Tether 加入允许列表。",
+
+    privacy_title: "只有两个人看得到",
+    pv1: "除了受邀的两人，没有人能看到",
+    pv2: "对话与照片只保存在两人的空间里",
+    pv3: "还可以在设备上再加一道 PIN 锁",
+
+    final_t: "准备好就开始吧",
+    final_cta: "使用 Google 开始",
+    final_note: "注册后审核可能需要一些时间。",
+
+    svil_mission: "Singularity Visual Intelligence Lab：致力于提升低视力人群 AI 无障碍体验的研究与开发。",
+    foot_contact: "合作咨询", foot_blog: "博客", foot_home: "主页",
+    foot_youtube: "YouTube", foot_github: "GitHub"
+  },
+
+  vi: {
+    _title: "Tether — Không gian riêng của hai người",
+    hero_tagline: "Không gian riêng của chúng ta",
+    hero_sub: "Ứng dụng chỉ dành cho hai người. Chỉ hai người được mời mới vào được.",
+    cta_primary: "Bắt đầu",
+    cta_secondary: "Tôi đã có lời mời",
+
+    what_title: "Mọi thứ giữa hai người, ở cùng một nơi",
+    what_sub: "Tin nhắn, tâm trạng hôm nay, nhật ký trao đổi, nhạc nghe cùng nhau. Tất cả dồn về một chỗ thay vì rải rác.",
+    f1_t: "Trò chuyện", f1_d: "Gửi ảnh và tệp kèm theo lời nhắn",
+    f2_t: "Tâm trạng hôm nay", f2_d: "Biết đối phương thế nào mà không cần hỏi",
+    f3_t: "Nhật ký trao đổi", f3_d: "Mỗi ngày một bài, gửi qua gửi lại",
+    f4_t: "Album ảnh", f4_d: "Album chỉ hai người xem",
+    f5_t: "Nghe cùng nhau", f5_d: "Bài của bạn và của họ, phát chung một danh sách",
+    f6_t: "Tiểu thuyết tiếp sức", f6_d: "Câu chuyện viết luân phiên từng đoạn",
+    badge_new: "Mới",
+
+    detail_title: "Dùng như thế nào",
+    detail_sub: "Từng tính năng làm được gì.",
+    d1_tag: "TRÒ CHUYỆN",
+    d1_t: "Gửi ảnh kèm điều muốn nói",
+    d1_d: "Khi gửi ảnh, nhạc hay tài liệu, bạn có thể kèm lời nhắn. Gửi nhiều tệp cùng lúc thì mỗi tệp có lời nhắn riêng, và lời nhắn đó cũng hiện trong thông báo của đối phương.",
+    d1_p1: "Dấu đã đọc và tin chưa đọc",
+    d1_p2: "Chạm vào ảnh để xem lớn và lưu vào album",
+    d1_p3: "Tệp đã trao đổi tự gom vào thư viện chung",
+    d1_alt: "Màn hình trò chuyện Tether",
+    d2_tag: "TIỂU THUYẾT TIẾP SỨC",
+    d2_t: "Câu chuyện viết luân phiên từng đoạn",
+    d2_d: "Hai người cùng viết truyện ngay trong khung chat, mỗi người một lượt. Lượt của ai hiện ở phía trên, và chỉ phần bạn viết đúng lượt mới vào truyện. Bí ý tưởng thì AI viết tiếp hai ba câu.",
+    d2_p1: "Viết một lượt rồi chuyển cho đối phương",
+    d2_p2: "Có thể đặt trước thể loại và nhân vật",
+    d2_p3: "Hoàn thành sẽ được cất vào tủ sách và lưu thành tài liệu",
+    d2_alt: "Màn hình tiểu thuyết tiếp sức",
+    d3_tag: "TÂM TRẠNG HÔM NAY",
+    d3_t: "Để không cần hỏi vẫn biết",
+    d3_d: "Ghi một dòng về tình trạng và tâm trạng, nó hiện ngay trên màn hình chính của đối phương. Khi thay đổi sẽ có thông báo.",
+    d3_p1: "Thẻ tâm trạng kèm lời nhắn ngắn",
+    d3_p2: "Xem lại các trạng thái cũ trong lịch sử",
+    d3_p3: "Xem còn bao nhiêu ngày đến kỷ niệm ngay trên màn hình chính",
+    d3_alt: "Màn hình chính và tâm trạng hôm nay",
+    d4_tag: "NHẬT KÝ TRAO ĐỔI",
+    d4_t: "Mỗi ngày một bài, gửi qua gửi lại",
+    d4_d: "Mỗi người viết về ngày của mình rồi đọc của nhau. Có thể trả lời, và nhật ký cũ luôn mở lại được.",
+    d4_p1: "Có thông báo khi nhật ký mới được đăng",
+    d4_p2: "Phần trả lời nối tiếp thành cuộc trò chuyện",
+    d4_alt: "Màn hình nhật ký trao đổi",
+    d5_tag: "NGHE CÙNG NHAU VÀ THƯ VIỆN",
+    d5_t: "Bài của bạn và của họ, nghe chung",
+    d5_d: "Mỗi người chọn vài bài, danh sách gộp lại sẽ phát cùng nhau. Nhạc và tài liệu đã trao đổi được giữ trong thư viện để tìm lại sau.",
+    d5_p1: "Các bài đã chọn phát ngẫu nhiên lặp lại",
+    d5_p2: "Đặt bài chủ đề để phát ngay từ đầu ứng dụng",
+    d5_alt: "Màn hình nghe cùng nhau",
+
+    join_title: "Cách tham gia",
+    join_sub: "Không phải ai cũng đăng ký được. Hãy làm theo thứ tự.",
+    s1_t: "Đăng nhập bằng Google",
+    s1_d: "Không cần tạo ID và mật khẩu riêng. Đổi thiết bị mà cùng tài khoản thì vẫn tiếp tục được.",
+    s2_t: "Chờ phê duyệt",
+    s2_d: "Yêu cầu đăng ký được gửi tới quản trị viên. Chưa duyệt thì chưa dùng được.",
+    s3_t: "Kết nối với đối phương",
+    s3_d: "Một người tạo mã mời, người kia nhập vào là không gian của hai người mở ra.",
+    s4_t: "Cài đặt như một ứng dụng",
+    s4_d: "Phải thêm vào màn hình chính mới nhận được thông báo. Chỉ dùng tab trình duyệt thì không nhận được.",
+    chip_waiting: "Đang chờ",
+    await_t: "Đang chờ phê duyệt",
+    await_d: "Yêu cầu đã được gửi. Khi được duyệt, màn hình này sẽ tự chuyển tiếp. Bạn có thể đóng ứng dụng.",
+    await_account: "Tài khoản đã yêu cầu",
+    await_note: "Nếu chờ lâu, hãy hỏi trực tiếp đối phương.",
+
+    notify_title: "Để nhận được thông báo",
+    notify_sub: "Phải cài đặt như một ứng dụng. Hãy chọn thiết bị.",
+    tab_selected: "Đang chọn",
+    ios_1: "Mở trang này bằng Safari. Trình duyệt khác không cài được.",
+    ios_2: "Nhấn nút chia sẻ bên dưới và chọn Thêm vào MH chính.",
+    ios_3: "Mở từ biểu tượng trên màn hình chính rồi cho phép thông báo.",
+    ios_4: "Bật Cài đặt, Cài đặt chung, Làm mới ứng dụng nền.",
+    ios_c: "Dùng ở tab Safari sẽ không nhận được thông báo nào. Hãy luôn mở từ biểu tượng màn hình chính.",
+    and_1: "Mở trang này bằng Chrome.",
+    and_2: "Chọn Cài đặt ứng dụng trong menu cạnh thanh địa chỉ.",
+    and_3: "Mở ứng dụng rồi cho phép thông báo.",
+    and_4: "Đặt Cài đặt, Ứng dụng, Tether, Pin thành Không hạn chế.",
+    and_c: "Bật tối ưu hoá pin sẽ khiến thông báo đến trễ hoặc không đến. Đây là nguyên nhân phổ biến nhất trên Android.",
+    win_1: "Mở trang này bằng Chrome hoặc Edge.",
+    win_2: "Nhấn biểu tượng cài đặt ở bên phải thanh địa chỉ.",
+    win_3: "Mở ứng dụng rồi cho phép thông báo.",
+    win_4: "Kiểm tra Cài đặt, Hệ thống, Thông báo.",
+    win_c: "Đóng hẳn trình duyệt thì không nhận được thông báo. Đóng cửa sổ cũng được, nhưng hãy để trình duyệt chạy.",
+    mac_1: "Với Safari, dùng nút chia sẻ và chọn Thêm vào Dock.",
+    mac_2: "Với Chrome, nhấn biểu tượng cài đặt bên phải thanh địa chỉ.",
+    mac_3: "Mở ứng dụng rồi cho phép thông báo.",
+    mac_4: "Kiểm tra Cài đặt hệ thống, Thông báo.",
+    mac_c: "Chế độ tập trung sẽ ẩn thông báo. Hãy thêm Tether vào danh sách cho phép.",
+
+    privacy_title: "Chỉ hai người nhìn thấy",
+    pv1: "Ngoài hai người được mời, không ai xem được",
+    pv2: "Tin nhắn và ảnh chỉ lưu trong không gian của hai người",
+    pv3: "Có thể khoá thêm bằng mã PIN trên từng thiết bị",
+
+    final_t: "Sẵn sàng thì bắt đầu thôi",
+    final_cta: "Tiếp tục với Google",
+    final_note: "Sau khi đăng ký, việc phê duyệt có thể mất một chút thời gian.",
+
+    svil_mission: "Singularity Visual Intelligence Lab: nghiên cứu và phát triển nhằm cải thiện khả năng tiếp cận AI cho người thị lực kém.",
+    foot_contact: "Liên hệ", foot_blog: "Blog", foot_home: "Trang chủ",
+    foot_youtube: "YouTube", foot_github: "GitHub"
+  }
+};
+
+const OS_KEYS = {
+  ios: ['ios_1', 'ios_2', 'ios_3', 'ios_4', 'ios_c'],
+  android: ['and_1', 'and_2', 'and_3', 'and_4', 'and_c'],
+  windows: ['win_1', 'win_2', 'win_3', 'win_4', 'win_c'],
+  mac: ['mac_1', 'mac_2', 'mac_3', 'mac_4', 'mac_c']
+};
+
+const CAUTION_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+
+let lang = 'en';
+let os = 'ios';
+
+// 누락 키는 en으로 폴백한다
+function t(key) {
+  const dict = I18N[lang] || I18N.en;
+  if (dict[key] !== undefined) return dict[key];
+  if (I18N.en[key] !== undefined) return I18N.en[key];
+  return key;
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+function renderGuide() {
+  const keys = OS_KEYS[os];
+  const items = keys.slice(0, 4).map(function (k, i) {
+    return '<li><span class="n">' + (i + 1) + '</span><span>' + escapeHtml(t(k)) + '</span></li>';
+  }).join('');
+  document.getElementById('guide').innerHTML =
+    '<ol>' + items + '</ol>' +
+    '<p class="caution">' + CAUTION_ICON + '<span>' + escapeHtml(t(keys[4])) + '</span></p>';
+}
+
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.title = t('_title');
+  document.querySelectorAll('[data-i18n]').forEach(function (el) {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-alt]').forEach(function (el) {
+    el.alt = t(el.dataset.i18nAlt);
+  });
+  document.querySelectorAll('.langbar button').forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+  });
+  renderGuide();
+}
+
+function setLang(next) {
+  lang = I18N[next] ? next : 'en';
+  try { localStorage.setItem('tether_landing_lang', lang); } catch (e) { /* 저장 불가 환경 무시 */ }
+  applyI18n();
+}
+
+// 최초 언어: localStorage → navigator.language → en
+function initialLang() {
+  try {
+    const saved = localStorage.getItem('tether_landing_lang');
+    if (saved && I18N[saved]) return saved;
+  } catch (e) { /* ignore */ }
+  const nav = (navigator.language || 'en').toLowerCase();
+  if (nav.indexOf('ko') === 0) return 'ko';
+  if (nav.indexOf('ja') === 0) return 'ja';
+  if (nav.indexOf('zh') === 0) return 'zh';
+  if (nav.indexOf('vi') === 0) return 'vi';
+  return 'en';
+}
+
+function detectOs() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'mac';
+  return 'windows';
+}
+
+document.querySelectorAll('.langbar button').forEach(function (b) {
+  b.addEventListener('click', function () { setLang(b.dataset.lang); });
+});
+
+const tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+tabs.forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    os = tab.dataset.os;
+    tabs.forEach(function (x) { x.setAttribute('aria-selected', String(x.dataset.os === os)); });
+    renderGuide();
+  });
+});
+
+// 스크린샷은 기본이 숨김. 실제로 불러와진 것만 보여준다.
+// (파일이 없을 때 호스팅이 index.html을 200으로 돌려줘도 빈 상자가 남지 않는다)
+function revealShot(img) {
+  if (img.naturalWidth > 0) {
+    const frame = img.closest('.shot-frame');
+    if (frame) frame.hidden = false;
+  }
+}
+document.querySelectorAll('.shot').forEach(function (img) {
+  if (img.complete) revealShot(img);
+  else img.addEventListener('load', function () { revealShot(img); });
+});
+
+// 저작권 연도는 렌더 시점 기준. HTML의 값은 JS 비활성 환경용 폴백이다.
+document.getElementById('svil-year').textContent = new Date().getFullYear();
+
+os = detectOs();
+tabs.forEach(function (x) { x.setAttribute('aria-selected', String(x.dataset.os === os)); });
+lang = initialLang();
+applyI18n();
+</script>
+
+</body>
+</html>

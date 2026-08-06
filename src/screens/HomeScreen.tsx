@@ -35,6 +35,7 @@ const NAV_ITEMS: { icon: string; label: string; screen: string }[] = [
   { icon: 'chat', label: '채팅', screen: 'chat' },
   { icon: 'calendar_month', label: '기념일', screen: 'anniversary' },
   { icon: 'auto_stories', label: '교환일기', screen: 'diary' },
+  { icon: 'history_edu', label: '릴레이소설', screen: 'relayNovel' },
   { icon: 'featured_play_list', label: '콘텐츠', screen: 'contents' },
   { icon: 'photo_library', label: '사진첩', screen: 'photo' },
   { icon: 'folder_open', label: '자료실', screen: 'library' },
