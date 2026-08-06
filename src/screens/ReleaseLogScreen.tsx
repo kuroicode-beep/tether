@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-hotfix-v0-18-2-chat-input-korean-ime',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅 입력창 기본 한글 입력.`,
+    detail: '채팅 입력창과 첨부 설명 입력창에 한국어 입력 힌트(lang="ko")를 달아, 포커스를 옮겼을 때 입력기가 영문으로 시작하지 않고 한글로 시작하도록 했습니다. 운영체제 입력기 설정에 따라 동작이 다를 수 있습니다.',
+  },
+  {
     id: '2026-08-07-hotfix-v0-18-1-chat-slow-cache',
     date: '2026.08.07',
     type: 'hotfix',

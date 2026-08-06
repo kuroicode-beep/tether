@@ -184,6 +184,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
             </label>
             <textarea
               id="attachment-caption"
+              lang="ko"
               className="attachment-caption-input mb-lg"
               placeholder={isImageFile(preview.file) ? '사진에 남길 말 (선택)' : '파일에 남길 말 (선택)'}
               value={caption}
@@ -248,6 +249,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
           value={text}
           disabled={disabled}
           placeholder="메시지 입력..."
+          lang="ko"
           className="chat-input-editor"
           onChange={handleChange}
           onFocus={() => onFocusChange?.(true)}
