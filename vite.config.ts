@@ -48,6 +48,24 @@ function injectSwEnvPlugin(mode: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
+  build: {
+    rollupOptions: {
+      output: {
+        // 자주 안 바뀌는 벤더를 분리해 앱 코드 수정 시 재다운로드 범위를 줄인다
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-firebase': [
+            'firebase/app',
+            'firebase/auth',
+            'firebase/firestore',
+            'firebase/storage',
+            'firebase/functions',
+            'firebase/messaging',
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

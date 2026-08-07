@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-hotfix-v0-19-1-app-wide-speedup',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 앱 전체 속도 개선.`,
+    detail: '미읽음 배지가 채팅·일기·콘텐츠 전체를 상시 감시하던 것을 최근 것만 보도록 바꿔, 데이터가 쌓여도 앱이 느려지지 않게 했습니다. 또 시작할 때 모든 화면을 한꺼번에 읽던 것을 필요한 화면만 먼저 읽도록 나눠 첫 화면이 더 빨리 뜹니다.',
+  },
+  {
     id: '2026-08-07-update-v0-19-0-typing-indicator',
     date: '2026.08.07',
     type: 'update',

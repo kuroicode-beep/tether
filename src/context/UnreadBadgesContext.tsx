@@ -4,11 +4,13 @@ import { ReactNode, useCallback, useEffect, useState } from 'react'
 import {
   collection,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -20,6 +22,12 @@ import {
 } from './UnreadBadgesContextCore'
 
 const EMPTY_BADGES: UnreadBadges = { chat: 0, diary: 0, contents: 0 }
+
+// 배지 집계용 구독 한도 — 전체 컬렉션을 상시 구독하면 데이터가 쌓일수록
+// 앱 전역이 느려진다. 미읽음이 이 수를 넘으면 한도 값으로 표시된다.
+const CHAT_BADGE_SCAN_LIMIT = 100
+const DIARY_BADGE_SCAN_LIMIT = 50
+const CONTENTS_BADGE_SCAN_LIMIT = 50
 
 const toMillis = (value: unknown): number => {
   if (value instanceof Timestamp) return value.toMillis()
@@ -74,7 +82,11 @@ export function UnreadBadgesProvider({
 
     const unsubs = [
       onSnapshot(
-        query(collection(db, 'couples', coupleId, 'messages'), orderBy('createdAt', 'desc')),
+        query(
+          collection(db, 'couples', coupleId, 'messages'),
+          orderBy('createdAt', 'desc'),
+          limit(CHAT_BADGE_SCAN_LIMIT),
+        ),
         (snap) => {
           counts.chat = snap.docs.filter((d) => {
             const data = d.data()
@@ -83,21 +95,32 @@ export function UnreadBadgesProvider({
           merge()
         },
       ),
-      onSnapshot(query(collection(db, 'couples', coupleId, 'diary'), orderBy('createdAt', 'desc')), (snap) => {
-        counts.diary = snap.docs.filter((d) => {
-          const data = d.data()
-          return data.authorUid !== uid && data.isRead !== true
-        }).length
-        merge()
-      }),
       onSnapshot(
-        query(collection(db, 'couples', coupleId, 'contents'), orderBy('createdAt', 'desc')),
+        query(
+          collection(db, 'couples', coupleId, 'diary'),
+          orderBy('createdAt', 'desc'),
+          limit(DIARY_BADGE_SCAN_LIMIT),
+        ),
+        (snap) => {
+          counts.diary = snap.docs.filter((d) => {
+            const data = d.data()
+            return data.authorUid !== uid && data.isRead !== true
+          }).length
+          merge()
+        },
+      ),
+      onSnapshot(
+        query(
+          collection(db, 'couples', coupleId, 'contents'),
+          // 마지막으로 읽은 시점 이후만 서버에서 걸러 받는다
+          where('createdAt', '>', Timestamp.fromMillis(contentsReadSince)),
+          orderBy('createdAt', 'desc'),
+          limit(CONTENTS_BADGE_SCAN_LIMIT),
+        ),
         (snap) => {
           counts.contents = snap.docs.filter((d) => {
             const data = d.data()
-            const addedBy = data.addedBy as string
-            const createdAt = toMillis(data.createdAt)
-            return addedBy !== uid && createdAt > contentsReadSince
+            return (data.addedBy as string) !== uid
           }).length
           merge()
         },

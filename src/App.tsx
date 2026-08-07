@@ -1,30 +1,44 @@
 ﻿// src/App.tsx
 // 앱 루트: Session/AppContext 제공 + status 기반 라우팅
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { AppProvider } from './context/AppContext'
 import { useApp } from './context/useApp'
 import { SessionProvider } from './context/SessionContext'
 import { useSession } from './context/useSession'
 import { LockScreen } from './screens/LockScreen'
-import { OnboardingScreen } from './screens/OnboardingScreen'
 import { RestoreFailedScreen } from './screens/RestoreFailedScreen'
 import { ApprovalPendingScreen } from './screens/ApprovalPendingScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { ChatScreen } from './screens/ChatScreen'
-import { DiaryScreen } from './screens/DiaryScreen'
-import { ContentsScreen } from './screens/ContentsScreen'
-import { DateRecipeScreen, LibraryScreen, LinkShareScreen } from './screens/LibraryScreen'
-import { ListenTogetherScreen } from './screens/ListenTogetherScreen'
-import { SettingsScreen } from './screens/SettingsScreen'
-import { PhotoAlbum } from './screens/PhotoAlbum'
-import { AnniversaryScreen } from './screens/AnniversaryScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
 import { ThemeMusicPlayer, type ThemeTrack } from './components/ThemeMusicPlayer'
-import { StatusHistoryScreen } from './screens/StatusHistoryScreen'
-import { ReleaseLogScreen } from './screens/ReleaseLogScreen'
-import { RelayNovelScreen } from './screens/RelayNovelScreen'
-import { AdminScreen } from './screens/AdminScreen'
+
+// 시작에 꼭 필요하지 않은 화면은 지연 로드해 초기 번들을 줄인다.
+// PWA가 청크를 미리 캐시하므로 전환 시 추가 네트워크 비용은 없다.
+const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen').then((m) => ({ default: m.OnboardingScreen })))
+const DiaryScreen = lazy(() => import('./screens/DiaryScreen').then((m) => ({ default: m.DiaryScreen })))
+const ContentsScreen = lazy(() => import('./screens/ContentsScreen').then((m) => ({ default: m.ContentsScreen })))
+const LibraryScreen = lazy(() => import('./screens/LibraryScreen').then((m) => ({ default: m.LibraryScreen })))
+const DateRecipeScreen = lazy(() => import('./screens/LibraryScreen').then((m) => ({ default: m.DateRecipeScreen })))
+const LinkShareScreen = lazy(() => import('./screens/LibraryScreen').then((m) => ({ default: m.LinkShareScreen })))
+const ListenTogetherScreen = lazy(() => import('./screens/ListenTogetherScreen').then((m) => ({ default: m.ListenTogetherScreen })))
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen').then((m) => ({ default: m.SettingsScreen })))
+const PhotoAlbum = lazy(() => import('./screens/PhotoAlbum').then((m) => ({ default: m.PhotoAlbum })))
+const AnniversaryScreen = lazy(() => import('./screens/AnniversaryScreen').then((m) => ({ default: m.AnniversaryScreen })))
+const StatusHistoryScreen = lazy(() => import('./screens/StatusHistoryScreen').then((m) => ({ default: m.StatusHistoryScreen })))
+const ReleaseLogScreen = lazy(() => import('./screens/ReleaseLogScreen').then((m) => ({ default: m.ReleaseLogScreen })))
+const RelayNovelScreen = lazy(() => import('./screens/RelayNovelScreen').then((m) => ({ default: m.RelayNovelScreen })))
+const AdminScreen = lazy(() => import('./screens/AdminScreen').then((m) => ({ default: m.AdminScreen })))
+
+// 지연 로드 화면이 뜨는 동안 보여줄 공통 로딩
+function ScreenLoading() {
+  return (
+    <div className="screen min-h-screen flex flex-col items-center justify-center gap-md" style={{ background: 'var(--color-bg)' }}>
+      <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-primary)' }} />
+    </div>
+  )
+}
 import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
@@ -464,7 +478,11 @@ function AppContent() {
   }
 
   if (session.status === 'signed_out' || session.status === 'no_couple') {
-    return <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
+    return (
+      <Suspense fallback={<ScreenLoading />}>
+        <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
+      </Suspense>
+    )
   }
 
   if (session.status === 'approval_pending') {
@@ -519,6 +537,7 @@ function AppContent() {
       )}
 
       <div key={screen} className={`app-screen-slot${showThemePlayer ? ' app-screen-slot--with-theme-music' : ''}`}>
+        <Suspense fallback={<ScreenLoading />}>
         {screen === 'onboarding'  && <OnboardingScreen onConnected={() => setScreen('home')} />}
         {screen === 'chat'        && <ChatScreen onBack={toHome} onSetThemeTrack={handleSetThemeTrack} />}
         {screen === 'relayNovel'  && <RelayNovelScreen onBack={toHome} />}
@@ -544,6 +563,7 @@ function AppContent() {
           />
         )}
         {screen === 'home' && <HomeScreen onNavigate={navigate} onTogglePlayer={togglePlayer} hasPlayer={activePlaylist.length > 0} isPlayerVisible={showThemePlayer} />}
+        </Suspense>
       </div>
     </>
   )
