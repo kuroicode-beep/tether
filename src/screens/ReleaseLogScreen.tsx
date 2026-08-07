@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-update-v0-19-3-mute-chat-alerts-in-chat',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 보는 중엔 메시지 알림 끔.`,
+    detail: '채팅 화면을 보고 있는 동안에는 새 메시지 알림(토스트·알림음)을 띄우지 않습니다. 대화 내용이 이미 눈앞에 보이고 있기 때문이에요. 앱이 백그라운드에 있거나 다른 화면을 보고 있을 때는 기존처럼 알림이 옵니다.',
+  },
+  {
     id: '2026-08-07-hotfix-v0-19-2-auto-hangul-ime',
     date: '2026.08.07',
     type: 'hotfix',

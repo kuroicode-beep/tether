@@ -323,6 +323,8 @@ function AppContent() {
       if (document.visibilityState !== 'visible') return
       if (!shouldHandleNotification(data.notificationId as string | undefined)) return
       const type = (data.alertType as string) ?? undefined
+      // 채팅 화면을 보고 있는 동안에는 메시지 알림을 띄우지 않는다
+      if (type === 'message' && screenRef.current === 'chat') return
       const settings = loadSettings()
       if (!shouldAlertForType(type, settings)) return
       // 창에 포커스가 있으면 무음 (토스트만) — 포커스 없을 때만 울린다
@@ -350,6 +352,8 @@ function AppContent() {
       const willAlert = shouldAlertForType(type, settings)
       const isVisible = document.visibilityState === 'visible'
       debugLog('App.tsx:onForegroundMessage', 'received', { type: type ?? 'none', willAlert, isVisible }, 'H4')
+      // 채팅 화면을 보고 있는 동안에는 메시지 알림(토스트·소리)을 띄우지 않는다
+      if (type === 'message' && isVisible && screenRef.current === 'chat') return
       if (willAlert) {
         if (isVisible) {
           // 포커스 중이면 무음 토스트, 포커스가 없으면 소리도 함께
