@@ -7,8 +7,9 @@ const os = require('os')
 const path = require('path')
 const { execFile, exec, spawn } = require('child_process')
 
-const APP_VERSION = '0.3.2'
+const APP_VERSION = '0.4.0'
 const VERSION_HISTORY = [
+  { version: '0.4.0', date: '2026-08-07', summary: '채팅 입력창 포커스 시 IME를 한글 모드로 자동 전환 (/ime/hangul)' },
   { version: '0.3.2', date: '2026-07-26', summary: '이미 열린 잠금 화면도 단축키로 해제, 단축키로 여는 채팅창은 다크모드' },
   { version: '0.3.1', date: '2026-07-26', summary: '단축키로 열 때 PIN 건너뛰기(1회용 로컬 토큰), 포트 기반 단일 인스턴스 판정' },
   { version: '0.3.0', date: '2026-07-26', summary: '전역 단축키(기본 Win+Alt+Q)로 채팅 화면 바로 열기' },
@@ -201,6 +202,14 @@ function startPingServer(onReady) {
       res.end(JSON.stringify({ ok: true, app: 'tether-sidecar', version: APP_VERSION }))
       return
     }
+    // 채팅 입력창 포커스 시 전경 Tether 창의 IME를 한글 모드로 전환한다
+    if (req.method === 'GET' && req.url === '/ime/hangul') {
+      setImeHangul().then((ok) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok }))
+      })
+      return
+    }
     // 잠금 화면에 있는 앱이 "방금 단축키가 눌렸는지"를 가져간다
     if (req.method === 'GET' && req.url === '/unlock-pending') {
       const ok = consumeUnlockPending()
@@ -265,6 +274,22 @@ function isTetherFocused() {
       const title = titleParts.join('|')
       const isBrowser = /^(chrome|msedge)$/i.test(proc ?? '')
       resolve(isBrowser && title.startsWith('Tether'))
+    })
+  })
+}
+
+// ─── IME 한글 전환 (채팅 입력창 포커스 연동) ──────────────────────────────
+
+// 전경 창이 Tether일 때만 그 창의 IME를 한글 모드로 바꾼다 (ime-hangul.ps1)
+function setImeHangul() {
+  return new Promise((resolve) => {
+    const scriptPath = path.join(__dirname, 'ime-hangul.ps1')
+    execFile('powershell.exe', [
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+    ], { timeout: 4000 }, (err, stdout) => {
+      const ok = !err && String(stdout).includes('OK:1')
+      log('ime_hangul', { ok })
+      resolve(ok)
     })
   })
 }

@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-hotfix-v0-19-2-auto-hangul-ime',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅 입력창 자동 한글 전환 (Windows).`,
+    detail: '채팅 입력창에 포커스가 가면 이 PC의 Tether 사이드카(v0.4.0)가 입력기를 한글 모드로 자동 전환합니다. 사이드카가 실행 중인 Windows에서만 동작하며, 휴대폰 등 다른 기기에서는 기존과 같습니다.',
+  },
+  {
     id: '2026-08-07-hotfix-v0-19-1-app-wide-speedup',
     date: '2026.08.07',
     type: 'hotfix',

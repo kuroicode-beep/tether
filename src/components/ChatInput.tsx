@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { requestKoreanIme } from '../lib/sidecarIme'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
@@ -260,7 +261,7 @@ export function ChatInput({
           lang="ko"
           className="chat-input-editor"
           onChange={handleChange}
-          onFocus={() => onFocusChange?.(true)}
+          onFocus={() => { onFocusChange?.(true); requestKoreanIme() }}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
