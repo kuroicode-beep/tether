@@ -1,6 +1,6 @@
 // src/components/MessageBubble.tsx
 // Renders one chat bubble with sender name, media fallback, and read state.
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { ChatMessage } from '../hooks/useChat'
 
 interface MessageBubbleProps {
@@ -59,7 +59,8 @@ function renderTextWithLinks(text: string) {
   return parts.length > 0 ? parts : text
 }
 
-export function MessageBubble({
+// 메시지 내용이 바뀌지 않으면 다시 그리지 않는다 (목록 전체 리렌더 방지)
+export const MessageBubble = memo(function MessageBubble({
   message,
   isMe,
   showTime,
@@ -224,4 +225,20 @@ export function MessageBubble({
       )}
     </div>
   )
-}
+}, (prev, next) => {
+  // 스냅샷마다 메시지 객체가 새로 생성되므로 내용으로 비교한다
+  const a = prev.message
+  const b = next.message
+  return prev.isMe === next.isMe
+    && prev.showTime === next.showTime
+    && prev.showSenderName === next.showSenderName
+    && prev.senderName === next.senderName
+    && prev.onImageTap === next.onImageTap
+    && prev.onSetThemeTrack === next.onSetThemeTrack
+    && a.id === b.id
+    && a.text === b.text
+    && a.imageUrl === b.imageUrl
+    && a.fileUrl === b.fileUrl
+    && a.createdAt === b.createdAt
+    && a.readBy.join(',') === b.readBy.join(',')
+})

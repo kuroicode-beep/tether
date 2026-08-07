@@ -1698,6 +1698,31 @@ html[data-theme="dark"] body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 채팅 상단 "이전 내용 보기" 버튼 */
+.chat-load-previous {
+  min-height: 50px;
+  padding: 12px 24px;
+  border-radius: 25px;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-load-previous:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+[data-theme="high-contrast"] .chat-load-previous {
+  background: var(--hc-box-bg, #000);
+  border-color: var(--hc-box-text, #fff);
+  color: var(--hc-box-text, #fff);
+}
+
 /* 첨부 시트의 캡션 입력 */
 .attachment-caption-input {
   display: block;
@@ -1742,6 +1767,66 @@ html[data-theme="dark"] body {
 /* 채팅 입력창 */
 /* 입력 바는 채팅 화면 흐름의 마지막 요소다 (fixed 아님).
    화면이 보이는 영역에 고정돼 있으므로 자동으로 키보드 바로 위에 놓인다. */
+/* 입력바 래퍼 — "입력 중" 표시를 입력창 위에 겹쳐 띄우기 위한 기준점 */
+.chat-input-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 상대방 입력 중 표시 — 입력창 바로 위에 떠서 목록 레이아웃을 밀지 않는다 */
+.typing-indicator {
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 45;
+}
+
+.typing-indicator-text {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.typing-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: typing-dot-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+[data-theme="high-contrast"] .typing-indicator {
+  background: var(--hc-box-bg, #000);
+  border-color: var(--hc-box-text, #fff);
+}
+
+[data-theme="high-contrast"] .typing-indicator-text {
+  color: var(--hc-box-text, #fff);
+}
+
 .chat-input-bar {
   position: relative;
   flex-shrink: 0;

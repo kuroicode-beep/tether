@@ -89,6 +89,55 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-07-update-v0-19-3-mute-chat-alerts-in-chat',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 보는 중엔 메시지 알림 끔.`,
+    detail: '채팅 화면을 보고 있는 동안에는 새 메시지 알림(토스트·알림음)을 띄우지 않습니다. 대화 내용이 이미 눈앞에 보이고 있기 때문이에요. 앱이 백그라운드에 있거나 다른 화면을 보고 있을 때는 기존처럼 알림이 옵니다.',
+  },
+  {
+    id: '2026-08-07-hotfix-v0-19-2-auto-hangul-ime',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅 입력창 자동 한글 전환 (Windows).`,
+    detail: '채팅 입력창에 포커스가 가면 이 PC의 Tether 사이드카(v0.4.0)가 입력기를 한글 모드로 자동 전환합니다. 사이드카가 실행 중인 Windows에서만 동작하며, 휴대폰 등 다른 기기에서는 기존과 같습니다.',
+  },
+  {
+    id: '2026-08-07-hotfix-v0-19-1-app-wide-speedup',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 앱 전체 속도 개선.`,
+    detail: '미읽음 배지가 채팅·일기·콘텐츠 전체를 상시 감시하던 것을 최근 것만 보도록 바꿔, 데이터가 쌓여도 앱이 느려지지 않게 했습니다. 또 시작할 때 모든 화면을 한꺼번에 읽던 것을 필요한 화면만 먼저 읽도록 나눠 첫 화면이 더 빨리 뜹니다.',
+  },
+  {
+    id: '2026-08-07-update-v0-19-0-typing-indicator',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 상대방 입력 중 표시.`,
+    detail: '상대가 채팅을 치기 시작하면 입력창 위에 "OO 입력 중"이 점 애니메이션과 함께 떠요. 입력을 멈추거나 지우거나 전송하면 사라집니다. 6초 안에 갱신이 없으면 자동으로 꺼져요.',
+  },
+  {
+    id: '2026-08-07-hotfix-v0-18-2-chat-input-korean-ime',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅 입력창 기본 한글 입력.`,
+    detail: '채팅 입력창과 첨부 설명 입력창에 한국어 입력 힌트(lang="ko")를 달아, 포커스를 옮겼을 때 입력기가 영문으로 시작하지 않고 한글로 시작하도록 했습니다. 운영체제 입력기 설정에 따라 동작이 다를 수 있습니다.',
+  },
+  {
+    id: '2026-08-07-hotfix-v0-18-1-chat-slow-cache',
+    date: '2026.08.07',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 채팅창이 느려지던 문제.`,
+    detail: '채팅 초기화로 서버에서 지운 옛 메시지가 기기 안 캐시에는 그대로 남아, 채팅을 열 때마다 유령 데이터 수만 건을 뒤지느라 느려졌습니다. 업데이트 후 처음 열 때 캐시를 한 번 비우고 자동으로 새로고침합니다. 메시지 목록 그리기도 함께 가볍게 손봤습니다.',
+  },
+  {
+    id: '2026-08-07-update-v0-18-0-chat-order-today',
+    date: '2026.08.07',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 순서 정리와 이전 내용 보기.`,
+    detail: '메시지 시간을 서버 기준으로 통일해 기기 시계가 달라도 입력한 순서대로 표시됩니다. 채팅방에 들어가면 오늘 대화만 먼저 보이고, 맨 위의 "이전 내용 보기" 버튼을 누르면 지난 대화를 이어서 불러옵니다.',
+  },
+  {
     id: '2026-08-03-update-v0-17-0-landing-page',
     date: '2026.08.03',
     type: 'update',

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { requestKoreanIme } from '../lib/sidecarIme'
 
 interface ChatInputProps {
   onSendText: (text: string) => void
@@ -7,6 +8,8 @@ interface ChatInputProps {
   autoFocus?: boolean
   incomingFiles?: { id: number; files: File[] } | null
   onFocusChange?: (focused: boolean) => void
+  onTyping?: () => void
+  onTypingStop?: () => void
 }
 
 interface FilePreview {
@@ -24,7 +27,9 @@ function formatFileSize(size: number): string {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomingFiles, onFocusChange }: ChatInputProps) {
+export function ChatInput({
+  onSendText, onSendFile, disabled, autoFocus, incomingFiles, onFocusChange, onTyping, onTypingStop,
+}: ChatInputProps) {
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<FilePreview | null>(null)
   const [fileQueue, setFileQueue] = useState<File[]>([])
@@ -85,6 +90,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
     const trimmed = current.trim()
     if (!trimmed || disabled || composingRef.current) return
     onSendText(trimmed)
+    onTypingStop?.()
     setText('')
     if (editorRef.current) {
       editorRef.current.value = ''
@@ -105,6 +111,9 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
     const next = e.currentTarget.value
     setText(next.replace(/\u00a0/g, ' '))
     adjustHeight()
+    // \uc785\ub825 \uc911 \uc0c1\ud0dc \uc804\ub2ec \u2014 \ub0b4\uc6a9\uc744 \ub2e4 \uc9c0\uc6b0\uba74 \uba48\ucd98 \uac83\uc73c\ub85c \uc54c\ub9b0\ub2e4
+    if (next.trim()) onTyping?.()
+    else onTypingStop?.()
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -184,6 +193,7 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
             </label>
             <textarea
               id="attachment-caption"
+              lang="ko"
               className="attachment-caption-input mb-lg"
               placeholder={isImageFile(preview.file) ? '사진에 남길 말 (선택)' : '파일에 남길 말 (선택)'}
               value={caption}
@@ -248,9 +258,10 @@ export function ChatInput({ onSendText, onSendFile, disabled, autoFocus, incomin
           value={text}
           disabled={disabled}
           placeholder="메시지 입력..."
+          lang="ko"
           className="chat-input-editor"
           onChange={handleChange}
-          onFocus={() => onFocusChange?.(true)}
+          onFocus={() => { onFocusChange?.(true); requestKoreanIme() }}
           onBlur={() => onFocusChange?.(false)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}

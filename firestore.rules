@@ -173,6 +173,12 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Typing: ephemeral "입력 중" indicator; users manage only their own doc.
+      match /typing/{uid} {
+        allow read: if isCoupleMember();
+        allow create, update, delete: if isCoupleMember() && request.auth.uid == uid;
+      }
+
       // Status history is append-only and uid must match the writer.
       match /statusHistory/{entryId} {
         allow read: if isCoupleMember();

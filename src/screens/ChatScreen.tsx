@@ -12,6 +12,7 @@ import { ImageViewer } from '../components/ImageViewer'
 import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useRelayNovel } from '../hooks/useRelayNovel'
+import { useTypingStatus } from '../hooks/useTypingStatus'
 import {
   formatBackground, parseRelayCommand, RELAY_HELP_TEXT, RELAY_QUICK_HINT,
 } from '../lib/relayNovel'
@@ -52,6 +53,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   )
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const relay = useRelayNovel(coupleId, uid)
+  const { partnerTyping, notifyTyping, stopTyping } = useTypingStatus(coupleId, uid, partnerUid)
   const keyboardOpen = useKeyboardInset()
   const myName = myNickname || '나'
 
@@ -78,6 +80,12 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
 
   const partnerName = partnerNickname || '자기'
   const groupedMessages = useMemo(() => groupMessages(messages), [messages])
+  // 메시지 id → 목록 인덱스 (렌더마다 findIndex로 전체를 훑지 않도록)
+  const messageIndexById = useMemo(() => {
+    const map = new Map<string, number>()
+    messages.forEach((m, i) => map.set(m.id, i))
+    return map
+  }, [messages])
 
   // 릴레이소설 — 시스템 안내는 진행 상황을 알리는 메시지로 남긴다
   const postRelaySystem = useCallback((text: string, novelId?: string) => {
@@ -336,18 +344,18 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     requestAnimationFrame(() => scrollToBottom('auto'))
   }, [keyboardOpen, scrollToBottom])
 
-  // 사용자가 직접 맨 위에 닿았을 때만 이전 메시지를 불러온다 (iOS 자동 튐 방지)
-  const handleListScroll = useCallback(() => {
+  // "이전 내용 보기" 버튼 — 이전 메시지를 불러오고 보던 위치를 유지한다
+  const handleLoadPrevious = useCallback(() => {
     const list = listRef.current
-    if (!list || !initialScrollDoneRef.current || inputFocusedRef.current) return
-    if (!hasMore || loading || list.scrollTop > 24) return
+    if (!list || !hasMore || loading) return
 
     const prevHeight = list.scrollHeight
+    const prevTop = list.scrollTop
     void loadMore().then(() => {
       const nextList = listRef.current
       if (!nextList) return
       const added = nextList.scrollHeight - prevHeight
-      nextList.scrollTop = Math.max(added, 0)
+      nextList.scrollTop = prevTop + Math.max(added, 0)
     })
   }, [hasMore, loading, loadMore])
 
@@ -373,7 +381,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   // 메시지 사이에 날짜 디바이더가 필요한지 판단
   const needsDivider = useCallback(
     (msg: ChatMessage, index: number): boolean => {
-      if (!msg.createdAt) return false
+      if (!msg.createdAt || index < 0) return false
       if (index === 0) return true
       const prev = messages[index - 1]
       if (!prev.createdAt) return false
@@ -489,10 +497,21 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         ref={listRef}
         className="chat-message-list flex-1 min-h-0 overflow-y-auto px-4 flex flex-col"
         style={{ paddingTop: '16px', paddingBottom: '12px' }}
-        onScroll={handleListScroll}
       >
-        <div ref={topRef} className="h-1 shrink-0">
-          {loading && (
+        <div ref={topRef} className="shrink-0">
+          {hasMore && (
+            <div className="flex justify-center pb-sm">
+              <button
+                type="button"
+                className="chat-load-previous"
+                onClick={handleLoadPrevious}
+                disabled={loading}
+              >
+                {loading ? '불러오는 중…' : '이전 내용 보기'}
+              </button>
+            </div>
+          )}
+          {!hasMore && loading && (
             <div className="flex justify-center py-sm">
               <span className="material-symbols-outlined text-outline-variant animate-spin text-sm">
                 progress_activity
@@ -526,7 +545,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
               className={`message-group${isNewSender ? ' new-sender' : ''}`}
             >
               {group.map((msg, msgIndex) => {
-                const flatIndex = messages.findIndex((m) => m.id === msg.id)
+                const flatIndex = messageIndexById.get(msg.id) ?? -1
                 const isMe = msg.senderUid === uid
                 const showSenderName = msgIndex === 0 && !isMe
                 const showTime = msgIndex === group.length - 1
@@ -576,13 +595,23 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         <div ref={bottomRef} className="h-1" />
       </main>
 
-      <ChatInput
-        onSendText={handleSendText}
-        onSendFile={sendFile}
-        autoFocus
-        incomingFiles={incomingFiles}
-        onFocusChange={(focused) => { inputFocusedRef.current = focused }}
-      />
+      <div className="chat-input-wrap">
+        {partnerTyping && (
+          <div className="typing-indicator" role="status" aria-live="polite">
+            <span className="typing-indicator-text">{partnerName} 입력 중</span>
+            <span className="typing-dots" aria-hidden="true"><i /><i /><i /></span>
+          </div>
+        )}
+        <ChatInput
+          onSendText={handleSendText}
+          onSendFile={sendFile}
+          autoFocus
+          incomingFiles={incomingFiles}
+          onFocusChange={(focused) => { inputFocusedRef.current = focused }}
+          onTyping={notifyTyping}
+          onTypingStop={stopTyping}
+        />
+      </div>
 
       {viewerUrl && (
         <ImageViewer
