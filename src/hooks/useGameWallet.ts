@@ -61,11 +61,11 @@ export function useGameWallet(coupleId: string | null, myUid: string | null) {
       .filter((t): t is number => t != null)
   }, [coupleId, myUid])
 
-  // 지금 충전 가능한지 판정만 한다 (쓰기 없음)
+  // 지금 충전 가능한지 판정만 한다 (쓰기 없음) — 잔액 5만원 이하 조건 포함
   const getChargeEligibility = useCallback(async (): Promise<ChargeEligibility> => {
     const times = await fetchChargeTimes()
-    return computeChargeEligibility(times, Date.now())
-  }, [fetchChargeTimes])
+    return computeChargeEligibility(times, Date.now(), balance ?? 0)
+  }, [fetchChargeTimes, balance])
 
   // 5만원 충전 — 판정 통과 시 이력 기록 + 잔액 증가
   const charge = useCallback(async (): Promise<ChargeAttempt> => {

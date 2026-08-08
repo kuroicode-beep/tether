@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-08-hotfix-v0-20-1-charge-balance-limit',
+    date: '2026.08.08',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 충전은 잔액 5만원 이하일 때만.`,
+    detail: '게임머니 충전 조건을 조정했습니다. 잔액이 5만원 이하일 때만 충전할 수 있고, 넘으면 은행 화면과 안내 메시지에 사유가 표시됩니다.',
+  },
+  {
     id: '2026-08-08-update-v0-20-0-omok-game',
     date: '2026.08.08',
     type: 'update',

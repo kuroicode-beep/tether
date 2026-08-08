@@ -17,7 +17,7 @@ import { useOmokGame } from '../hooks/useOmokGame'
 import { useGameWallet } from '../hooks/useGameWallet'
 import { useOmokRecord, formatBucket } from '../hooks/useOmokRecord'
 import { parseGameCommand, OMOK_HELP_TEXT, OMOK_QUICK_HINT, type GameCommand } from '../lib/gameCommand'
-import { formatKrw, formatRemaining, CHARGE_AMOUNT } from '../lib/gameWallet'
+import { formatKrw, formatRemaining, CHARGE_AMOUNT, CHARGE_BALANCE_LIMIT } from '../lib/gameWallet'
 import { OmokPanel } from '../components/OmokPanel'
 import { GameBankSheet } from '../components/GameBankSheet'
 import {
@@ -175,6 +175,8 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       const attempt = await wallet.charge()
       if (attempt.ok) {
         postGameSystem(`${myName} 게임머니 ${formatKrw(CHARGE_AMOUNT)} 충전 완료!`)
+      } else if (attempt.reason === 'balance') {
+        postGameSystem(`잔액이 ${formatKrw(CHARGE_BALANCE_LIMIT)} 이하일 때만 충전할 수 있어요 (현재 ${formatKrw(wallet.balance ?? 0)}).`)
       } else if (attempt.reason === 'daily') {
         postGameSystem('오늘 충전 3회를 모두 사용했어요. 내일 다시 충전할 수 있어요.')
       } else if (attempt.reason === 'cooldown') {

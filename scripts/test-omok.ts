@@ -66,14 +66,17 @@ check('릴소 명령 무시', parseGameCommand('/릴소 시작'), null)
 check('베팅 상한', normalizeBet(999999), 50000)
 check('베팅 반올림', normalizeBet(1234), 1200)
 
-// 충전 판정 — 기준시각 고정
+// 충전 판정 — 기준시각 고정, 잔액 5만원 이하 조건 포함
 const NOON = new Date('2026-08-08T12:00:00+09:00').getTime()
 const H = 60 * 60 * 1000
-check('첫 충전 가능', computeChargeEligibility([], NOON), { ok: true })
-check('쿨다운 차단', computeChargeEligibility([NOON - 2 * H], NOON).reason, 'cooldown')
-check('8시간 경과 가능', computeChargeEligibility([NOON - 9 * H], NOON), { ok: true })
-check('하루 3회 차단', computeChargeEligibility([NOON - 1 * H, NOON - 9 * H, NOON - 11 * H], NOON).reason, 'daily')
-check('어제 충전은 오늘 카운트 제외', computeChargeEligibility([NOON - 13 * H, NOON - 30 * H, NOON - 40 * H], NOON), { ok: true })
+check('첫 충전 가능', computeChargeEligibility([], NOON, 0), { ok: true })
+check('쿨다운 차단', computeChargeEligibility([NOON - 2 * H], NOON, 0).reason, 'cooldown')
+check('8시간 경과 가능', computeChargeEligibility([NOON - 9 * H], NOON, 0), { ok: true })
+check('하루 3회 차단', computeChargeEligibility([NOON - 1 * H, NOON - 9 * H, NOON - 11 * H], NOON, 0).reason, 'daily')
+check('어제 충전은 오늘 카운트 제외', computeChargeEligibility([NOON - 13 * H, NOON - 30 * H, NOON - 40 * H], NOON, 0), { ok: true })
+check('잔액 5만원 초과 차단', computeChargeEligibility([], NOON, 50_100).reason, 'balance')
+check('잔액 정확히 5만원 허용', computeChargeEligibility([], NOON, 50_000), { ok: true })
+check('잔액 차단이 쿨다운보다 우선', computeChargeEligibility([NOON - 2 * H], NOON, 120_000).reason, 'balance')
 
 console.log(`\n${pass}/${total} passed`)
 if (pass !== total) process.exit(1)

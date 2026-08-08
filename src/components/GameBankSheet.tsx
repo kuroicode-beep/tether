@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import {
-  CHARGE_AMOUNT, MAX_DAILY_CHARGES,
+  CHARGE_AMOUNT, MAX_DAILY_CHARGES, CHARGE_BALANCE_LIMIT,
   computeChargeEligibility, formatKrw, formatRemaining,
   type ChargeEligibility,
 } from '../lib/gameWallet'
@@ -66,7 +66,7 @@ export function GameBankSheet({ coupleId, myUid, balance, onCharge, onClose }: G
         .map((d) => (d.data()['at'] as Timestamp | null)?.toMillis() ?? null)
         .filter((t): t is number => t != null)
       const now = Date.now()
-      setEligibility(computeChargeEligibility(chargeTimes, now))
+      setEligibility(computeChargeEligibility(chargeTimes, now, balance ?? 0))
       const dayStart = startOfDay(new Date(now)).getTime()
       setTodayCount(chargeTimes.filter((t) => t >= dayStart).length)
 
@@ -95,7 +95,7 @@ export function GameBankSheet({ coupleId, myUid, balance, onCharge, onClose }: G
     } finally {
       setLoading(false)
     }
-  }, [coupleId, myUid])
+  }, [coupleId, myUid, balance])
 
   useEffect(() => {
     void load()
@@ -115,6 +115,8 @@ export function GameBankSheet({ coupleId, myUid, balance, onCharge, onClose }: G
   const chargeDisabled = charging || loading || eligibility?.ok === false
   const chargeStatusText = eligibility == null || eligibility.ok
     ? `오늘 ${todayCount}/${MAX_DAILY_CHARGES}회 사용`
+    : eligibility.reason === 'balance'
+      ? `잔액이 ${formatKrw(CHARGE_BALANCE_LIMIT)} 이하일 때만 충전할 수 있어요`
     : eligibility.reason === 'daily'
       ? `오늘 충전 ${MAX_DAILY_CHARGES}회를 모두 사용했어요 (내일 가능)`
       : `오늘 ${todayCount}/${MAX_DAILY_CHARGES}회 · 다음 충전까지 ${formatRemaining((eligibility.nextAt ?? 0) - Date.now())}`

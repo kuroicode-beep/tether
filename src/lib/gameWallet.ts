@@ -6,6 +6,8 @@ export const WALLET_SEED = 50_000
 export const CHARGE_AMOUNT = 50_000
 export const MAX_DAILY_CHARGES = 3
 export const CHARGE_COOLDOWN_MS = 8 * 60 * 60 * 1000
+// 잔액이 이 금액 이하일 때만 충전할 수 있다
+export const CHARGE_BALANCE_LIMIT = 50_000
 
 export const OMOK_DEFAULT_BET = 1_000
 export const OMOK_MAX_BET = 50_000
@@ -13,13 +15,20 @@ export const OMOK_BET_UNIT = 100
 
 export interface ChargeEligibility {
   ok: boolean
-  reason?: 'daily' | 'cooldown'
+  reason?: 'daily' | 'cooldown' | 'balance'
   nextAt?: number
 }
 
-// 충전 이력(최신순 ms 배열)으로 지금 충전 가능한지 판정한다.
+// 충전 이력(최신순 ms 배열)과 현재 잔액으로 지금 충전 가능한지 판정한다.
 // 시각은 서버 기록(serverTimestamp) 기준 — 기기 시계 어긋남 영향 최소화.
-export function computeChargeEligibility(chargeTimesDesc: number[], now: number): ChargeEligibility {
+export function computeChargeEligibility(
+  chargeTimesDesc: number[],
+  now: number,
+  balance: number,
+): ChargeEligibility {
+  if (balance > CHARGE_BALANCE_LIMIT) {
+    return { ok: false, reason: 'balance' }
+  }
   const dayStart = startOfDay(new Date(now)).getTime()
   const todayCount = chargeTimesDesc.filter((t) => t >= dayStart).length
   if (todayCount >= MAX_DAILY_CHARGES) {
