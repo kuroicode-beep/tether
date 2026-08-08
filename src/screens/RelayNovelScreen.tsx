@@ -1,10 +1,10 @@
 // src/screens/RelayNovelScreen.tsx
-// 릴레이소설 서재 — 완결본 목록과 본문 보기, 문서 파일 내려받기.
+// 릴레이소설 서재 — 일시중지된 이야기 재개, 완결본 목록과 본문 보기, 문서 내려받기.
 import { useCallback, useEffect, useState } from 'react'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { useCoupleSession } from '../hooks/useCoupleSession'
-import { fetchCompletedNovels } from '../hooks/useRelayNovel'
+import { fetchCompletedNovels, fetchPausedNovels, resumeNovel } from '../hooks/useRelayNovel'
 import { buildNovelDocument, type RelayNovel } from '../lib/relayNovel'
 
 interface RelayNovelScreenProps {
@@ -21,9 +21,12 @@ function formatDate(ms: number | null): string {
 export function RelayNovelScreen({ onBack }: RelayNovelScreenProps) {
   const { coupleId } = useCoupleSession()
   const [novels, setNovels] = useState<RelayNovel[]>([])
+  const [pausedNovels, setPausedNovels] = useState<RelayNovel[]>([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [openNovel, setOpenNovel] = useState<RelayNovel | null>(null)
+  const [resumingId, setResumingId] = useState<string | null>(null)
+  const [resumedTitle, setResumedTitle] = useState<string | null>(null)
 
   useEffect(() => {
     if (!coupleId) {
@@ -33,8 +36,12 @@ export function RelayNovelScreen({ onBack }: RelayNovelScreenProps) {
     let cancelled = false
     setLoading(true)
     setFailed(false)
-    fetchCompletedNovels(coupleId)
-      .then((list) => { if (!cancelled) setNovels(list) })
+    Promise.all([fetchCompletedNovels(coupleId), fetchPausedNovels(coupleId)])
+      .then(([completed, paused]) => {
+        if (cancelled) return
+        setNovels(completed)
+        setPausedNovels(paused)
+      })
       .catch((err) => {
         console.warn('[RelayNovel] 목록을 불러오지 못했어요', err)
         if (!cancelled) setFailed(true)
@@ -42,6 +49,21 @@ export function RelayNovelScreen({ onBack }: RelayNovelScreenProps) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [coupleId])
+
+  // 일시중지된 이야기를 재개한다 — 진행 중이던 다른 이야기는 자동 일시중지
+  const handleResume = useCallback(async (novel: RelayNovel) => {
+    if (!coupleId || resumingId) return
+    setResumingId(novel.id)
+    try {
+      await resumeNovel(coupleId, novel.id)
+      setPausedNovels((list) => list.filter((n) => n.id !== novel.id))
+      setResumedTitle(novel.title)
+    } catch (err) {
+      console.warn('[RelayNovel] 재개하지 못했어요', err)
+    } finally {
+      setResumingId(null)
+    }
+  }, [coupleId, resumingId])
 
   // 완결본을 마크다운 문서로 내려받는다
   const handleDownload = useCallback((novel: RelayNovel) => {
@@ -109,7 +131,44 @@ export function RelayNovelScreen({ onBack }: RelayNovelScreenProps) {
           </p>
         )}
 
-        {!loading && !failed && novels.length === 0 && (
+        {resumedTitle && (
+          <p className="relay-resume-notice" role="status">
+            「{resumedTitle}」를 다시 시작했어요. 채팅 상단에서 이어서 써주세요.
+          </p>
+        )}
+
+        {!loading && !failed && pausedNovels.length > 0 && (
+          <>
+            <p className="font-label-md text-label-md text-on-surface font-semibold mb-sm">
+              잠시 멈춘 이야기
+            </p>
+            {pausedNovels.map((novel) => (
+              <div key={novel.id} className="relay-card relay-card--paused">
+                <div className="relay-card-head">
+                  <span className="material-symbols-outlined relay-card-icon" aria-hidden="true">
+                    pause_circle
+                  </span>
+                  <span className="relay-card-title">{novel.title}</span>
+                </div>
+                <p className="relay-card-meta">
+                  {formatDate(novel.startedAt)} 시작 · {novel.turnCount}턴 · 일시중지
+                </p>
+                {novel.turns[0] && <p className="relay-card-preview">{novel.turns[0].text}</p>}
+                <button
+                  type="button"
+                  className="btn-outline w-full mt-sm"
+                  onClick={() => void handleResume(novel)}
+                  disabled={resumingId === novel.id}
+                >
+                  {resumingId === novel.id ? '재개하는 중…' : '재개하기'}
+                </button>
+              </div>
+            ))}
+            <div className="mb-lg" />
+          </>
+        )}
+
+        {!loading && !failed && novels.length === 0 && pausedNovels.length === 0 && (
           <div className="relay-empty">
             <span className="material-symbols-outlined relay-empty-icon" aria-hidden="true">
               history_edu

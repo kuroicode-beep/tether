@@ -59,7 +59,9 @@ const PREFIXES = ['/릴레이 소설', '/릴레이소설', '/릴소'] as const
 const ALIASES: Record<string, RelayCommand['kind']> = {
   '시작': 'start',
   '끝': 'pause',
+  '일시중지': 'pause',
   '일시정지': 'pause',
+  '중지': 'pause',
   '정지': 'pause',
   '완결': 'complete',
   '종료': 'complete',
@@ -144,7 +146,7 @@ export const RELAY_HELP_TEXT = [
   '',
   '[이야기 관리]',
   '/릴소 시작 [제목] — 새 이야기를 시작해요',
-  '/릴소 끝 — 잠시 멈춰요 (차례인 사람만)',
+  '/릴소 일시중지 — 잠시 멈추고 채팅 상단에서 숨겨요 (서재에서 재개)',
   '/릴소 완결 — 마무리하고 서재에 보관해요',
   '/릴소 초기화 — 둘 다 입력하면 본문과 설정을 비워요',
   '',

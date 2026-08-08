@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-08-update-v0-21-0-relay-pause-resume',
+    date: '2026.08.08',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 릴레이소설 일시중지·재개.`,
+    detail: '/릴소 일시중지 명령이나 채팅 상단 띠의 [중지] 버튼으로 이야기를 잠시 멈출 수 있어요. 멈춘 이야기는 상단에서 사라지고, 그동안 새 이야기를 시작할 수 있습니다. 릴레이소설 서재의 "잠시 멈춘 이야기"에서 [재개하기]를 누르면 다시 이어집니다 (다른 이야기가 진행 중이면 그건 자동으로 일시중지돼요).',
+  },
+  {
     id: '2026-08-08-hotfix-v0-20-1-charge-balance-limit',
     date: '2026.08.08',
     type: 'hotfix',

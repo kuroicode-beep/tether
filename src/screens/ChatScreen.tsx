@@ -109,6 +109,17 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     void sendText(text, { gameKind: 'system', gameId })
   }, [sendText])
 
+  // 릴레이소설 일시중지 — 상단 배너의 [중지] 버튼과 /릴소 일시중지 명령 공용
+  const handleRelayPause = useCallback(async () => {
+    const novel = relay.novel
+    if (!novel) return
+    await relay.setStatus(novel.id, 'paused')
+    postRelaySystem(
+      `「${novel.title}」를 일시중지했어요. 릴레이소설 서재의 [재개하기]로 언제든 이어갈 수 있고, 그동안 새 이야기를 시작해도 돼요.`,
+      novel.id,
+    )
+  }, [relay, postRelaySystem])
+
   // 새 판이 시작되면 양쪽 모두 드로어를 자동으로 펼친다
   const lastSeenGameIdRef = useRef<string | null>(null)
   useEffect(() => {
@@ -284,9 +295,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           return
         }
         postRelaySystem(
-          relay.novel.status === 'paused'
-            ? `「${relay.novel.title}」가 ${relay.novel.turnCount}턴에서 멈춰 있어요. /릴소 쓰기 로 이어집니다.`
-            : `「${relay.novel.title}」를 ${relay.novel.turnCount}턴까지 쓰고 있어요. 새로 시작하려면 /릴소 완결 이나 /릴소 초기화 를 써주세요.`,
+          `「${relay.novel.title}」를 ${relay.novel.turnCount}턴까지 쓰고 있어요. 새로 시작하려면 /릴소 완결·/릴소 일시중지·/릴소 초기화 중 하나를 써주세요.`,
           relay.novel.id,
         )
         return
@@ -367,8 +376,8 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
       return
     }
 
-    // 쓰기·멈추기·이어쓰기 도움은 지금 차례인 사람만 쓸 수 있다
-    if ((command.kind === 'write' || command.kind === 'pause' || command.kind === 'assist') && !isMyTurn) {
+    // 쓰기·이어쓰기 도움은 지금 차례인 사람만 쓸 수 있다 (일시중지는 둘 다 언제든)
+    if ((command.kind === 'write' || command.kind === 'assist') && !isMyTurn) {
       postRelaySystem(`지금은 ${turnOwnerName} 차례예요. 차례인 사람만 쓸 수 있어요.`, relay.novel.id)
       return
     }
@@ -399,8 +408,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     }
 
     if (command.kind === 'pause') {
-      await relay.setStatus(relay.novel.id, 'paused')
-      postRelaySystem(`「${relay.novel.title}」를 잠시 멈췄어요. 이어서 쓰려면 그냥 쓰면 돼요.`, relay.novel.id)
+      await handleRelayPause()
       return
     }
 
@@ -440,7 +448,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     }
   }, [
     relay, sendText, postRelaySystem, myName, uid, partnerUid, partnerNickname,
-    isMyTurn, nextTurnUid, turnOwnerName, handleGameCommand,
+    isMyTurn, nextTurnUid, turnOwnerName, handleGameCommand, handleRelayPause,
   ])
 
   // 릴레이소설 턴 메시지를 지우면 소설에서도 그 턴을 되돌린다.
@@ -635,6 +643,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           turnOwnerName={turnOwnerName}
           isMyTurn={isMyTurn}
           onOpenInfo={() => setRelayInfoOpen(true)}
+          onPause={() => void handleRelayPause()}
         />
       )}
 

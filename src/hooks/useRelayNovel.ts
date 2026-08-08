@@ -30,7 +30,9 @@ function toNovel(id: string, d: Record<string, unknown>): RelayNovel {
   }
 }
 
-// 진행 중(active·paused) 세션을 구독한다. 없으면 null.
+// 진행 중(active) 세션만 구독한다. 없으면 null.
+// 일시중지(paused)된 이야기는 배너에서 숨겨지고 서재에서 재개한다 —
+// 그동안 새 이야기를 시작할 수 있다.
 export function useRelayNovel(coupleId: string | null, myUid: string | null) {
   const [novel, setNovel] = useState<RelayNovel | null>(null)
   const [assisting, setAssisting] = useState(false)
@@ -42,7 +44,7 @@ export function useRelayNovel(coupleId: string | null, myUid: string | null) {
     }
     const q = query(
       collection(db, 'couples', coupleId, 'relayNovels'),
-      where('status', 'in', ['active', 'paused']),
+      where('status', '==', 'active'),
       limit(1),
     )
     return onSnapshot(
@@ -245,4 +247,35 @@ export async function fetchCompletedNovels(coupleId: string): Promise<RelayNovel
   )
   const snap = await getDocs(q)
   return snap.docs.map((d) => toNovel(d.id, d.data()))
+}
+
+// 서재 화면용 — 일시중지된 이야기 목록 (시작일 최신순, 클라 정렬이라 인덱스 불필요)
+export async function fetchPausedNovels(coupleId: string): Promise<RelayNovel[]> {
+  const q = query(
+    collection(db, 'couples', coupleId, 'relayNovels'),
+    where('status', '==', 'paused'),
+    limit(20),
+  )
+  const snap = await getDocs(q)
+  return snap.docs
+    .map((d) => toNovel(d.id, d.data()))
+    .sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0))
+}
+
+// 일시중지된 이야기를 재개한다. 진행 중인 다른 이야기가 있으면
+// 그것을 일시중지해 "동시에 한 편만 진행" 규칙을 지킨다.
+export async function resumeNovel(coupleId: string, novelId: string): Promise<void> {
+  const activeSnap = await getDocs(query(
+    collection(db, 'couples', coupleId, 'relayNovels'),
+    where('status', '==', 'active'),
+    limit(1),
+  ))
+  for (const d of activeSnap.docs) {
+    if (d.id !== novelId) {
+      await updateDoc(d.ref, { status: 'paused' as RelayNovelStatus })
+    }
+  }
+  await updateDoc(doc(db, 'couples', coupleId, 'relayNovels', novelId), {
+    status: 'active' as RelayNovelStatus,
+  })
 }
