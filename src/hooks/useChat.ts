@@ -37,12 +37,15 @@ export interface ChatMessage {
   relayTurn?: number
   relayKind?: 'turn' | 'system' | 'assist'
   relayAuthorName?: string
+  // 게임(오목 등) 안내 메시지 표시
+  gameKind?: 'system'
+  gameId?: string
 }
 
-// 메시지에 함께 저장할 부가 정보 (릴레이소설 등)
+// 메시지에 함께 저장할 부가 정보 (릴레이소설·게임 등)
 export type ChatMessageMeta = Pick<
   ChatMessage,
-  'relayNovelId' | 'relayTurn' | 'relayKind' | 'relayAuthorName'
+  'relayNovelId' | 'relayTurn' | 'relayKind' | 'relayAuthorName' | 'gameKind' | 'gameId'
 >
 
 function toMessage(d: DocumentData, id: string): ChatMessage {
@@ -64,6 +67,8 @@ function toMessage(d: DocumentData, id: string): ChatMessage {
     relayTurn: d['relayTurn'] as number | undefined,
     relayKind: d['relayKind'] as ChatMessage['relayKind'],
     relayAuthorName: d['relayAuthorName'] as string | undefined,
+    gameKind: d['gameKind'] as ChatMessage['gameKind'],
+    gameId: d['gameId'] as string | undefined,
   }
 }
 

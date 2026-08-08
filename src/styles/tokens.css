@@ -2469,3 +2469,342 @@ body[data-keyboard="open"] .chat-input-bar {
 [data-theme="high-contrast"] .diary-status-pill--unread {
   border-color: var(--color-primary) !important;
 }
+
+/* ── 오목 게임 드로어 ──
+   채팅 헤더 아래 접이식 패널. 접힘=한 줄 배너, 펼침=보드.
+   메시지 목록·입력은 아래에서 그대로 사용 가능해야 한다(드로어 요건). */
+.omok-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  z-index: 30;
+}
+
+.omok-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.omok-banner-icon {
+  color: var(--color-primary);
+  font-size: 22px;
+}
+
+.omok-banner-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.omok-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.omok-turn-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.omok-turn-badge--mine {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.omok-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 12px;
+  max-height: 62vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.omok-panel-status {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.omok-panel-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.omok-mini-btn {
+  min-height: 34px;
+  padding: 4px 12px;
+  border-radius: 17px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.omok-board {
+  width: min(100%, 340px);
+  height: auto;
+  touch-action: manipulation;
+  display: block;
+}
+
+.omok-board-bg { fill: #d9b36c; }
+.omok-board-line { stroke: #7a5c2e; stroke-width: 1; }
+.omok-board-star { fill: #7a5c2e; }
+.omok-stone-black { fill: #14140f; stroke: #000; stroke-width: 1; }
+.omok-stone-white { fill: #fafaf5; stroke: #444; stroke-width: 1.5; }
+.omok-last-marker { fill: #d8432f; }
+.omok-win-line {
+  stroke: #d8432f;
+  stroke-width: 5;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.omok-ghost-ring {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.omok-confirm-btn {
+  min-height: 50px;
+  width: min(100%, 340px);
+  border-radius: 25px;
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary, #fff);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.omok-confirm-btn:disabled { opacity: 0.6; cursor: default; }
+
+.omok-hint-text {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.omok-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.omok-action-btn {
+  min-height: 40px;
+  padding: 6px 20px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.omok-record-row {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  opacity: 0.85;
+  margin: 0;
+  text-align: center;
+}
+
+[data-theme="high-contrast"] .omok-wrap {
+  background: var(--hc-box-bg, #000);
+  border-bottom-color: var(--hc-box-text, #fff);
+}
+
+[data-theme="high-contrast"] .omok-banner,
+[data-theme="high-contrast"] .omok-panel-status,
+[data-theme="high-contrast"] .omok-record-row,
+[data-theme="high-contrast"] .omok-hint-text {
+  color: var(--hc-box-text, #fff);
+  opacity: 1;
+}
+
+[data-theme="high-contrast"] .omok-turn-badge,
+[data-theme="high-contrast"] .omok-mini-btn,
+[data-theme="high-contrast"] .omok-action-btn {
+  background: var(--hc-box-bg, #000);
+  border-color: var(--hc-box-text, #fff);
+  color: var(--hc-box-text, #fff);
+}
+
+[data-theme="high-contrast"] .omok-stone-white { stroke: #000; stroke-width: 2.5; }
+
+/* ── 게임 은행 시트 ── */
+.game-bank-sheet {
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-bank-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text);
+  margin: 0 0 12px;
+}
+
+.game-bank-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  margin-bottom: 12px;
+}
+
+.game-bank-balance-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.game-bank-balance-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.game-bank-charge-btn {
+  min-height: 50px;
+  width: 100%;
+  border-radius: 25px;
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary, #fff);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.game-bank-charge-btn:disabled { opacity: 0.55; cursor: default; }
+
+.game-bank-charge-status {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 8px 0 12px;
+}
+
+.game-bank-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 6px;
+}
+
+.game-bank-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid var(--color-border);
+}
+
+.game-bank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.game-bank-row-time {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  min-width: 74px;
+}
+
+.game-bank-row-label { flex: 1; }
+
+.game-bank-row-delta { font-weight: 700; }
+.game-bank-row-delta.plus { color: var(--color-primary); }
+.game-bank-row-delta.minus { color: #d8432f; }
+
+.game-bank-empty {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 16px 0;
+}
+
+.game-bank-close-btn {
+  min-height: 50px;
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 25px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-theme="high-contrast"] .game-bank-balance,
+[data-theme="high-contrast"] .game-bank-close-btn {
+  background: var(--hc-box-bg, #000);
+  border-color: var(--hc-box-text, #fff);
+  color: var(--hc-box-text, #fff);
+}
+
+[data-theme="high-contrast"] .game-bank-row,
+[data-theme="high-contrast"] .game-bank-title,
+[data-theme="high-contrast"] .game-bank-section-title,
+[data-theme="high-contrast"] .game-bank-balance-value {
+  color: var(--hc-box-text, #fff);
+}
+
+/* 고대비에서 수지 부호는 색+기호 병행이라 색만 강조 완화 */
+[data-theme="high-contrast"] .game-bank-row-delta.plus,
+[data-theme="high-contrast"] .game-bank-row-delta.minus {
+  color: var(--hc-box-text, #fff);
+}

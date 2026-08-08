@@ -13,6 +13,13 @@ import { ProfileAvatar } from '../components/ProfileAvatar'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useRelayNovel } from '../hooks/useRelayNovel'
 import { useTypingStatus } from '../hooks/useTypingStatus'
+import { useOmokGame } from '../hooks/useOmokGame'
+import { useGameWallet } from '../hooks/useGameWallet'
+import { useOmokRecord, formatBucket } from '../hooks/useOmokRecord'
+import { parseGameCommand, OMOK_HELP_TEXT, OMOK_QUICK_HINT, type GameCommand } from '../lib/gameCommand'
+import { formatKrw, formatRemaining, CHARGE_AMOUNT } from '../lib/gameWallet'
+import { OmokPanel } from '../components/OmokPanel'
+import { GameBankSheet } from '../components/GameBankSheet'
 import {
   formatBackground, parseRelayCommand, RELAY_HELP_TEXT, RELAY_QUICK_HINT,
 } from '../lib/relayNovel'
@@ -54,6 +61,11 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
   const { addPhotoFromUrl } = usePhotos(coupleId, uid, partnerUid)
   const relay = useRelayNovel(coupleId, uid)
   const { partnerTyping, notifyTyping, stopTyping } = useTypingStatus(coupleId, uid, partnerUid)
+  const omok = useOmokGame(coupleId, uid, partnerUid)
+  const wallet = useGameWallet(coupleId, uid)
+  const omokRecord = useOmokRecord(coupleId, uid)
+  const [omokExpanded, setOmokExpanded] = useState(false)
+  const [bankOpen, setBankOpen] = useState(false)
   const keyboardOpen = useKeyboardInset()
   const myName = myNickname || '나'
 
@@ -92,6 +104,150 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     void sendText(text, { relayKind: 'system', relayNovelId: novelId })
   }, [sendText])
 
+  // 게임(오목) — 시작·승패·충전 안내를 채팅에 남긴다
+  const postGameSystem = useCallback((text: string, gameId?: string) => {
+    void sendText(text, { gameKind: 'system', gameId })
+  }, [sendText])
+
+  // 새 판이 시작되면 양쪽 모두 드로어를 자동으로 펼친다
+  const lastSeenGameIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const game = omok.latestGame
+    if (!game) return
+    if (game.status === 'active' && lastSeenGameIdRef.current !== game.id) {
+      lastSeenGameIdRef.current = game.id
+      setOmokExpanded(true)
+    }
+  }, [omok.latestGame])
+
+  // 드로어를 펼치면 전적을 갱신한다 (상시 리스너 없음)
+  useEffect(() => {
+    if (omokExpanded) void omokRecord.refresh()
+  }, [omokExpanded, omokRecord])
+
+  // 전적 4구간을 한 줄 텍스트로
+  const buildRecordText = useCallback((r: typeof omokRecord.record) => [
+    `${myName} 오목 전적`,
+    `오늘 ${formatBucket(r.today)}`,
+    `이번주 ${formatBucket(r.week)}`,
+    `이번달 ${formatBucket(r.month)}`,
+    `전체 ${formatBucket(r.total)}${r.total.net !== 0 ? ` (수지 ${r.total.net > 0 ? '+' : ''}${formatKrw(r.total.net)})` : ''}`,
+  ].join('\n'), [myName])
+
+  // 오목 기권 — 상대 수락 전이면 취소·환불로 처리된다
+  const handleOmokSurrender = useCallback(async () => {
+    const game = omok.activeGame
+    if (!game) {
+      postGameSystem('진행 중인 오목이 없어요. /게임 오목 으로 시작할 수 있어요.')
+      return
+    }
+    const outcome = await omok.surrender(game)
+    if (outcome === 'cancelled') {
+      postGameSystem('오목 판을 취소했어요. 판돈은 돌려받았어요.', game.id)
+    } else if (outcome === 'surrendered') {
+      postGameSystem(
+        `${myName} 기권 — ${partnerNickname || '상대방'} 승리!${game.bet > 0 ? ` 판돈 ${formatKrw(game.bet * 2)} 획득` : ''}`,
+        game.id,
+      )
+      void omokRecord.refresh()
+    }
+  }, [omok, myName, partnerNickname, postGameSystem, omokRecord])
+
+  // 게임 슬래시 명령 처리 (릴레이소설 명령이 아닐 때만 호출된다)
+  const handleGameCommand = useCallback(async (command: GameCommand) => {
+    if (command.kind === 'help') {
+      postGameSystem(OMOK_HELP_TEXT)
+      return
+    }
+
+    if (command.kind === 'bank') {
+      setBankOpen(true)
+      return
+    }
+
+    if (command.kind === 'record') {
+      const r = await omokRecord.refresh()
+      postGameSystem(buildRecordText(r))
+      return
+    }
+
+    if (command.kind === 'charge') {
+      const attempt = await wallet.charge()
+      if (attempt.ok) {
+        postGameSystem(`${myName} 게임머니 ${formatKrw(CHARGE_AMOUNT)} 충전 완료!`)
+      } else if (attempt.reason === 'daily') {
+        postGameSystem('오늘 충전 3회를 모두 사용했어요. 내일 다시 충전할 수 있어요.')
+      } else if (attempt.reason === 'cooldown') {
+        postGameSystem(`다음 충전까지 ${formatRemaining((attempt.nextAt ?? 0) - Date.now())} 남았어요.`)
+      } else {
+        postGameSystem('충전에 실패했어요. 잠시 후 다시 시도해주세요.')
+      }
+      return
+    }
+
+    if (command.kind === 'surrender') {
+      await handleOmokSurrender()
+      return
+    }
+
+    // command.kind === 'start'
+    if (omok.activeGame) {
+      setOmokExpanded(true)
+      postGameSystem('이미 진행 중인 오목이 있어요. 위 판에서 이어서 두세요.', omok.activeGame.id)
+      return
+    }
+    const balance = wallet.balance
+    if (balance == null) {
+      postGameSystem('지갑을 준비하고 있어요. 잠시 후 다시 시도해주세요.')
+      return
+    }
+    if (command.bet > 0 && balance < command.bet) {
+      const eligibility = await wallet.getChargeEligibility()
+      if (eligibility.ok) {
+        postGameSystem(`잔액이 부족해요 (현재 ${formatKrw(balance)}). /게임 충전 으로 채운 뒤 시작해주세요.`)
+      } else if (eligibility.reason === 'daily') {
+        postGameSystem(`잔액이 부족하고 오늘 충전도 다 썼어요 (현재 ${formatKrw(balance)}). 내일 충전 후 시작할 수 있어요.`)
+      } else {
+        postGameSystem(`잔액이 부족해요 (현재 ${formatKrw(balance)}). 다음 충전까지 ${formatRemaining((eligibility.nextAt ?? 0) - Date.now())} 남아 지금은 시작할 수 없어요.`)
+      }
+      return
+    }
+    const gameId = await omok.start(command.bet)
+    if (!gameId) {
+      postGameSystem('오목을 시작하지 못했어요. 잠시 후 다시 시도해주세요.')
+      return
+    }
+    setOmokExpanded(true)
+    postGameSystem(
+      `오목 시작! ${command.bet > 0 ? `판돈 ${formatKrw(command.bet)}` : '친선전'} · ${myName}(흑) 선공\n\n${OMOK_QUICK_HINT}`,
+      gameId,
+    )
+  }, [omok, wallet, omokRecord, myName, postGameSystem, buildRecordText, handleOmokSurrender])
+
+  // 보드 착수 — 첫 수면 판돈 수락, 5목·무승부면 정산까지 이어진다
+  const handleOmokPlace = useCallback(async (x: number, y: number) => {
+    const game = omok.activeGame
+    if (!game) return
+    const outcome = await omok.placeStone(game, x, y, wallet.balance)
+    if (!outcome.ok) {
+      if (outcome.reason === 'balance') {
+        postGameSystem(`잔액이 부족해서 판돈 ${formatKrw(game.bet)}을 걸 수 없어요. 충전 후 첫 수를 두면 게임이 수락돼요.`, game.id)
+        setBankOpen(true)
+      }
+      return
+    }
+    if (outcome.state === 'win') {
+      postGameSystem(
+        `오목 완성! ${myName} 승리 🎉${game.bet > 0 ? ` 판돈 ${formatKrw(game.bet * 2)} 획득!` : ''}`,
+        game.id,
+      )
+      void omokRecord.refresh()
+    } else if (outcome.state === 'draw') {
+      postGameSystem('판이 가득 찼어요 — 무승부! 판돈은 각자 돌려받았어요.', game.id)
+      void omokRecord.refresh()
+    }
+  }, [omok, wallet.balance, myName, postGameSystem, omokRecord])
+
   // 채팅 입력을 가로채 릴레이소설 명령어를 먼저 처리한다
   const handleSendText = useCallback(async (text: string) => {
     const command = parseRelayCommand(text)
@@ -99,6 +255,11 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     // 슬래시 명령이 아니면 언제나 평범한 대화다.
     // 릴레이소설이 진행 중이어도 일반 대화를 턴으로 삼지 않는다.
     if (!command) {
+      const gameCommand = parseGameCommand(text)
+      if (gameCommand) {
+        await handleGameCommand(gameCommand)
+        return
+      }
       await sendText(text)
       return
     }
@@ -277,7 +438,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     }
   }, [
     relay, sendText, postRelaySystem, myName, uid, partnerUid, partnerNickname,
-    isMyTurn, nextTurnUid, turnOwnerName,
+    isMyTurn, nextTurnUid, turnOwnerName, handleGameCommand,
   ])
 
   // 릴레이소설 턴 메시지를 지우면 소설에서도 그 턴을 되돌린다.
@@ -475,6 +636,25 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
         />
       )}
 
+      {omok.latestGame && (
+        omok.latestGame.status === 'active'
+        || (omok.latestGame.finishedAt != null && Date.now() - omok.latestGame.finishedAt < 30 * 60_000)
+      ) && (
+        <OmokPanel
+          game={omok.latestGame}
+          myUid={uid}
+          myName={myName}
+          partnerName={partnerName}
+          balance={wallet.balance}
+          record={omokRecord.record}
+          expanded={omokExpanded}
+          onToggleExpanded={() => setOmokExpanded((v) => !v)}
+          onPlace={handleOmokPlace}
+          onSurrender={() => void handleOmokSurrender()}
+          onOpenBank={() => setBankOpen(true)}
+        />
+      )}
+
       {relay.novel && relayInfoOpen && (
         <RelayNovelInfoSheet
           novel={relay.novel}
@@ -612,6 +792,16 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           onTypingStop={stopTyping}
         />
       </div>
+
+      {bankOpen && (
+        <GameBankSheet
+          coupleId={coupleId}
+          myUid={uid}
+          balance={wallet.balance}
+          onCharge={wallet.charge}
+          onClose={() => setBankOpen(false)}
+        />
+      )}
 
       {viewerUrl && (
         <ImageViewer

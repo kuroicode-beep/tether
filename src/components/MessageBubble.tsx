@@ -71,7 +71,7 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps) {
   const {
     type, text, imageUrl, fileUrl, fileName, fileType, fileSize, createdAt, readBy, senderUid,
-    relayKind, relayTurn, relayAuthorName,
+    relayKind, relayTurn, relayAuthorName, gameKind,
   } = message
   const [imgError, setImgError] = useState(false)
   const isRead = isMe && readBy.filter((uid) => uid !== senderUid).length > 0
@@ -90,6 +90,18 @@ export const MessageBubble = memo(function MessageBubble({
   useEffect(() => {
     setImgError(false)
   }, [imageUrl])
+
+  // 게임(오목) 안내 — 릴레이소설 안내와 같은 카드 스타일, 아이콘만 게임패드
+  if (gameKind === 'system') {
+    return (
+      <div className="relay-system" role="note">
+        <span className="material-symbols-outlined relay-system-icon" aria-hidden="true">
+          sports_esports
+        </span>
+        <p className="relay-system-text">{text}</p>
+      </div>
+    )
+  }
 
   // 릴레이소설 안내 — 발신자와 무관하게 가운데 정렬된 안내 카드로 보여준다
   if (relayKind === 'system') {

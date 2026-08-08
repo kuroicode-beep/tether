@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-08-update-v0-20-0-omok-game',
+    date: '2026.08.08',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 오목 게임과 게임머니.`,
+    detail: '채팅에서 /게임 오목 을 입력하면 채팅 위 드로어에서 오목이 시작돼요. 한 수씩 번갈아 두고, 판돈을 걸면 이긴 사람이 가져갑니다. 게임머니는 각자 5만원으로 시작하고 /게임 충전 으로 하루 3번(8시간 간격) 5만원씩 충전할 수 있어요. /게임 은행 에서 잔고·충전·사용내역을, /게임 전적 에서 오늘·이번주·이번달·전체 전적을 볼 수 있습니다.',
+  },
+  {
     id: '2026-08-07-update-v0-19-3-mute-chat-alerts-in-chat',
     date: '2026.08.07',
     type: 'update',

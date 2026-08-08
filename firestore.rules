@@ -244,6 +244,62 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Games (오목 등): 둘이 번갈아 두는 미니게임. 정산 필드까지만 갱신 허용.
+      match /games/{gameId} {
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember()
+                      && request.resource.data.startedBy == request.auth.uid
+                      && request.resource.data.status == 'active'
+                      && request.resource.data.bet is int
+                      && request.resource.data.bet >= 0
+                      && request.resource.data.bet <= 50000;
+        allow update: if isCoupleMember()
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['moves', 'moveCount', 'nextTurnUid', 'status',
+                                     'escrowUids', 'winnerUid', 'winLine', 'result',
+                                     'finishedAt', 'settled']);
+        allow delete: if false;
+      }
+
+      // Game wallets: 생성·시드는 본인만. 정산은 상대 지갑에 +를 써야 하므로
+      // balance 갱신은 커플 멤버에게 허용한다 (신뢰 기반 2인 앱 관례).
+      match /wallets/{walletId} {
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember()
+                      && walletId == request.auth.uid
+                      && request.resource.data.balance == 50000;
+        allow update: if isCoupleMember()
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['balance', 'updatedAt']);
+        allow delete: if false;
+
+        // 충전 이력: 본인만, 금액 고정, 시각은 서버 시각만 인정
+        match /charges/{chargeId} {
+          allow read: if isCoupleMember();
+          allow create: if isCoupleMember()
+                        && walletId == request.auth.uid
+                        && request.resource.data.amount == 50000
+                        && request.resource.data.at == request.time;
+          allow update, delete: if false;
+        }
+      }
+
+      // Game results: 전적 계산용 불변 이력
+      match /gameResults/{resultId} {
+        allow read: if isCoupleMember();
+        allow create: if isCoupleMember()
+                      && request.resource.data.game is string
+                      && request.resource.data.finishedAt is timestamp;
+        allow update, delete: if false;
+      }
+
+      // Game stats: 비정규화 누적 카운터
+      match /gameStats/{statId} {
+        allow read: if isCoupleMember();
+        allow create, update: if isCoupleMember();
+        allow delete: if false;
+      }
+
       // Files: durable library index copied from chat file messages.
       match /files/{fileId} {
         function validFileCreate() {
