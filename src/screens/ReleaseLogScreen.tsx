@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-12-update-v0-22-0-omok-board-readability',
+    date: '2026.08.12',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 오목판 가독성 대폭 향상.`,
+    detail: 'SVIL Baduk(고대비 바둑)의 검증된 설계를 이식했어요. 어두운 판에 밝은 격자선, 흑돌은 밝은 테두리·백돌은 검은 테두리로 반전시키고 돌마다 「흑」「백」 글자를 함께 표시해 색만으로 구분하지 않습니다. 마지막 수는 호박색 점, 승리 라인은 두 겹 강조선과 돌 링으로 표시돼요. 판 크기도 키웠습니다.',
+  },
+  {
     id: '2026-08-08-update-v0-21-0-relay-pause-resume',
     date: '2026.08.08',
     type: 'update',
