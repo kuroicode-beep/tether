@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-12-update-v0-25-0-omok-result-overlay-hotkeys',
+    date: '2026.08.12',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 오목 결과 오버레이와 단축키.`,
+    detail: '게임이 끝나면 화면 가운데에 "OO 승리!"가 크게 4초간 표시된 뒤 사라지고, 전체화면이었다면 자동으로 채팅 화면으로 돌아와요. PC 단축키: Enter=고른 자리에 두기(턴 넘기기), F5=전체화면 켜기/끄기, 스페이스바=오목판 보이기/감추기. 채팅 입력창에 타이핑 중일 때는 단축키가 동작하지 않아요.',
+  },
+  {
     id: '2026-08-12-update-v0-24-0-omok-sound-timer-blink',
     date: '2026.08.12',
     type: 'update',

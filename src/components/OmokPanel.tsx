@@ -56,14 +56,33 @@ export function OmokPanel({
     prevMovesRef.current = { id: game.id, count: game.moveCount }
   }, [game.id, game.moveCount])
 
-  // 승리 효과음 — 5목으로 끝났을 때 (양쪽 모두)
+  // 게임 종료 — 승리음 + 화면 가운데 큰 결과 오버레이(4초) + 전체화면 자동 복귀
+  const [announce, setAnnounce] = useState<string | null>(null)
   const prevStatusRef = useRef(game.status)
   useEffect(() => {
-    if (prevStatusRef.current === 'active' && game.status === 'finished' && game.result === 'five') {
-      playWinSound()
-    }
+    const ended = prevStatusRef.current === 'active'
+      && (game.status === 'finished' || game.status === 'abandoned')
     prevStatusRef.current = game.status
-  }, [game.status, game.result])
+    if (!ended) return
+
+    if (game.result === 'five') playWinSound()
+
+    const winnerName = game.winnerUid == null ? null
+      : game.winnerUid === myUid ? myName : partnerName
+    const text = game.result === 'draw' ? '무승부!'
+      : game.result === 'cancelled' ? null
+      : winnerName ? `${winnerName} 승리!`
+      : null
+    if (!text) return
+
+    setAnnounce(text)
+    const timer = window.setTimeout(() => {
+      setAnnounce(null)
+      // 결과를 보여준 뒤에는 전체화면을 닫아 채팅으로 돌아온다
+      setFullscreen(false)
+    }, 4000)
+    return () => window.clearTimeout(timer)
+  }, [game.status, game.result, game.winnerUid, myUid, myName, partnerName])
 
   // 초재기 — 내 차례 동안 30초 카운트다운. 앱이 화면에서 사라지면 멈추고,
   // 돌아오면 30초를 새로 시작한다(채팅 앱 특성상 관대하게).
@@ -141,6 +160,37 @@ export function OmokPanel({
       setPlacing(false)
     }
   }, [ghost, placing, onPlace])
+
+  // 단축키 — Enter: 착수 확정(턴 넘기기), F5: 전체화면 토글, Space: 판 보임/감춤.
+  // 채팅 입력창 등에서 타이핑 중일 때는 가로채지 않는다.
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement
+      && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable)
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return
+      if (e.key === 'F5') {
+        e.preventDefault()
+        setFullscreen((v) => !v)
+        return
+      }
+      if (e.key === 'Enter') {
+        if (ghost && isMyTurn && !placing) {
+          e.preventDefault()
+          void handleConfirm()
+        }
+        return
+      }
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        if (fullscreen) setFullscreen(false)
+        else onToggleExpanded()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [ghost, isMyTurn, placing, fullscreen, handleConfirm, onToggleExpanded])
 
   // 상태 한 줄 (텍스트 라벨 — 색상만으로 구분하지 않는다)
   const statusText = isActive
@@ -275,6 +325,12 @@ export function OmokPanel({
             )}
             <button type="button" className="omok-action-btn" onClick={() => setFullscreen(false)}>닫기</button>
           </div>
+        </div>
+      )}
+
+      {announce && (
+        <div className="omok-announce" role="status" aria-live="assertive">
+          <span className="omok-announce-text">{announce}</span>
         </div>
       )}
     </div>
