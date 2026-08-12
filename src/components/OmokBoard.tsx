@@ -13,6 +13,8 @@ interface OmokBoardProps {
   disabled: boolean
   /** 전체화면 모드 — 가용 영역을 최대로 채운다 */
   fullscreen?: boolean
+  /** 상대 직전 수 반짝임 — 내가 착수할 때까지 (SVIL Baduk blinkLastMove) */
+  blinkLast?: boolean
 }
 
 const MARGIN = 24
@@ -27,7 +29,9 @@ function toSvg(i: number): number {
 
 const STAR_POINTS = [3, 7, 11].flatMap((x) => [3, 7, 11].map((y) => ({ x, y })))
 
-export function OmokBoard({ game, myUid, ghost, onCellTap, disabled, fullscreen = false }: OmokBoardProps) {
+export function OmokBoard({
+  game, myUid, ghost, onCellTap, disabled, fullscreen = false, blinkLast = false,
+}: OmokBoardProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const board = useMemo(() => buildBoard(game.moves, game.boardSize), [game.moves, game.boardSize])
   const lastMove = game.moves[game.moves.length - 1] ?? null
@@ -114,12 +118,22 @@ export function OmokBoard({ game, myUid, ghost, onCellTap, disabled, fullscreen 
               {isBlack ? '흑' : '백'}
             </text>
             {isLast && !isLast2InWinLine(winSet, m.x, m.y) && (
-              <circle
-                cx={toSvg(m.x)}
-                cy={toSvg(m.y)}
-                r={STONE_R * 0.28}
-                className="omok-last-marker"
-              />
+              <g className={blinkLast ? 'omok-last-blink' : undefined}>
+                <circle
+                  cx={toSvg(m.x)}
+                  cy={toSvg(m.y)}
+                  r={STONE_R * 0.28}
+                  className="omok-last-marker"
+                />
+                {blinkLast && (
+                  <circle
+                    cx={toSvg(m.x)}
+                    cy={toSvg(m.y)}
+                    r={STONE_R + 3}
+                    className="omok-last-ring"
+                  />
+                )}
+              </g>
             )}
           </g>
         )

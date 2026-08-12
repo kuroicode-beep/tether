@@ -2963,3 +2963,41 @@ body[data-keyboard="open"] .chat-input-bar {
 [data-theme="high-contrast"] .omok-fullscreen-status {
   color: var(--hc-box-text, #fff);
 }
+
+/* ── 오목 초재기·마지막 수 반짝임 ── */
+@keyframes omok-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+/* 상대 직전 수 — 내가 둘 때까지 반짝인다 (SVIL Baduk blinkLastMove) */
+.omok-last-blink {
+  animation: omok-blink 0.65s ease-in-out infinite;
+}
+
+.omok-last-ring {
+  fill: none;
+  stroke: #ffd479;
+  stroke-width: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .omok-last-blink { animation: none; }
+}
+
+/* 초재기 10초 이하 — 색과 함께 글자(초 수)로도 표시된다 */
+.omok-turn-badge--urgent {
+  border-color: #d8432f;
+  color: #d8432f;
+}
+
+.omok-timer-urgent {
+  color: #d8432f;
+}
+
+[data-theme="high-contrast"] .omok-turn-badge--urgent,
+[data-theme="high-contrast"] .omok-timer-urgent {
+  color: var(--hc-box-text, #fff);
+  border-color: var(--hc-box-text, #fff);
+  text-decoration: underline;
+}

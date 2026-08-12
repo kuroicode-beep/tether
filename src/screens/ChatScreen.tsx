@@ -164,6 +164,22 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
     }
   }, [omok, myName, partnerNickname, postGameSystem, omokRecord])
 
+  // 초재기 30초 초과 — 시간패 (상대 수락 전이면 취소·환불)
+  const handleOmokTimeout = useCallback(async () => {
+    const game = omok.activeGame
+    if (!game || !uid || game.nextTurnUid !== uid) return
+    const outcome = await omok.surrender(game)
+    if (outcome === 'cancelled') {
+      postGameSystem('⏱ 30초 초과 — 오목 판을 취소했어요. 판돈은 돌려받았어요.', game.id)
+    } else if (outcome === 'surrendered') {
+      postGameSystem(
+        `⏱ 30초 초과 — ${myName} 시간패! ${partnerNickname || '상대방'} 승리${game.bet > 0 ? ` · 판돈 ${formatKrw(game.bet * 2)} 획득` : ''}`,
+        game.id,
+      )
+      void omokRecord.refresh()
+    }
+  }, [omok, uid, myName, partnerNickname, postGameSystem, omokRecord])
+
   // 게임 슬래시 명령 처리 (릴레이소설 명령이 아닐 때만 호출된다)
   const handleGameCommand = useCallback(async (command: GameCommand) => {
     if (command.kind === 'help') {
@@ -663,6 +679,7 @@ export function ChatScreen({ onBack, onSetThemeTrack }: ChatScreenProps) {
           onPlace={handleOmokPlace}
           onSurrender={() => void handleOmokSurrender()}
           onOpenBank={() => setBankOpen(true)}
+          onTimeout={handleOmokTimeout}
         />
       )}
 

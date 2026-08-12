@@ -1,10 +1,15 @@
 // src/components/OmokPanel.tsx
 // 채팅 상단 오목 드로어 — 접힘=한 줄 배너, 펼침=보드+상태+전적 (채팅과 동시 사용)
-import { useState, useCallback, useEffect } from 'react'
+// 내 차례 30초 초재기 + 효과음 + 상대 마지막 수 반짝임 포함.
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { OmokGame, formatCoord } from '../lib/omok'
 import { formatKrw } from '../lib/gameWallet'
 import { OmokBoard } from './OmokBoard'
 import { OmokRecord, formatBucket } from '../hooks/useOmokRecord'
+import { playStoneSound, playTickSound, playTimeoutSound, playWinSound } from '../lib/omokSound'
+
+// 초재기 — 내 차례가 되면 30초 안에 둔다 (화면이 보일 때만 흐른다)
+const TURN_SECONDS = 30
 
 interface OmokPanelProps {
   game: OmokGame
@@ -18,11 +23,12 @@ interface OmokPanelProps {
   onPlace: (x: number, y: number) => Promise<void>
   onSurrender: () => void
   onOpenBank: () => void
+  onTimeout: () => void
 }
 
 export function OmokPanel({
   game, myUid, myName, partnerName, balance, record,
-  expanded, onToggleExpanded, onPlace, onSurrender, onOpenBank,
+  expanded, onToggleExpanded, onPlace, onSurrender, onOpenBank, onTimeout,
 }: OmokPanelProps) {
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null)
   const [placing, setPlacing] = useState(false)
@@ -41,6 +47,89 @@ export function OmokPanel({
   useEffect(() => {
     setFullscreen(false)
   }, [game.id])
+
+  // 착수 효과음 — 새 수가 도착하면(내 수·상대 수 모두) 딱 소리
+  const prevMovesRef = useRef<{ id: string; count: number }>({ id: game.id, count: game.moveCount })
+  useEffect(() => {
+    const prev = prevMovesRef.current
+    if (prev.id === game.id && game.moveCount > prev.count) playStoneSound()
+    prevMovesRef.current = { id: game.id, count: game.moveCount }
+  }, [game.id, game.moveCount])
+
+  // 승리 효과음 — 5목으로 끝났을 때 (양쪽 모두)
+  const prevStatusRef = useRef(game.status)
+  useEffect(() => {
+    if (prevStatusRef.current === 'active' && game.status === 'finished' && game.result === 'five') {
+      playWinSound()
+    }
+    prevStatusRef.current = game.status
+  }, [game.status, game.result])
+
+  // 초재기 — 내 차례 동안 30초 카운트다운. 앱이 화면에서 사라지면 멈추고,
+  // 돌아오면 30초를 새로 시작한다(채팅 앱 특성상 관대하게).
+  // 0이 되면 시간패(onTimeout) — 마지막 10초는 틱, 5초 이하는 긴급 틱.
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
+  const deadlineRef = useRef<number | null>(null)
+  const lastShownRef = useRef<number | null>(null)
+  const timeoutFiredRef = useRef(false)
+  // 부모 재렌더로 onTimeout 정체성이 바뀌어도 카운트다운이 리셋되지 않도록 ref로 고정
+  const onTimeoutRef = useRef(onTimeout)
+  useEffect(() => { onTimeoutRef.current = onTimeout }, [onTimeout])
+
+  useEffect(() => {
+    if (!isMyTurn || !isActive) {
+      deadlineRef.current = null
+      lastShownRef.current = null
+      setSecondsLeft(null)
+      return
+    }
+
+    timeoutFiredRef.current = false
+    const startCountdown = () => {
+      deadlineRef.current = Date.now() + TURN_SECONDS * 1000
+      lastShownRef.current = TURN_SECONDS
+      setSecondsLeft(TURN_SECONDS)
+    }
+    if (document.visibilityState === 'visible') startCountdown()
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      const deadline = deadlineRef.current
+      if (deadline == null) return
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+      if (left !== lastShownRef.current) {
+        lastShownRef.current = left
+        setSecondsLeft(left)
+        if (left > 0 && left <= 10) playTickSound(left <= 5)
+      }
+      if (left <= 0 && !timeoutFiredRef.current) {
+        timeoutFiredRef.current = true
+        playTimeoutSound()
+        onTimeoutRef.current()
+      }
+    }, 250)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        deadlineRef.current = null
+        lastShownRef.current = null
+        setSecondsLeft(null)
+      } else if (deadlineRef.current == null && !timeoutFiredRef.current) {
+        startCountdown()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [isMyTurn, isActive, game.id, game.moveCount])
+
+  const lastMove = game.moves[game.moves.length - 1] ?? null
+  const blinkLast = isActive && isMyTurn && lastMove != null && lastMove.uid !== myUid
+  const timerUrgent = secondsLeft != null && secondsLeft <= 10
+  const timerText = secondsLeft != null ? ` · ${secondsLeft}초` : ''
 
   const handleConfirm = useCallback(async () => {
     if (!ghost || placing) return
@@ -69,8 +158,8 @@ export function OmokPanel({
           <span className="omok-banner-title">
             오목 · {game.moveCount}수{game.bet > 0 ? ` · 판돈 ${formatKrw(game.bet)}` : ' · 친선전'}
           </span>
-          <span className={`omok-turn-badge${isMyTurn ? ' omok-turn-badge--mine' : ''}`}>
-            {statusText}
+          <span className={`omok-turn-badge${isMyTurn ? ' omok-turn-badge--mine' : ''}${timerUrgent ? ' omok-turn-badge--urgent' : ''}`}>
+            {statusText}{timerText}
           </span>
         </span>
         <span className="material-symbols-outlined" aria-hidden="true">
@@ -81,7 +170,7 @@ export function OmokPanel({
       {expanded && (
         <section className="omok-panel" aria-label="오목판">
           <div className="omok-panel-status">
-            <span>{statusText}</span>
+            <span className={timerUrgent ? 'omok-timer-urgent' : undefined}>{statusText}{timerText}</span>
             <span className="omok-panel-balance">
               잔액 {balance != null ? formatKrw(balance) : '확인 중'}
               <button type="button" className="omok-mini-btn" onClick={onOpenBank}>은행</button>
@@ -94,6 +183,7 @@ export function OmokPanel({
             ghost={isMyTurn ? ghost : null}
             onCellTap={(x, y) => setGhost({ x, y })}
             disabled={!isMyTurn || placing}
+            blinkLast={blinkLast}
           />
 
           {isMyTurn && ghost && (
@@ -137,8 +227,8 @@ export function OmokPanel({
       {fullscreen && (
         <div className="omok-fullscreen" role="dialog" aria-label="오목판 전체화면">
           <div className="omok-fullscreen-top">
-            <span className="omok-fullscreen-status">
-              {statusText}
+            <span className={`omok-fullscreen-status${timerUrgent ? ' omok-timer-urgent' : ''}`}>
+              {statusText}{timerText}
               {game.bet > 0 && ` · 판돈 ${formatKrw(game.bet)}`}
             </span>
             <button type="button" className="omok-action-btn" onClick={() => setFullscreen(false)}>
@@ -155,6 +245,7 @@ export function OmokPanel({
               onCellTap={(x, y) => setGhost({ x, y })}
               disabled={!isMyTurn || placing}
               fullscreen
+              blinkLast={blinkLast}
             />
           </div>
 

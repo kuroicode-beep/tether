@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-12-update-v0-24-0-omok-sound-timer-blink',
+    date: '2026.08.12',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 오목 효과음·30초 초재기·마지막 수 반짝임.`,
+    detail: '돌을 놓으면 딱 소리, 5목 완성 시 승리음이 나요. 내 차례가 되면 30초 초재기가 흐르고 마지막 10초는 틱 소리(5초 이하는 긴급음)로 알려줘요. 30초를 넘기면 시간패로 처리됩니다 — 단, 앱이 화면에서 사라지면 초재기가 멈추고 돌아오면 30초가 새로 시작돼요. 상대가 마지막에 둔 돌은 내가 둘 때까지 호박색 링과 함께 반짝입니다.',
+  },
+  {
     id: '2026-08-12-update-v0-23-0-omok-fullscreen',
     date: '2026.08.12',
     type: 'update',
