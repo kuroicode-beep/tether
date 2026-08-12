@@ -2902,3 +2902,64 @@ body[data-keyboard="open"] .chat-input-bar {
   color: var(--hc-box-text, #fff);
   border-color: var(--hc-box-text, #fff);
 }
+
+/* ── 오목 전체화면 모드 ──
+   채팅 화면(.chat-screen, position:fixed) 전체를 덮고 판을 최대로 키운다.
+   svg는 meet 규칙으로 가운데 최대 정사각형을 쓰고, 좌표 환산도 이를 따른다. */
+.omok-fullscreen {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.omok-fullscreen-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+
+.omok-fullscreen-status {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.omok-fullscreen-board {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.omok-board--full {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.omok-action-icon {
+  font-size: 18px;
+  vertical-align: -4px;
+  margin-right: 2px;
+}
+
+[data-theme="high-contrast"] .omok-fullscreen {
+  background: var(--hc-box-bg, #000);
+}
+
+[data-theme="high-contrast"] .omok-fullscreen-status {
+  color: var(--hc-box-text, #fff);
+}

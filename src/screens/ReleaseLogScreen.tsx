@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-12-update-v0-23-0-omok-fullscreen',
+    date: '2026.08.12',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 오목판 전체화면 모드.`,
+    detail: '오목 드로어의 [전체화면] 버튼을 누르면 판이 화면 전체를 채우는 최대 크기로 커져요. 위에는 차례·판돈, 아래에는 착수 확인·기권 버튼이 함께 표시되고, [축소]나 [닫기]로 채팅 화면으로 돌아옵니다.',
+  },
+  {
     id: '2026-08-12-update-v0-22-0-omok-board-readability',
     date: '2026.08.12',
     type: 'update',

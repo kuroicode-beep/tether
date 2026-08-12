@@ -26,6 +26,7 @@ export function OmokPanel({
 }: OmokPanelProps) {
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null)
   const [placing, setPlacing] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
 
   const isActive = game.status === 'active'
   const isMyTurn = isActive && myUid != null && game.nextTurnUid === myUid
@@ -35,6 +36,11 @@ export function OmokPanel({
   useEffect(() => {
     setGhost(null)
   }, [game.id, game.moveCount])
+
+  // 새 판이 열리면 전체화면은 기본 상태(창모드)로 돌린다
+  useEffect(() => {
+    setFullscreen(false)
+  }, [game.id])
 
   const handleConfirm = useCallback(async () => {
     if (!ghost || placing) return
@@ -111,6 +117,10 @@ export function OmokPanel({
           )}
 
           <div className="omok-panel-actions">
+            <button type="button" className="omok-action-btn" onClick={() => setFullscreen(true)}>
+              <span className="material-symbols-outlined omok-action-icon" aria-hidden="true">fullscreen</span>
+              전체화면
+            </button>
             {isActive && (
               <button type="button" className="omok-action-btn" onClick={onSurrender}>기권</button>
             )}
@@ -122,6 +132,59 @@ export function OmokPanel({
             {record.total.net !== 0 && ` (수지 ${record.total.net > 0 ? '+' : ''}${formatKrw(record.total.net)})`}
           </p>
         </section>
+      )}
+
+      {fullscreen && (
+        <div className="omok-fullscreen" role="dialog" aria-label="오목판 전체화면">
+          <div className="omok-fullscreen-top">
+            <span className="omok-fullscreen-status">
+              {statusText}
+              {game.bet > 0 && ` · 판돈 ${formatKrw(game.bet)}`}
+            </span>
+            <button type="button" className="omok-action-btn" onClick={() => setFullscreen(false)}>
+              <span className="material-symbols-outlined omok-action-icon" aria-hidden="true">close_fullscreen</span>
+              축소
+            </button>
+          </div>
+
+          <div className="omok-fullscreen-board">
+            <OmokBoard
+              game={game}
+              myUid={myUid}
+              ghost={isMyTurn ? ghost : null}
+              onCellTap={(x, y) => setGhost({ x, y })}
+              disabled={!isMyTurn || placing}
+              fullscreen
+            />
+          </div>
+
+          {isMyTurn && ghost && (
+            <button
+              type="button"
+              className="omok-confirm-btn"
+              onClick={handleConfirm}
+              disabled={placing}
+            >
+              {placing ? '두는 중…' : `${formatCoord(ghost.x, ghost.y)}에 두기`}
+            </button>
+          )}
+          {isMyTurn && !ghost && (
+            <p className="omok-hint-text">판을 눌러 자리를 고르세요</p>
+          )}
+          {!isMyTurn && isActive && (
+            <p className="omok-hint-text">{partnerName}의 수를 기다리는 중…</p>
+          )}
+          {!isActive && (
+            <p className="omok-hint-text">새 판을 시작하려면 /게임 오목 을 입력하세요</p>
+          )}
+
+          <div className="omok-panel-actions">
+            {isActive && (
+              <button type="button" className="omok-action-btn" onClick={onSurrender}>기권</button>
+            )}
+            <button type="button" className="omok-action-btn" onClick={() => setFullscreen(false)}>닫기</button>
+          </div>
+        </div>
       )}
     </div>
   )

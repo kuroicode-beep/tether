@@ -11,6 +11,8 @@ interface OmokBoardProps {
   ghost: { x: number; y: number } | null
   onCellTap: (x: number, y: number) => void
   disabled: boolean
+  /** 전체화면 모드 — 가용 영역을 최대로 채운다 */
+  fullscreen?: boolean
 }
 
 const MARGIN = 24
@@ -25,7 +27,7 @@ function toSvg(i: number): number {
 
 const STAR_POINTS = [3, 7, 11].flatMap((x) => [3, 7, 11].map((y) => ({ x, y })))
 
-export function OmokBoard({ game, myUid, ghost, onCellTap, disabled }: OmokBoardProps) {
+export function OmokBoard({ game, myUid, ghost, onCellTap, disabled, fullscreen = false }: OmokBoardProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const board = useMemo(() => buildBoard(game.moves, game.boardSize), [game.moves, game.boardSize])
   const lastMove = game.moves[game.moves.length - 1] ?? null
@@ -35,14 +37,20 @@ export function OmokBoard({ game, myUid, ghost, onCellTap, disabled }: OmokBoard
     [game.winLine],
   )
 
-  // 탭 좌표를 가장 가까운 교차점으로 스냅한다
+  // 탭 좌표를 가장 가까운 교차점으로 스냅한다.
+  // 전체화면에서는 svg 박스가 정사각형이 아닐 수 있으므로(레터박스),
+  // preserveAspectRatio(meet)로 실제 그려진 정사각 영역을 기준으로 환산한다.
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (disabled) return
     const svg = svgRef.current
     if (!svg) return
     const rect = svg.getBoundingClientRect()
-    const px = ((e.clientX - rect.left) / rect.width) * VIEW
-    const py = ((e.clientY - rect.top) / rect.height) * VIEW
+    const scale = Math.min(rect.width, rect.height)
+    if (scale <= 0) return
+    const originX = rect.left + (rect.width - scale) / 2
+    const originY = rect.top + (rect.height - scale) / 2
+    const px = ((e.clientX - originX) / scale) * VIEW
+    const py = ((e.clientY - originY) / scale) * VIEW
     const x = Math.round((px - MARGIN) / CELL)
     const y = Math.round((py - MARGIN) / CELL)
     if (x < 0 || x >= game.boardSize || y < 0 || y >= game.boardSize) return
@@ -56,8 +64,9 @@ export function OmokBoard({ game, myUid, ghost, onCellTap, disabled }: OmokBoard
   return (
     <svg
       ref={svgRef}
-      className="omok-board"
+      className={`omok-board${fullscreen ? ' omok-board--full' : ''}`}
       viewBox={`0 0 ${VIEW} ${VIEW}`}
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={`오목판, ${game.moveCount}수 진행`}
       onPointerDown={handlePointerDown}
