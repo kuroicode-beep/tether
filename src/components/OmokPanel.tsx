@@ -161,8 +161,10 @@ export function OmokPanel({
     }
   }, [ghost, placing, onPlace])
 
-  // 단축키 — Enter: 착수 확정(턴 넘기기), F5: 전체화면 토글, Space: 판 보임/감춤.
+  // 단축키 — Enter: 착수 확정(턴 넘기기), F: 전체화면 토글, Space: 판 보임/감춤.
   // 채팅 입력창 등에서 타이핑 중일 때는 가로채지 않는다.
+  // F는 물리 키(KeyF) 기준이라 한글 입력 상태(ㄹ)에서도 동작하고,
+  // Ctrl+F(찾기) 같은 조합키는 브라우저에 그대로 넘긴다.
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) =>
       target instanceof HTMLElement
@@ -170,7 +172,8 @@ export function OmokPanel({
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target)) return
-      if (e.key === 'F5') {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.code === 'KeyF') {
         e.preventDefault()
         setFullscreen((v) => !v)
         return

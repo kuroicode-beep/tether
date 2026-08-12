@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-12-hotfix-v0-25-1-fullscreen-key-f',
+    date: '2026.08.12',
+    type: 'hotfix',
+    title: `Tether ${APP_VERSION_LABEL} 핫픽스 — 전체화면 단축키 F5 → F.`,
+    detail: 'F5가 브라우저 새로고침과 겹쳐서 전체화면 단축키를 F 키로 바꿨어요. 한/영 상태와 무관하게 동작하고, Ctrl+F 같은 조합키는 브라우저 기능 그대로 유지됩니다.',
+  },
+  {
     id: '2026-08-12-update-v0-25-0-omok-result-overlay-hotkeys',
     date: '2026.08.12',
     type: 'update',
