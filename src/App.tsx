@@ -9,6 +9,7 @@ import { useSession } from './context/useSession'
 import { LockScreen } from './screens/LockScreen'
 import { RestoreFailedScreen } from './screens/RestoreFailedScreen'
 import { ApprovalPendingScreen } from './screens/ApprovalPendingScreen'
+import { MaintenanceScreen } from './screens/MaintenanceScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { ToastNotification, ToastPayload } from './components/ToastNotification'
@@ -43,7 +44,8 @@ import { IOSInstallBanner } from './components/IOSInstallBanner'
 import { usePushNotification } from './hooks/usePushNotification'
 import { installPushTokenAutoSync } from './lib/pushTokenSync'
 import { consumeSidecarUnlockToken, pollSidecarUnlockRequest } from './lib/sidecarUnlock'
-import { isPinFreeEmail } from './lib/coupleAuth'
+import { isAdminEmail, isPinFreeEmail } from './lib/coupleAuth'
+import { useMaintenanceMode } from './hooks/useMaintenanceMode'
 
 // 잠금 화면에 있는 동안 사이드카 단축키 요청을 확인하는 주기
 const SIDECAR_UNLOCK_POLL_MS = 1000
@@ -141,6 +143,7 @@ function toTrackKey(track: ThemeTrack | null): string | null {
 function AppContent() {
   const { connect, disconnect } = useApp()
   const session = useSession()
+  const maintenance = useMaintenanceMode()
   useTheme()
   const [screen, setScreen] = useState<Screen>('lock')
   const [unlocked, setUnlocked] = useState(false)
@@ -487,6 +490,11 @@ function AppContent() {
         <OnboardingScreen onConnected={() => { setUnlocked(false); setScreen('lock') }} />
       </Suspense>
     )
+  }
+
+  // 점검 중에는 관리자를 뺀 모두를 공지 화면에서 멈춘다 (앱 데이터는 불러오지 않는다)
+  if (maintenance.enabled && !isAdminEmail(session.user?.email)) {
+    return <MaintenanceScreen message={maintenance.message} />
   }
 
   if (session.status === 'approval_pending') {

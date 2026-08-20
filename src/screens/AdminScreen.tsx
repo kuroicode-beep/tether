@@ -1,6 +1,6 @@
 // src/screens/AdminScreen.tsx
 // kuroicode@gmail.com 전용 관리자 화면.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   collection,
   collectionGroup,
@@ -19,6 +19,7 @@ import { useSession } from '../context/useSession'
 import { SubScreen } from '../components/SubScreen'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { DEFAULT_STATUS_TAGS } from '../hooks/useStatusOptions'
+import { useMaintenanceControl, useMaintenanceMode } from '../hooks/useMaintenanceMode'
 
 interface AdminScreenProps {
   onBack: () => void
@@ -63,6 +64,17 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
   const [tagInput, setTagInput] = useState('')
   const [error, setError] = useState('')
   const canAdmin = isAdminEmail(user?.email)
+  const maintenance = useMaintenanceMode()
+  const maintenanceControl = useMaintenanceControl()
+  const [noticeInput, setNoticeInput] = useState('')
+  const noticeTouchedRef = useRef(false)
+
+  // 서버에서 읽어온 공지 문구를 한 번만 입력창에 채운다 (편집 중이면 덮어쓰지 않는다)
+  useEffect(() => {
+    if (maintenance.loading || noticeTouchedRef.current) return
+    noticeTouchedRef.current = true
+    setNoticeInput(maintenance.message)
+  }, [maintenance.loading, maintenance.message])
 
   useEffect(() => {
     if (!canAdmin) return
@@ -232,6 +244,58 @@ export function AdminScreen({ onBack }: AdminScreenProps) {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="hc-readable-box rounded-xl bg-surface p-md">
+          <h2 className="mb-md font-label-md text-label-md font-semibold text-on-surface">서비스 점검 모드</h2>
+          <p className="mb-md font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
+            켜면 {ADMIN_EMAIL} 을 제외한 모든 접속이 점검 공지 화면에서 멈춰요. 대화·일기 같은 앱 데이터는
+            아예 불러오지 않습니다. 관리자 계정은 그대로 사용할 수 있어요.
+          </p>
+
+          <div className="mb-md flex items-center gap-sm rounded-xl border border-outline-variant/40 p-md">
+            <span
+              className="material-symbols-outlined"
+              style={{ color: maintenance.enabled ? 'var(--color-error)' : 'var(--color-primary)' }}
+            >
+              {maintenance.enabled ? 'construction' : 'check_circle'}
+            </span>
+            <span className="font-label-md text-label-md font-semibold text-on-surface">
+              현재 상태: {maintenance.enabled ? '점검 중 — 외부 접속 차단' : '정상 운영 중'}
+            </span>
+          </div>
+
+          <label className="mb-xs block font-label-sm text-label-sm text-on-surface-variant" htmlFor="maintenance-notice">
+            점검 공지 문구
+          </label>
+          <textarea
+            id="maintenance-notice"
+            value={noticeInput}
+            onChange={(event) => setNoticeInput(event.target.value)}
+            rows={3}
+            className="mb-md w-full rounded-xl border border-outline-variant bg-surface-container-low p-md font-body-md text-body-md text-on-surface"
+            placeholder="점검 안내 문구를 적어주세요"
+          />
+
+          <button
+            type="button"
+            disabled={maintenanceControl.saving}
+            onClick={() => void maintenanceControl.setMaintenance(!maintenance.enabled, noticeInput)}
+            className="min-h-[50px] w-full rounded-full px-lg font-label-md text-label-md disabled:opacity-50"
+            style={{
+              background: maintenance.enabled ? 'var(--color-primary)' : 'var(--color-error)',
+              color: maintenance.enabled ? 'var(--color-on-primary)' : 'var(--color-on-error)',
+            }}
+          >
+            {maintenanceControl.saving
+              ? '저장 중...'
+              : maintenance.enabled
+                ? '점검 종료하고 서비스 재개'
+                : '점검 모드 켜기 (외부 접속 차단)'}
+          </button>
+          {maintenanceControl.error && (
+            <p className="mt-sm font-label-sm text-label-sm text-error">{maintenanceControl.error}</p>
+          )}
         </section>
 
         <section className="hc-readable-box rounded-xl bg-surface p-md">
