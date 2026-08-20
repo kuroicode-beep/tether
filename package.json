@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build && node scripts/inject-sw-env.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e:firebase": "tsx scripts/test-e2e-firebase.ts"
+    "test:e2e:firebase": "tsx scripts/test-e2e-firebase.ts",
+    "chat:backup": "tsx scripts/chat-wipe.ts backup",
+    "chat:wipe": "tsx scripts/chat-wipe.ts wipe",
+    "chat:verify": "tsx scripts/chat-wipe.ts verify"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.0.0",

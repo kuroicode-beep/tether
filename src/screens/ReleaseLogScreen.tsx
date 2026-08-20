@@ -89,6 +89,13 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
+    id: '2026-08-20-update-v0-25-2-chat-history-reset',
+    date: '2026.08.20',
+    type: 'update',
+    title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 기록 초기화.`,
+    detail: '지난 대화와 주고받은 사진·파일을 모두 지웠어요. 두 사람 모두 이전 채팅을 볼 수 없고, 라이브러리의 파일 목록도 함께 비워집니다. 앱을 처음 열 때 기기에 남아 있던 옛 대화 캐시를 한 번 정리하느라 화면이 잠깐 새로고침돼요. 교환일기·사진앨범·컨텐츠·릴레이소설·오목 기록은 그대로 남아 있습니다.',
+  },
+  {
     id: '2026-08-12-hotfix-v0-25-1-fullscreen-key-f',
     date: '2026.08.12',
     type: 'hotfix',

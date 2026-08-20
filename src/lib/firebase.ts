@@ -75,10 +75,11 @@ function createFirestoreDb() {
 
 export const db = createFirestoreDb()
 
-// 2026-08-07 채팅 초기화로 서버에서 대량 삭제된 문서가 로컬 IndexedDB 캐시에는
-// 그대로 남아, 쿼리마다 메인 스레드에서 유령 문서 수만 건을 스캔하며 느려진다.
-// 앱 시작 시 1회만 캐시를 비우고 새로고침해 캐시를 새로 채운다.
-const CACHE_PURGE_KEY = 'tether:fscache-purged:2026-08-07'
+// 채팅 초기화로 서버에서 대량 삭제된 문서가 로컬 IndexedDB 캐시에는 그대로 남아,
+// 쿼리마다 메인 스레드에서 유령 문서 수만 건을 스캔하며 느려진다. 남은 캐시로는
+// 삭제된 대화가 계속 보이기도 한다. 앱 시작 시 1회만 캐시를 비우고 새로고침해 다시 채운다.
+// 대량 삭제를 또 하면 이 키의 날짜를 그날짜로 바꿔야 모든 기기에서 재퍼지된다.
+const CACHE_PURGE_KEY = 'tether:fscache-purged:2026-08-20'
 
 // 캐시를 정리했으면 true를 반환한다 (호출부는 렌더를 멈추고 reload를 기다린다)
 export async function purgeStaleFirestoreCacheOnce(): Promise<boolean> {
