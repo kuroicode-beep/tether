@@ -46,6 +46,7 @@ import { installPushTokenAutoSync } from './lib/pushTokenSync'
 import { consumeSidecarUnlockToken, pollSidecarUnlockRequest } from './lib/sidecarUnlock'
 import { isAdminEmail, isPinFreeEmail } from './lib/coupleAuth'
 import { useMaintenanceMode } from './hooks/useMaintenanceMode'
+import { MAINTENANCE_MESSAGE, MAINTENANCE_MODE, isMaintenanceBypassed } from './lib/maintenanceFlag'
 
 // 잠금 화면에 있는 동안 사이드카 단축키 요청을 확인하는 주기
 const SIDECAR_UNLOCK_POLL_MS = 1000
@@ -591,6 +592,16 @@ function AppWithBadges() {
 }
 
 export default function App() {
+  // 점검 스위치가 켜져 있으면 Context를 켜기 전에 멈춘다.
+  // 로그인 전이든 커플 연결이 끊겼든 상관없이 모든 접속이 여기서 막힌다.
+  if (MAINTENANCE_MODE && !isMaintenanceBypassed()) {
+    return (
+      <div className="app-container">
+        <MaintenanceScreen message={MAINTENANCE_MESSAGE} />
+      </div>
+    )
+  }
+
   return (
     <div className="app-container">
       <SessionProvider>
