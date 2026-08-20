@@ -19,12 +19,16 @@ service firebase.storage {
     match /couples/{coupleId}/images/{uploaderUid}/{filename} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uploaderUid;
+      // Chat reset must clear the partner's attachments too, not just your own.
+      allow delete: if isCoupleMember(coupleId);
     }
 
     // Chat files: couples/{coupleId}/files/{uploaderUid}/{filename}
     match /couples/{coupleId}/files/{uploaderUid}/{filename} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uploaderUid;
+      // Chat reset must clear the partner's attachments too, not just your own.
+      allow delete: if isCoupleMember(coupleId);
     }
 
     // Legacy chat images: couples/{coupleId}/images/{filename}

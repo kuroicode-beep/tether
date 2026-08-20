@@ -12,6 +12,8 @@ import {
   NotificationSettings,
 } from '../hooks/usePushNotification'
 import { usePushTokenHealth } from '../hooks/usePushTokenHealth'
+import { useChatWipe, type ChatWipeProgress } from '../hooks/useChatWipe'
+import { purgeFirestoreCacheNow } from '../lib/firebase'
 import { debugPushPing, type PushPingTarget } from '../lib/pushDiagnostics'
 import { useSession } from '../context/useSession'
 import { SubScreen } from '../components/SubScreen'
@@ -92,15 +94,96 @@ function DisconnectConfirmDialog({ onConfirm, onCancel, loading, error }: Confir
   )
 }
 
+// ── 채팅 기록 전체 삭제 다이얼로그 ──────────────────────────────────────────
+interface ChatWipeDialogProps {
+  progress: ChatWipeProgress
+  running: boolean
+  onConfirm: () => void
+  onClose: () => void
+  onRefresh: () => void
+}
+
+function ChatWipeConfirmDialog({ progress, running, onConfirm, onClose, onRefresh }: ChatWipeDialogProps) {
+  const finished = progress.phase === 'done'
+  const failed = progress.phase === 'error'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-margin-mobile">
+      <div className="absolute inset-0 bg-black/50" onClick={running ? undefined : onClose} />
+      <div className="relative bg-surface rounded-2xl shadow-2xl max-w-sm w-full p-xl">
+        <div className="flex flex-col items-center text-center gap-md mb-xl">
+          <div className="w-14 h-14 rounded-full bg-error-container flex items-center justify-center">
+            <span className="material-symbols-outlined text-error text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              {finished ? 'check_circle' : 'delete_forever'}
+            </span>
+          </div>
+          <div>
+            <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface mb-xs">
+              채팅 기록 전체 삭제
+            </h2>
+            {finished ? (
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                {progress.message}<br />
+                남아 있는 기록을 정리하려면<br />
+                앱을 새로고침해 주세요.
+              </p>
+            ) : running ? (
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                {progress.message}<br />
+                창을 닫지 말고 기다려 주세요.
+              </p>
+            ) : (
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                지난 대화와 주고받은 사진·파일을<br />
+                모두 지웁니다. 두 사람 다 볼 수 없게 되고<br />
+                <span className="text-error font-semibold">되돌릴 수 없어요.</span><br />
+                일기·사진앨범·컨텐츠는 그대로 남습니다.
+              </p>
+            )}
+            {failed && <p className="mt-sm font-label-sm text-label-sm text-error">{progress.message}</p>}
+          </div>
+        </div>
+
+        {finished ? (
+          <button
+            onClick={onRefresh}
+            className="w-full py-md rounded-full bg-primary text-on-primary font-label-md text-label-md active:scale-95 transition-transform"
+          >
+            앱 새로고침
+          </button>
+        ) : (
+          <div className="flex gap-sm">
+            <button
+              onClick={onClose}
+              disabled={running}
+              className="flex-1 py-md rounded-full border border-outline-variant font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={running}
+              className="flex-1 py-md rounded-full bg-error text-on-error font-label-md text-label-md active:scale-95 transition-transform disabled:opacity-50"
+            >
+              {running ? '지우는 중...' : failed ? '다시 시도' : '전체 삭제'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnniversary, onOpenAdmin }: SettingsScreenProps) {
   const { theme, setTheme } = useTheme()
   const { scale, setScale, fontFamily, setFontFamily } = useFontScale()
   const bio = useBiometric()
   const { clearPin } = usePinAuth()
   const {
-    uid, myNickname, partnerNickname, myPhotoUrl, startDate,
+    uid, coupleId, myNickname, partnerNickname, myPhotoUrl, startDate,
     disconnect, setStartDate, setMyNickname, setMyPhotoUrl,
   } = useApp()
+  const chatWipe = useChatWipe(coupleId)
   const { user, linkGoogle, isGoogleLinked } = useSession()
   const push = usePushNotification(uid)
   const pushHealth = usePushTokenHealth(uid)
@@ -120,6 +203,7 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
   const [googleError, setGoogleError] = useState('')
   const [disconnecting, setDisconnecting] = useState(false)
   const [disconnectError, setDisconnectError] = useState('')
+  const [showChatWipeDialog, setShowChatWipeDialog] = useState(false)
 
   // 커플 정보 편집
   const [editingMyNick, setEditingMyNick] = useState(false)
@@ -821,6 +905,21 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
               <span className="font-label-sm text-label-sm text-on-surface-variant">{APP_VERSION_LABEL}</span>
             </div>
             <button
+              onClick={() => {
+                chatWipe.reset()
+                setShowChatWipeDialog(true)
+              }}
+              className="w-full flex items-center justify-between p-md border-b border-outline-variant/20 hover:bg-error-container/10 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-md">
+                <span className="material-symbols-outlined text-error">delete_forever</span>
+                <span className="font-body-md text-body-md text-error font-semibold">채팅 기록 전체 삭제</span>
+              </div>
+              <span className="material-symbols-outlined text-error/40 group-hover:text-error transition-colors">
+                warning
+              </span>
+            </button>
+            <button
               onClick={() => setShowDisconnectDialog(true)}
               className="w-full flex items-center justify-between p-md hover:bg-error-container/10 transition-colors text-left group"
             >
@@ -838,6 +937,17 @@ export function SettingsScreen({ onBack, onChangePin, onDisconnect, onOpenAnnive
           </p>
         </section>
       </main>
+
+      {/* 채팅 기록 전체 삭제 다이얼로그 */}
+      {showChatWipeDialog && (
+        <ChatWipeConfirmDialog
+          progress={chatWipe.progress}
+          running={chatWipe.running}
+          onConfirm={() => { void chatWipe.wipe() }}
+          onClose={() => setShowChatWipeDialog(false)}
+          onRefresh={() => { void purgeFirestoreCacheNow() }}
+        />
+      )}
 
       {/* 연결 해제 확인 다이얼로그 */}
       {showDisconnectDialog && (

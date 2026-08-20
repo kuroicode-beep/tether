@@ -98,6 +98,20 @@ export async function purgeStaleFirestoreCacheOnce(): Promise<boolean> {
   }
 }
 
+// 방금 대량 삭제를 한 기기에서 플래그와 무관하게 캐시를 즉시 비우고 새로고침한다.
+// (설정의 "채팅 기록 전체 삭제" 완료 직후 호출한다)
+export async function purgeFirestoreCacheNow(): Promise<void> {
+  // 재퍼지 대상이 이미 정리됐으므로 1회성 플래그도 채워 둔다
+  try {
+    localStorage.setItem(CACHE_PURGE_KEY, String(Date.now()))
+  } catch {
+    // 저장 실패는 무시한다 — 퍼지 자체를 막을 이유가 없다
+  }
+  await terminate(db)
+  await clearIndexedDbPersistence(db)
+  window.location.reload()
+}
+
 export const storage = getStorage(app)
 
 // Android Chrome / iOS Safari의 cross-site storage 제한 환경에서도 redirect 토큰이
