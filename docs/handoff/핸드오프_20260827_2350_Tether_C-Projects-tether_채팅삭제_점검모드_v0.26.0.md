@@ -15,7 +15,7 @@
 
 1. **서비스가 점검 중이다.** 누가 접속하든 점검 화면만 보인다. 관리자 우회는 `https://tether-d1dab.web.app/?bypass=<BYPASS_VALUE>` — **실제 값은 `src/lib/maintenanceFlag.ts`의 `BYPASS_VALUE`에 있다**(문서에 평문으로 적지 않는다). localStorage에 기억되고, 해제는 `?bypass=off`.
 2. **채팅 데이터는 아직 그대로다.** 삭제는 앱에서 사람이 눌러야 한다 — 설정 → 맨 아래 "채팅 기록 전체 삭제".
-3. **삭제가 끝나면 점검을 풀어야 한다.** `src/lib/maintenanceFlag.ts:5`의 `MAINTENANCE_MODE`를 `false`로 바꾸고 재배포.
+3. **삭제가 끝나면 점검을 풀어야 한다.** `src/lib/maintenanceFlag.ts:5`의 `MAINTENANCE_MODE`와 `public/landing/index.html`의 `MAINTENANCE_NOTICE`를 **둘 다** `false`로 바꾸고 재배포.
 
 ## 완료한 작업
 
@@ -73,7 +73,7 @@
 
 - [ ] 앱에서 채팅 기록 전체 삭제 실행 (담당: 소장님)
 - [ ] `MAINTENANCE_MODE = false` + 재배포 (담당: 다음 세션, 삭제 확인 후)
-- [ ] 랜딩 페이지(`/landing/`)는 점검 게이트에 걸리지 않아 **앱이 점검 중이어도 계속 열린다.** 의도한 것인지 판단 필요
+- [x] 랜딩 페이지 점검 안내 — `/landing/`은 게이트에 안 걸려 계속 열리므로 상단 배너를 추가했다(5개 언어). 🔴 **점검 스위치가 둘이다**: `src/lib/maintenanceFlag.ts`의 `MAINTENANCE_MODE`와 `public/landing/index.html`의 `MAINTENANCE_NOTICE`. 끌 때 둘 다 끈다
 - [ ] (선택) 규칙 레벨 접속 차단 — 삭제 작업이 끝난 뒤에 올릴 것(배치 쓰기마다 `get()`이 늘어난다)
 
 ## 주의사항

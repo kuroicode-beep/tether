@@ -269,6 +269,14 @@ footer p { font-size: 15px; }
   html { scroll-behavior: auto; }
   * { transition: none !important; animation: none !important; }
 }
+
+.maint-banner{display:flex;gap:.7rem;align-items:flex-start;justify-content:center;
+  margin:0 auto 1.7rem;padding:.9rem 1.15rem;max-width:36rem;
+  background:var(--surface-2);border:1px solid var(--border-strong);border-radius:.9rem;
+  color:var(--text);font-size:1rem;line-height:1.55;text-align:left}
+.maint-banner[hidden]{display:none}
+.maint-icon{flex:0 0 auto;font-size:1.15rem;line-height:1.35}
+@media (max-width:480px){.maint-banner{font-size:.95rem;padding:.8rem 1rem}}
 </style>
 </head>
 <body>
@@ -292,6 +300,10 @@ footer p { font-size: 15px; }
 <main>
   <section class="hero">
     <div class="wrap hero-inner">
+      <div class="maint-banner" id="maintBanner" role="status" hidden>
+        <span class="maint-icon" aria-hidden="true">&#128736;</span>
+        <span data-i18n="maintenance_notice"></span>
+      </div>
       <svg width="52" height="52" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color: var(--accent)">
         <path d="M12 22c0-5 1-8 4-11 0 0-6-1-9 3-2.4 3.2-1 8-1 8s-1-4 1-7c1.6-2.4 4-3 4-3s-4 2-5 6c-.7 2.8 0 4 0 4H12z"/>
         <path d="M12 22c0-4-1-6-3-8 0 0 4-1 6 2 1.6 2.4.6 6 .6 6z" opacity=".55"/>
@@ -531,6 +543,7 @@ footer p { font-size: 15px; }
 // 고유명사·코드·이메일·명령어는 번역하지 않는다.
 const I18N = {
   en: {
+    maintenance_notice: "Tether is under maintenance right now, so signing in is temporarily unavailable. Please try again a little later.",
     _title: "Tether — A private space for two",
     hero_tagline: "A space just for us",
     hero_sub: "An app only two people use. Invite-only, so no one else can get in.",
@@ -638,6 +651,7 @@ const I18N = {
   },
 
   ko: {
+    maintenance_notice: "지금 Tether는 점검 중이라 로그인이 일시적으로 제한돼요. 잠시 뒤에 다시 찾아와 주세요.",
     _title: "Tether — 우리만의 공간",
     hero_tagline: "우리만의 공간",
     hero_sub: "둘만 쓰는 앱. 초대받은 두 사람만 들어올 수 있어요.",
@@ -745,6 +759,7 @@ const I18N = {
   },
 
   ja: {
+    maintenance_notice: "現在 Tether はメンテナンス中のため、ログインを一時的にご利用いただけません。しばらくしてからもう一度お試しください。",
     _title: "Tether — ふたりだけの空間",
     hero_tagline: "ふたりだけの空間",
     hero_sub: "ふたりだけで使うアプリ。招待された二人しか入れません。",
@@ -852,6 +867,7 @@ const I18N = {
   },
 
   zh: {
+    maintenance_notice: "Tether 正在维护中，暂时无法登录。请稍后再试。",
     _title: "Tether — 只属于两个人的空间",
     hero_tagline: "只属于我们的空间",
     hero_sub: "只有两个人使用的应用。仅限受邀的两人进入。",
@@ -959,6 +975,7 @@ const I18N = {
   },
 
   vi: {
+    maintenance_notice: "Tether đang bảo trì nên tạm thời không thể đăng nhập. Vui lòng quay lại sau ít phút.",
     _title: "Tether — Không gian riêng của hai người",
     hero_tagline: "Không gian riêng của chúng ta",
     hero_sub: "Ứng dụng chỉ dành cho hai người. Chỉ hai người được mời mới vào được.",
@@ -1102,6 +1119,15 @@ function renderGuide() {
     '<p class="caution">' + CAUTION_ICON + '<span>' + escapeHtml(t(keys[4])) + '</span></p>';
 }
 
+// 앱 점검 중일 때 랜딩 상단에 안내를 띄운다.
+// 점검을 끝내면 src/lib/maintenanceFlag.ts의 MAINTENANCE_MODE와 함께 false로 되돌린다.
+var MAINTENANCE_NOTICE = true;
+
+function applyMaintenanceBanner() {
+  var el = document.getElementById('maintBanner');
+  if (el) el.hidden = !MAINTENANCE_NOTICE;
+}
+
 function applyI18n() {
   document.documentElement.lang = lang;
   document.title = t('_title');
@@ -1178,6 +1204,7 @@ os = detectOs();
 tabs.forEach(function (x) { x.setAttribute('aria-selected', String(x.dataset.os === os)); });
 lang = initialLang();
 applyI18n();
+applyMaintenanceBanner();
 </script>
 
 </body>
