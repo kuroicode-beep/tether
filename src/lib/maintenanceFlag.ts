@@ -10,9 +10,10 @@ export const MAINTENANCE_MESSAGE = '더 나은 서비스를 위해 점검 중이
 // 관리자가 점검 중에도 앱을 쓰기 위한 우회 값
 const BYPASS_KEY = 'tether:maintenance-bypass'
 const BYPASS_PARAM = 'bypass'
-const BYPASS_VALUE = 'tether-admin'
+const BYPASS_VALUE = 'tether-9auQLkCz4ria'
 
-// ?bypass=tether-admin 으로 한 번 들어오면 이 기기를 기억해 이후에는 그냥 통과시킨다
+// ?bypass=<BYPASS_VALUE> 로 한 번 들어오면 이 기기를 기억해 이후에는 그냥 통과시킨다
+// 값을 바꾸면 기존에 우회해 둔 기기도 다시 점검 화면으로 돌아간다
 export function isMaintenanceBypassed(): boolean {
   try {
     const param = new URLSearchParams(window.location.search).get(BYPASS_PARAM)
