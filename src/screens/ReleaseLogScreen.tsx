@@ -89,8 +89,8 @@ function loadLegacyFeedbackMemos(): LegacyFeedbackMemo[] {
 
 const RELEASE_LOGS: ReleaseLogEntry[] = [
   {
-    id: '2026-08-20-update-v0-26-0-chat-reset-maintenance-mode',
-    date: '2026.08.20',
+    id: '2026-08-27-update-v0-26-0-chat-reset-maintenance-mode',
+    date: '2026.08.27',
     type: 'update',
     title: `Tether ${APP_VERSION_LABEL} 업데이트 — 채팅 기록 전체 삭제와 점검 모드.`,
     detail: '설정 맨 아래에 "채팅 기록 전체 삭제"가 생겼어요. 지난 대화와 주고받은 사진·파일을 한 번에 지우고, 두 사람 모두 이전 채팅을 볼 수 없게 됩니다 — 되돌릴 수 없으니 신중하게 눌러주세요. 라이브러리의 파일 목록도 함께 비워지고, 삭제가 끝나면 기기에 남은 옛 대화 캐시를 정리하느라 앱이 한 번 새로고침돼요. 교환일기·사진앨범·컨텐츠·릴레이소설·오목 기록은 그대로 남습니다. 그리고 서비스 점검이 필요할 때 관리자가 점검 모드를 켜면 "서비스 점검 중" 안내 화면이 표시돼요.',
